@@ -1,0 +1,61 @@
+{
+  "data": {
+    "total_exposure": 18400.0,
+    "currency": "INR",
+    "items": [
+      {
+        "series_id": "N02BE",
+        "type": "stockout",
+        "severity": "high",
+        "probability": 0.62,
+        "exposure": 9800.0,
+        "headline": "Paracetamol runs out Thursday, delivery lands Friday",
+        "detail": "Cover 1.3 days against a 4-day lead time.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 130
+      },
+      {
+        "series_id": "R06",
+        "type": "stockout",
+        "severity": "medium",
+        "probability": 0.41,
+        "exposure": 4300.0,
+        "headline": "Antihistamines: pollen season starts inside the lead time",
+        "detail": "The May peak is 1.73x the annual mean. Order early.",
+        "recommended_action": "order_early",
+        "recommended_quantity": 60
+      },
+      {
+        "series_id": "M01AB",
+        "type": "overstock",
+        "severity": "medium",
+        "probability": 0.78,
+        "exposure": 2600.0,
+        "headline": "Diclofenac has 41 days of cover",
+        "detail": "Capital tied up against a 7-day review period.",
+        "recommended_action": "do_not_order",
+        "recommended_quantity": 0
+      },
+      {
+        "series_id": "N05C",
+        "type": "anomaly",
+        "severity": "low",
+        "probability": 0.3,
+        "exposure": 1700.0,
+        "headline": "Sedatives: last week fell outside the 95% interval",
+        "detail": "Intermittent series; one observation outside the band is expected 1 week in 20.",
+        "recommended_action": "watch",
+        "recommended_quantity": 0
+      }
+    ]
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "snapshot_id": "sha256:9f2c1a4b7e03",
+    "generated_at": "2026-08-27T02:14:11Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}

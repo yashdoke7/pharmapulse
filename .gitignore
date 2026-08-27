@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Data — the raw CSV is committed, everything derived is not
+data/warehouse/
+data/observed/*.parquet
+!data/observed/.gitkeep
+!data/synthetic/.gitkeep
+
+# Artifacts — benchmarks.json IS committed (the Ops Console reads it)
+artifacts/runs/
+mlruns/
+
+# Node
+node_modules/
+web/dist/
+web/.vite/
+
+# Env
+.env
+.env.local
+*.log

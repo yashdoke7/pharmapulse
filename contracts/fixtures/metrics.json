@@ -1,0 +1,169 @@
+{
+  "data": {
+    "benchmarks": {
+      "generated_at": "2026-08-27T02:14:11Z",
+      "snapshot_id": "sha256:9f2c1a4b7e03",
+      "protocol": {
+        "grain": "week",
+        "horizon": 8,
+        "folds": 4,
+        "metric": "MASE",
+        "cv": "rolling-origin",
+        "seed": 42,
+        "n_series": 8
+      },
+      "leaderboard": [
+        {
+          "model": "Naive",
+          "mase": 1.33
+        },
+        {
+          "model": "WindowAverage(8)",
+          "mase": 1.164
+        },
+        {
+          "model": "SeasonalNaive",
+          "mase": 1.118,
+          "is_benchmark": true
+        },
+        {
+          "model": "AutoETS",
+          "mase": 1.114
+        },
+        {
+          "model": "DynamicOptimizedTheta",
+          "mase": 1.104
+        },
+        {
+          "model": "CrostonOptimized",
+          "mase": 1.089
+        },
+        {
+          "model": "AutoARIMA",
+          "mase": 1.039
+        },
+        {
+          "model": "MSTL",
+          "mase": 1.011
+        },
+        {
+          "model": "LightGBM",
+          "mase": 0.973
+        },
+        {
+          "model": "Prophet",
+          "mase": 0.95
+        },
+        {
+          "model": "Ensemble(median-5)",
+          "mase": 0.906,
+          "is_shipped": true
+        },
+        {
+          "model": "Oracle",
+          "mase": 0.883,
+          "is_bound": true
+        }
+      ],
+      "per_series": [
+        {
+          "series_id": "M01AB",
+          "seasonal_naive": 0.978,
+          "ensemble": 0.641,
+          "best_model": "DOTheta",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "M01AE",
+          "seasonal_naive": 1.015,
+          "ensemble": 1.061,
+          "best_model": "SeasonalNaive",
+          "ensemble_wins": false
+        },
+        {
+          "series_id": "N02BA",
+          "seasonal_naive": 0.685,
+          "ensemble": 0.662,
+          "best_model": "LightGBM",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "N02BE",
+          "seasonal_naive": 0.998,
+          "ensemble": 0.901,
+          "best_model": "MSTL",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "N05B",
+          "seasonal_naive": 0.953,
+          "ensemble": 0.612,
+          "best_model": "DOTheta",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "N05C",
+          "seasonal_naive": 1.162,
+          "ensemble": 0.704,
+          "best_model": "Croston",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "R03",
+          "seasonal_naive": 1.305,
+          "ensemble": 1.087,
+          "best_model": "LightGBM",
+          "ensemble_wins": true
+        },
+        {
+          "series_id": "R06",
+          "seasonal_naive": 1.847,
+          "ensemble": 1.671,
+          "best_model": "MSTL",
+          "ensemble_wins": true
+        }
+      ],
+      "ablations": {
+        "selection_vs_combination": {
+          "selection": 1.091,
+          "combination": 0.906,
+          "oracle": 0.883
+        },
+        "direct_monthly_vs_aggregated": {
+          "direct": 0.912,
+          "summed_from_weekly": 0.954
+        }
+      },
+      "calibration": {
+        "nominal": 0.8,
+        "achieved_before": 0.75,
+        "achieved_after": 0.79,
+        "n_points": 256
+      },
+      "runtime": {
+        "portfolio_fit_seconds": 25.0,
+        "series_model_folds": 288,
+        "cpu": "1 core"
+      },
+      "PLACEHOLDER": "Copied from docs/PHARMAPULSE_ARCHITECTURE.md. NOT yet reproduced in this repository. Pod B regenerates this file with scripts/day1_benchmark.py on Day 1 and removes this key. Do not put these numbers on a slide until then."
+    },
+    "runtime": {
+      "p50_ms": 41,
+      "p95_ms": 180,
+      "cache_hit_rate": 0.82,
+      "rss_mb": 312,
+      "cost_per_1k_forecasts_inr": 0.7,
+      "uptime_s": 8100,
+      "ladder_rung": 1
+    }
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "snapshot_id": "sha256:9f2c1a4b7e03",
+    "generated_at": "2026-08-27T02:14:11Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}

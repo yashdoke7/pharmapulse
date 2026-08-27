@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: pytest -q
+        env:
+          PYTHONPATH: .
+      # From Day 1: a model regression fails the build rather than surprising us on Day 4.
+      # --fast runs 2 folds instead of 4. Enable once scripts/day1_benchmark.py exists.
+      # - name: Benchmark
+      #   run: python scripts/day1_benchmark.py --fast
+      #   env:
+      #     PYTHONPATH: .
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        working-directory: web
+        run: npm ci || npm install
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fixtures are valid JSON and match the committed shapes
+        run: |
+          python -c "
+          import json, pathlib, sys
+          required = {'series','history','forecast','recommend','risk','explain','metrics','settings','health'}
+          found = {p.stem for p in pathlib.Path('contracts/fixtures').glob('*.json')}
+          missing = required - found
+          assert not missing, f'missing fixtures: {missing}'
+          for p in pathlib.Path('contracts/fixtures').glob('*.json'):
+              obj = json.loads(p.read_text())
+              assert 'data' in obj and 'meta' in obj, f'{p} is missing the envelope'
+          print('fixtures ok:', sorted(found))
+          "

@@ -1,0 +1,69 @@
+{
+  "data": {
+    "lead_time_days": 4,
+    "holding_cost_rate": 0.22,
+    "expiry_risk_rate": 0.015,
+    "review_period_days": 7,
+    "currency": "INR",
+    "service_level_default": 0.95,
+    "per_series": {
+      "M01AB": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 15.1
+      },
+      "M01AE": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 11.7
+      },
+      "N02BA": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 11.6
+      },
+      "N02BE": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 89.8
+      },
+      "N05B": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 26.5
+      },
+      "N05C": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 1.8
+      },
+      "R03": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 16.5
+      },
+      "R06": {
+        "pack_size": 10,
+        "unit_cost": 12.5,
+        "unit_margin": 4.0,
+        "stock_on_hand": 8.7
+      }
+    }
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "snapshot_id": "sha256:9f2c1a4b7e03",
+    "generated_at": "2026-08-27T02:14:11Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}

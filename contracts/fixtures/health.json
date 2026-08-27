@@ -1,0 +1,18 @@
+{
+  "data": {
+    "status": "ok",
+    "ladder_rung": 1,
+    "forecast_store": "present",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "stale": false
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "snapshot_id": "sha256:9f2c1a4b7e03",
+    "generated_at": "2026-08-27T02:14:11Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}

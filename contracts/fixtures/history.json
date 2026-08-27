@@ -1,0 +1,381 @@
+{
+  "data": {
+    "series_id": "N02BE",
+    "grain": "week",
+    "points": [
+      {
+        "ds": "2018-10-07",
+        "y": 177.4,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-10-14",
+        "y": 181.6,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-10-21",
+        "y": 188.0,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-10-28",
+        "y": 213.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-11-04",
+        "y": 197.1,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-11-11",
+        "y": 165.1,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-11-18",
+        "y": 218.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-11-25",
+        "y": 205.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-12-02",
+        "y": 210.8,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-12-09",
+        "y": 223.4,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-12-16",
+        "y": 229.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-12-23",
+        "y": 259.0,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2018-12-30",
+        "y": 245.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-01-06",
+        "y": 230.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-01-13",
+        "y": 206.2,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-01-20",
+        "y": 197.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-01-27",
+        "y": 234.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-02-03",
+        "y": 264.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-02-10",
+        "y": 225.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-02-17",
+        "y": 218.6,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-02-24",
+        "y": 233.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-03-03",
+        "y": 174.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-03-10",
+        "y": 203.0,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-03-17",
+        "y": 220.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-03-24",
+        "y": 226.1,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-03-31",
+        "y": 192.2,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-04-07",
+        "y": 203.0,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-04-14",
+        "y": 194.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-04-21",
+        "y": 202.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-04-28",
+        "y": 152.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-05-05",
+        "y": 186.8,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-05-12",
+        "y": 136.0,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-05-19",
+        "y": 108.8,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-05-26",
+        "y": 148.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-06-02",
+        "y": 138.6,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-06-09",
+        "y": 171.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-06-16",
+        "y": 164.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-06-23",
+        "y": 125.5,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-06-30",
+        "y": 163.8,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-07-07",
+        "y": 127.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-07-14",
+        "y": 144.3,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-07-21",
+        "y": 140.4,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-07-28",
+        "y": 148.8,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-08-04",
+        "y": 163.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-08-11",
+        "y": 162.2,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-08-18",
+        "y": 159.1,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-08-25",
+        "y": 168.1,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-09-01",
+        "y": 168.2,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-09-08",
+        "y": 148.9,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-09-15",
+        "y": 150.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-09-22",
+        "y": 160.2,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      },
+      {
+        "ds": "2019-09-29",
+        "y": 186.7,
+        "is_closed": false,
+        "is_outlier": false,
+        "completeness": 1.0
+      }
+    ]
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-27T02:14Z/ens-v3",
+    "snapshot_id": "sha256:9f2c1a4b7e03",
+    "generated_at": "2026-08-27T02:14:11Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}
