@@ -174,7 +174,7 @@ was shut. The pattern identifies the calendar precisely:
 
 | Date pattern | Occurrences | What it is |
 |---|---|---|
-| 7 January | 2014–2019, every year | **Orthodox Christmas** |
+| 7 January | 2014–2016, 2018–2019 — **not 2017**, when the shop was open (59.9 units) | **Orthodox Christmas** |
 | Orthodox Easter Sunday | 20 Apr 2014 · 12 Apr 2015 · 1 May 2016 · 16 Apr 2017 · 8 Apr 2018 · 28 Apr 2019 | **all six years, exact** |
 | 1 January | 2015, 2016, 2018, 2019 | New Year |
 | 19 December | 2014–2018, every year | **St. Nicholas (Nikoljdan)** — a Serbian household slava |
@@ -1391,7 +1391,7 @@ The response is that the ML content is not in the combination step:
 **We did, and it matters more than it sounds.**
 
 The dataset states no location. We identified the calendar as Serbian Orthodox from the closure pattern
-— all six Orthodox Easters, 7 January every year, 19 December every year (§1.4). **21 of 26 closures
+— all six Orthodox Easters, 7 January in five of six years, 19 December every year (§1.4). **21 of 26 closures
 fit; 5 do not.** The inference is strong but it is an inference.
 
 **Why it matters:** the weather and pollen covariates that would explain the R06 May peak and the R03
