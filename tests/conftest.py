@@ -47,3 +47,8 @@ def gold_week(cleaned: pd.DataFrame) -> pd.DataFrame:
 @pytest.fixture(scope="session")
 def gold_month(cleaned: pd.DataFrame) -> pd.DataFrame:
     return aggregate(cleaned, "month")
+
+
+@pytest.fixture(scope="session")
+def gold_day(cleaned: pd.DataFrame) -> pd.DataFrame:
+    return aggregate(cleaned, "day")
