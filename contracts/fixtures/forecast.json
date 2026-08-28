@@ -444,9 +444,9 @@
   },
   "meta": {
     "origin": "observed",
-    "model_version": "2026-08-28T1315Z/ens-v1",
+    "model_version": "2026-08-28T1718Z/ens-v1",
     "snapshot_id": "sha256:49e4f1c5c3da",
-    "generated_at": "2026-08-28T13:15:50Z",
+    "generated_at": "2026-08-28T17:18:46Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"
