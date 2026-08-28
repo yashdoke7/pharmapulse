@@ -1,167 +1,277 @@
 {
   "data": {
     "benchmarks": {
-      "generated_at": "2026-08-27T02:14:11Z",
-      "snapshot_id": "sha256:9f2c1a4b7e03",
+      "generated_at": "2026-08-28T13:11:27Z",
+      "snapshot_id": "sha256:49e4f1c5c3da",
       "protocol": {
         "grain": "week",
         "horizon": 8,
         "folds": 4,
         "metric": "MASE",
-        "cv": "rolling-origin",
+        "mase_denominator": "in-sample naive (m=1)",
+        "cv": "rolling-origin, non-overlapping",
         "seed": 42,
-        "n_series": 8
+        "n_series": 8,
+        "n_periods": 300,
+        "fast_mode": false
       },
+      "ensemble_members": [
+        "AutoARIMA",
+        "LightGBM",
+        "MSTL",
+        "Prophet",
+        "SeasonalNaive"
+      ],
       "leaderboard": [
         {
-          "model": "Naive",
-          "mase": 1.33
+          "model": "Oracle",
+          "mase": 0.8434,
+          "is_bound": true
         },
         {
-          "model": "WindowAverage(8)",
-          "mase": 1.164
+          "model": "Ensemble",
+          "mase": 0.907,
+          "is_shipped": true
+        },
+        {
+          "model": "Prophet",
+          "mase": 0.935
+        },
+        {
+          "model": "LightGBM",
+          "mase": 0.961
+        },
+        {
+          "model": "MSTL",
+          "mase": 1.0144
+        },
+        {
+          "model": "CrostonOptimized",
+          "mase": 1.0851
+        },
+        {
+          "model": "AutoARIMA",
+          "mase": 1.1148
         },
         {
           "model": "SeasonalNaive",
-          "mase": 1.118,
+          "mase": 1.1175,
           "is_benchmark": true
         },
         {
           "model": "AutoETS",
-          "mase": 1.114
+          "mase": 1.1244
         },
         {
           "model": "DynamicOptimizedTheta",
-          "mase": 1.104
+          "mase": 1.1486
         },
         {
-          "model": "CrostonOptimized",
-          "mase": 1.089
+          "model": "WindowAverage",
+          "mase": 1.1655
         },
         {
-          "model": "AutoARIMA",
-          "mase": 1.039
-        },
-        {
-          "model": "MSTL",
-          "mase": 1.011
-        },
-        {
-          "model": "LightGBM",
-          "mase": 0.973
-        },
-        {
-          "model": "Prophet",
-          "mase": 0.95
-        },
-        {
-          "model": "Ensemble(median-5)",
-          "mase": 0.906,
-          "is_shipped": true
-        },
-        {
-          "model": "Oracle",
-          "mase": 0.883,
-          "is_bound": true
+          "model": "Naive",
+          "mase": 1.3317
         }
       ],
       "per_series": [
         {
           "series_id": "M01AB",
-          "seasonal_naive": 0.978,
-          "ensemble": 0.641,
-          "best_model": "DOTheta",
+          "seasonal_naive": 0.9712,
+          "ensemble": 0.651,
+          "best_model": "AutoARIMA",
+          "best_mase": 0.6047,
           "ensemble_wins": true
         },
         {
           "series_id": "M01AE",
-          "seasonal_naive": 1.015,
-          "ensemble": 1.061,
-          "best_model": "SeasonalNaive",
-          "ensemble_wins": false
+          "seasonal_naive": 1.0191,
+          "ensemble": 1.0,
+          "best_model": "Naive",
+          "best_mase": 0.8899,
+          "ensemble_wins": true
         },
         {
           "series_id": "N02BA",
-          "seasonal_naive": 0.685,
-          "ensemble": 0.662,
-          "best_model": "LightGBM",
+          "seasonal_naive": 0.671,
+          "ensemble": 0.6177,
+          "best_model": "SeasonalNaive",
+          "best_mase": 0.671,
           "ensemble_wins": true
         },
         {
           "series_id": "N02BE",
-          "seasonal_naive": 0.998,
-          "ensemble": 0.901,
-          "best_model": "MSTL",
+          "seasonal_naive": 0.9925,
+          "ensemble": 0.7992,
+          "best_model": "Prophet",
+          "best_mase": 0.7708,
           "ensemble_wins": true
         },
         {
           "series_id": "N05B",
-          "seasonal_naive": 0.953,
-          "ensemble": 0.612,
-          "best_model": "DOTheta",
+          "seasonal_naive": 0.9385,
+          "ensemble": 0.6207,
+          "best_model": "WindowAverage",
+          "best_mase": 0.5562,
           "ensemble_wins": true
         },
         {
           "series_id": "N05C",
-          "seasonal_naive": 1.162,
-          "ensemble": 0.704,
-          "best_model": "Croston",
+          "seasonal_naive": 1.1736,
+          "ensemble": 0.7852,
+          "best_model": "CrostonOptimized",
+          "best_mase": 0.7066,
           "ensemble_wins": true
         },
         {
           "series_id": "R03",
-          "seasonal_naive": 1.305,
-          "ensemble": 1.087,
-          "best_model": "LightGBM",
+          "seasonal_naive": 1.2942,
+          "ensemble": 1.1366,
+          "best_model": "CrostonOptimized",
+          "best_mase": 1.0844,
           "ensemble_wins": true
         },
         {
           "series_id": "R06",
-          "seasonal_naive": 1.847,
-          "ensemble": 1.671,
-          "best_model": "MSTL",
+          "seasonal_naive": 1.8797,
+          "ensemble": 1.6456,
+          "best_model": "Prophet",
+          "best_mase": 1.4635,
           "ensemble_wins": true
+        }
+      ],
+      "demand_classes": [
+        {
+          "series_id": "M01AB",
+          "adi": 1.0,
+          "cv2": 0.0569,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "M01AE",
+          "adi": 1.0,
+          "cv2": 0.064,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "N02BA",
+          "adi": 1.0,
+          "cv2": 0.0866,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "N02BE",
+          "adi": 1.0,
+          "cv2": 0.1322,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "N05B",
+          "adi": 1.0,
+          "cv2": 0.1306,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "N05C",
+          "adi": 1.1321,
+          "cv2": 0.3826,
+          "demand_class": "smooth",
+          "zero_rate": 0.1167
+        },
+        {
+          "series_id": "R03",
+          "adi": 1.0,
+          "cv2": 0.3536,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
+        },
+        {
+          "series_id": "R06",
+          "adi": 1.0,
+          "cv2": 0.311,
+          "demand_class": "smooth",
+          "zero_rate": 0.0
         }
       ],
       "ablations": {
         "selection_vs_combination": {
-          "selection": 1.091,
-          "combination": 0.906,
-          "oracle": 0.883
-        },
-        "direct_monthly_vs_aggregated": {
-          "direct": 0.912,
-          "summed_from_weekly": 0.954
+          "selection": 0.9678,
+          "combination": 0.907,
+          "oracle": 0.8434,
+          "verdict": "combination wins"
         }
       },
       "calibration": {
         "nominal": 0.8,
-        "achieved_before": 0.75,
-        "achieved_after": 0.79,
-        "n_points": 256
+        "achieved_before": 0.9219,
+        "achieved_after": 0.8203,
+        "conformal_scale": 0.7179,
+        "n_points": 256,
+        "curve_before": [
+          {
+            "nominal": 0.5,
+            "achieved": 0.6758
+          },
+          {
+            "nominal": 0.8,
+            "achieved": 0.9219
+          },
+          {
+            "nominal": 0.9,
+            "achieved": 0.9648
+          },
+          {
+            "nominal": 0.95,
+            "achieved": 0.9805
+          }
+        ],
+        "curve_after": [
+          {
+            "nominal": 0.5,
+            "achieved": 0.5312
+          },
+          {
+            "nominal": 0.8,
+            "achieved": 0.8203
+          },
+          {
+            "nominal": 0.9,
+            "achieved": 0.9141
+          },
+          {
+            "nominal": 0.95,
+            "achieved": 0.9375
+          }
+        ]
       },
       "runtime": {
-        "portfolio_fit_seconds": 25.0,
-        "series_model_folds": 288,
-        "cpu": "1 core"
-      },
-      "PLACEHOLDER": "Copied from docs/PHARMAPULSE_ARCHITECTURE.md. NOT yet reproduced in this repository. Pod B regenerates this file with scripts/day1_benchmark.py on Day 1 and removes this key. Do not put these numbers on a slide until then."
+        "total_seconds": 43.03,
+        "series_model_folds": 292,
+        "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+        "python": "3.11.9"
+      }
     },
     "runtime": {
-      "p50_ms": 41,
-      "p95_ms": 180,
-      "cache_hit_rate": 0.82,
-      "rss_mb": 312,
-      "cost_per_1k_forecasts_inr": 0.7,
-      "uptime_s": 8100,
-      "ladder_rung": 1
+      "cache_hit_rate": 0.0,
+      "requests": 1,
+      "rss_mb": null,
+      "uptime_s": 1.1,
+      "ladder_rung": 1,
+      "model_version": "2026-08-28T1315Z_ens-v1",
+      "audit_chain_valid": true
     }
   },
   "meta": {
     "origin": "observed",
-    "model_version": "2026-08-27T02:14Z/ens-v3",
-    "snapshot_id": "sha256:9f2c1a4b7e03",
-    "generated_at": "2026-08-27T02:14:11Z",
+    "model_version": "2026-08-28T1315Z/ens-v1",
+    "snapshot_id": "sha256:49e4f1c5c3da",
+    "generated_at": "2026-08-28T13:15:50Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"

@@ -9,59 +9,59 @@
     "per_series": {
       "M01AB": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 15.1
+        "unit_cost": 9.0,
+        "unit_margin": 3.0,
+        "stock_on_hand": 60
       },
       "M01AE": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 11.7
+        "unit_cost": 8.5,
+        "unit_margin": 2.8,
+        "stock_on_hand": 18
       },
       "N02BA": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 11.6
+        "unit_cost": 6.0,
+        "unit_margin": 2.0,
+        "stock_on_hand": 44
       },
       "N02BE": {
         "pack_size": 10,
         "unit_cost": 12.5,
         "unit_margin": 4.0,
-        "stock_on_hand": 89.8
+        "stock_on_hand": 95
       },
       "N05B": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 26.5
+        "unit_cost": 15.0,
+        "unit_margin": 5.5,
+        "stock_on_hand": 30
       },
       "N05C": {
-        "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 1.8
+        "pack_size": 5,
+        "unit_cost": 22.0,
+        "unit_margin": 7.0,
+        "stock_on_hand": 9
       },
       "R03": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 16.5
+        "unit_cost": 45.0,
+        "unit_margin": 14.0,
+        "stock_on_hand": 22
       },
       "R06": {
         "pack_size": 10,
-        "unit_cost": 12.5,
-        "unit_margin": 4.0,
-        "stock_on_hand": 8.7
+        "unit_cost": 11.0,
+        "unit_margin": 3.5,
+        "stock_on_hand": 320
       }
     }
   },
   "meta": {
-    "origin": "observed",
-    "model_version": "2026-08-27T02:14Z/ens-v3",
-    "snapshot_id": "sha256:9f2c1a4b7e03",
-    "generated_at": "2026-08-27T02:14:11Z",
+    "origin": "user_setting",
+    "model_version": "2026-08-28T1315Z/ens-v1",
+    "snapshot_id": "sha256:49e4f1c5c3da",
+    "generated_at": "2026-08-28T13:15:50Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"

@@ -2,12 +2,15 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PharmaPulse API",
-    "description": "Demand distribution to purchase order. See CONTRACTS.md section C3.",
-    "version": "0.1.0"
+    "description": "A pharmacy's sales history becomes a purchase quantity, with the odds and the cost of being wrong attached. See CONTRACTS.md section C3.",
+    "version": "1.0.0"
   },
   "paths": {
     "/api/health": {
       "get": {
+        "tags": [
+          "ops"
+        ],
         "summary": "Health",
         "operationId": "health_api_health_get",
         "responses": {
@@ -16,7 +19,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Health Api Health Get"
                 }
@@ -26,9 +28,35 @@
         }
       }
     },
+    "/api/metrics": {
+      "get": {
+        "tags": [
+          "ops"
+        ],
+        "summary": "Metrics",
+        "operationId": "metrics_api_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Metrics Api Metrics Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/series": {
       "get": {
+        "tags": [
+          "forecast"
+        ],
         "summary": "Series",
+        "description": "Catalogue with the measured demand class, which drives a UI chip.",
         "operationId": "series_api_series_get",
         "responses": {
           "200": {
@@ -36,7 +64,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Series Api Series Get"
                 }
@@ -48,6 +75,9 @@
     },
     "/api/history": {
       "get": {
+        "tags": [
+          "forecast"
+        ],
         "summary": "History",
         "operationId": "history_api_history_get",
         "parameters": [
@@ -70,6 +100,18 @@
               "default": "week",
               "title": "Grain"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2500,
+              "minimum": 1,
+              "default": 120,
+              "title": "Limit"
+            }
           }
         ],
         "responses": {
@@ -79,7 +121,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "additionalProperties": true,
                   "title": "Response History Api History Get"
                 }
               }
@@ -100,6 +141,9 @@
     },
     "/api/forecast": {
       "get": {
+        "tags": [
+          "forecast"
+        ],
         "summary": "Forecast",
         "operationId": "forecast_api_forecast_get",
         "parameters": [
@@ -133,91 +177,15 @@
               "default": 8,
               "title": "Horizon"
             }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Forecast Api Forecast Get"
-                }
-              }
-            }
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/recommend": {
-      "post": {
-        "summary": "Recommend",
-        "operationId": "recommend_api_recommend_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object",
-                "title": "Body"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Recommend Api Recommend Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/risk": {
-      "get": {
-        "summary": "Risk",
-        "operationId": "risk_api_risk_get",
-        "parameters": [
           {
-            "name": "limit",
+            "name": "with_members",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
+              "type": "boolean",
+              "default": true,
+              "title": "With Members"
             }
           }
         ],
@@ -228,8 +196,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Risk Api Risk Get"
+                  "title": "Response Forecast Api Forecast Get"
                 }
               }
             }
@@ -249,6 +216,9 @@
     },
     "/api/explain": {
       "get": {
+        "tags": [
+          "forecast"
+        ],
         "summary": "Explain",
         "operationId": "explain_api_explain_get",
         "parameters": [
@@ -278,6 +248,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 6,
               "minimum": 1,
               "default": 1,
               "title": "Horizon"
@@ -291,7 +262,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "additionalProperties": true,
                   "title": "Response Explain Api Explain Get"
                 }
               }
@@ -310,55 +280,18 @@
         }
       }
     },
-    "/api/metrics": {
-      "get": {
-        "summary": "Metrics",
-        "operationId": "metrics_api_metrics_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Metrics Api Metrics Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/settings": {
-      "get": {
-        "summary": "Get Settings",
-        "operationId": "get_settings_api_settings_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Get Settings Api Settings Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "summary": "Put Settings",
-        "operationId": "put_settings_api_settings_put",
+    "/api/recommend": {
+      "post": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Recommend",
+        "operationId": "recommend_api_recommend_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": true,
-                "type": "object",
-                "title": "Body"
+                "$ref": "#/components/schemas/RecommendRequest"
               }
             }
           },
@@ -370,7 +303,139 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Recommend Api Recommend Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/risk": {
+      "get": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Risk",
+        "operationId": "risk_api_risk_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Risk Api Risk Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/positions": {
+      "get": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Positions",
+        "description": "Live shelf position per product - what the dashboard opens on.",
+        "operationId": "positions_api_positions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Positions Api Positions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings_api_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Settings Api Settings Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Put Settings",
+        "description": "Lane 2. Editable, and never seen by the trainer.",
+        "operationId": "put_settings_api_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Patch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
                   "title": "Response Put Settings Api Settings Put"
                 }
@@ -383,6 +448,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "tags": [
+          "decision"
+        ],
+        "summary": "Commit Order",
+        "description": "Accept or override a recommendation. Overrides need a reason.\n\nAppends to a hash-chained log: each entry stores the previous entry's hash,\nso an edit or deletion is detectable. The system recommends; a person commits.",
+        "operationId": "commit_order_api_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCommit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Commit Order Api Orders Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Root  Get"
                 }
               }
             }
@@ -405,6 +532,175 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "OrderCommit": {
+        "properties": {
+          "series_id": {
+            "type": "string",
+            "title": "Series Id"
+          },
+          "recommended": {
+            "type": "integer",
+            "title": "Recommended"
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          },
+          "service_level": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Level"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor",
+            "default": "demo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "series_id",
+          "recommended",
+          "accepted"
+        ],
+        "title": "OrderCommit"
+      },
+      "RecommendRequest": {
+        "properties": {
+          "series_id": {
+            "type": "string",
+            "title": "Series Id",
+            "default": "N02BE"
+          },
+          "service_level": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.999,
+                "minimum": 0.01
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Level"
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 90.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "stock_on_hand": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock On Hand"
+          },
+          "pack_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pack Size"
+          },
+          "unit_cost": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Cost"
+          },
+          "unit_margin": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Margin"
+          },
+          "holding_cost_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 5.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holding Cost Rate"
+          },
+          "expiry_risk_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Risk Rate"
+          },
+          "review_period_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 90.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Period Days"
+          }
+        },
+        "type": "object",
+        "title": "RecommendRequest"
       },
       "ValidationError": {
         "properties": {
@@ -429,13 +725,6 @@
           "type": {
             "type": "string",
             "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
           }
         },
         "type": "object",

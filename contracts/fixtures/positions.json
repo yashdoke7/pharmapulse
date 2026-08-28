@@ -1,0 +1,111 @@
+{
+  "data": {
+    "positions": [
+      {
+        "series_id": "M01AB",
+        "name": "Diclofenac",
+        "stock_on_hand": 60.0,
+        "days_of_cover": 11.9,
+        "status": "ok",
+        "order_quantity": 0,
+        "p_stockout": 0.0,
+        "reorder_point": 34.6,
+        "projected_stockout_date": "2019-10-20",
+        "daily_mean": 5.03
+      },
+      {
+        "series_id": "M01AE",
+        "name": "Ibuprofen",
+        "stock_on_hand": 18.0,
+        "days_of_cover": 4.6,
+        "status": "order_now",
+        "order_quantity": 10,
+        "p_stockout": 0.0408,
+        "reorder_point": 27.1,
+        "projected_stockout_date": "2019-10-13",
+        "daily_mean": 3.9
+      },
+      {
+        "series_id": "N02BA",
+        "name": "Aspirin",
+        "stock_on_hand": 44.0,
+        "days_of_cover": 11.3,
+        "status": "ok",
+        "order_quantity": 0,
+        "p_stockout": 0.0,
+        "reorder_point": 22.8,
+        "projected_stockout_date": "2019-10-24",
+        "daily_mean": 3.88
+      },
+      {
+        "series_id": "N02BE",
+        "name": "Paracetamol",
+        "stock_on_hand": 95.0,
+        "days_of_cover": 3.2,
+        "status": "order_now",
+        "order_quantity": 100,
+        "p_stockout": 0.0497,
+        "reorder_point": 194.4,
+        "projected_stockout_date": "2019-10-11",
+        "daily_mean": 29.92
+      },
+      {
+        "series_id": "N05B",
+        "name": "Anxiolytics",
+        "stock_on_hand": 30.0,
+        "days_of_cover": 3.4,
+        "status": "order_now",
+        "order_quantity": 40,
+        "p_stockout": 0.0184,
+        "reorder_point": 63.0,
+        "projected_stockout_date": "2019-10-12",
+        "daily_mean": 8.85
+      },
+      {
+        "series_id": "N05C",
+        "name": "Sedatives",
+        "stock_on_hand": 9.0,
+        "days_of_cover": 15.3,
+        "status": "ok",
+        "order_quantity": 0,
+        "p_stockout": 0.0,
+        "reorder_point": 6.0,
+        "projected_stockout_date": null,
+        "daily_mean": 0.59
+      },
+      {
+        "series_id": "R03",
+        "name": "Asthma / COPD",
+        "stock_on_hand": 22.0,
+        "days_of_cover": 4.0,
+        "status": "order_now",
+        "order_quantity": 30,
+        "p_stockout": 0.0247,
+        "reorder_point": 43.9,
+        "projected_stockout_date": "2019-10-14",
+        "daily_mean": 5.51
+      },
+      {
+        "series_id": "R06",
+        "name": "Antihistamines",
+        "stock_on_hand": 320.0,
+        "days_of_cover": 110.3,
+        "status": "overstocked",
+        "order_quantity": 0,
+        "p_stockout": 0.0,
+        "reorder_point": 17.6,
+        "projected_stockout_date": null,
+        "daily_mean": 2.9
+      }
+    ]
+  },
+  "meta": {
+    "origin": "observed",
+    "model_version": "2026-08-28T1315Z/ens-v1",
+    "snapshot_id": "sha256:49e4f1c5c3da",
+    "generated_at": "2026-08-28T13:15:50Z",
+    "stale": false,
+    "degraded": null,
+    "correlation_id": "c-fixture01"
+  }
+}

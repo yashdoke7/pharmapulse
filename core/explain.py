@@ -124,9 +124,17 @@ def _prophet_attribution(series_id: str, one: pd.DataFrame,
         base = float(recent[col].mean()) if len(recent) else 0.0
         return float(future[col].mean()) - base
 
+    season_delta = delta("yearly")
+    hint = SEASON_HINTS.get(series_id)
+    if hint and season_delta >= 0:
+        season_detail = f"moving into the {hint}"
+    elif hint:
+        season_detail = f"coming off the {hint}"
+    else:
+        season_detail = "annual cycle"
+
     raw = [
-        ("seasonality", delta("yearly"),
-         f"{_label(series_id)} {SEASON_HINTS.get(series_id, 'annual cycle')}"),
+        ("seasonality", season_delta, season_detail),
         ("trend", delta("trend"), "underlying level"),
         ("holiday", delta("holidays"), "calendar effects"),
     ]

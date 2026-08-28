@@ -1,123 +1,158 @@
 {
   "data": {
     "series_id": "R06",
-    "headline": "R06 is up 41 units next month",
-    "total_change_units": 41.0,
-    "baseline_units": 58.0,
+    "headline": "Antihistamines is down 22 units next month",
+    "total_change_units": -21.55,
+    "baseline_units": 103.82,
     "components": [
       {
         "name": "seasonality",
-        "units": 28.0,
-        "detail": "May pollen season, 1.73x annual mean"
+        "units": -59.83,
+        "detail": "coming off the pollen season"
       },
       {
         "name": "trend",
-        "units": 9.0,
-        "detail": "underlying level, rising since 2018"
+        "units": 3.9,
+        "detail": "underlying level"
       },
       {
         "name": "holiday",
-        "units": 4.0,
-        "detail": "calendar effects including the 1 May closure"
+        "units": 34.38,
+        "detail": "calendar effects"
       }
     ],
     "decomposition": {
       "ds": [
+        "2018-05-01",
+        "2018-06-01",
+        "2018-07-01",
+        "2018-08-01",
+        "2018-09-01",
+        "2018-10-01",
+        "2018-11-01",
+        "2018-12-01",
         "2019-01-01",
         "2019-02-01",
         "2019-03-01",
         "2019-04-01",
-        "2019-05-01"
+        "2019-05-01",
+        "2019-06-01",
+        "2019-07-01",
+        "2019-08-01",
+        "2019-09-01",
+        "2019-10-01"
       ],
       "trend": [
-        54.0,
-        55.2,
-        56.6,
-        58.0,
-        60.1
+        130.77,
+        131.38,
+        131.97,
+        132.58,
+        133.2,
+        133.79,
+        134.4,
+        134.99,
+        135.6,
+        136.22,
+        136.77,
+        137.38,
+        137.97,
+        138.59,
+        139.18,
+        139.79,
+        140.4,
+        140.99
       ],
       "yearly": [
-        -12.0,
-        -8.0,
-        4.0,
-        16.0,
-        28.0
+        -307.74,
+        12.36,
+        -16.82,
+        -38.47,
+        -45.02,
+        -58.17,
+        92.73,
+        206.96,
+        311.35,
+        366.4,
+        -14.29,
+        -492.44,
+        -311.13,
+        11.39,
+        -16.14,
+        -38.69,
+        -44.62,
+        -58.73
       ],
       "holidays": [
-        2.0,
+        347.07,
         0.0,
         0.0,
-        1.0,
-        4.0
+        0.0,
+        0.0,
+        0.0,
+        -166.18,
+        -285.68,
+        -382.81,
+        -435.93,
+        0.0,
+        510.96,
+        347.07,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
       ]
     },
-    "shap_top": [
-      {
-        "feature": "lag_52",
-        "contribution": 12.4
-      },
-      {
-        "feature": "fourier_sin_1",
-        "contribution": 9.8
-      },
-      {
-        "feature": "roll_mean_13",
-        "contribution": 5.1
-      },
-      {
-        "feature": "month",
-        "contribution": 3.9
-      },
-      {
-        "feature": "days_to_holiday",
-        "contribution": 1.2
-      }
-    ],
+    "method": "prophet_components",
     "calibration": {
       "before": [
         {
           "nominal": 0.5,
-          "achieved": 0.44
+          "achieved": 0.6758
         },
         {
           "nominal": 0.8,
-          "achieved": 0.75
+          "achieved": 0.9219
         },
         {
           "nominal": 0.9,
-          "achieved": 0.83
+          "achieved": 0.9648
         },
         {
           "nominal": 0.95,
-          "achieved": 0.88
+          "achieved": 0.9805
         }
       ],
       "after": [
         {
           "nominal": 0.5,
-          "achieved": 0.51
+          "achieved": 0.5312
         },
         {
           "nominal": 0.8,
-          "achieved": 0.79
+          "achieved": 0.8203
         },
         {
           "nominal": 0.9,
-          "achieved": 0.9
+          "achieved": 0.9141
         },
         {
           "nominal": 0.95,
-          "achieved": 0.94
+          "achieved": 0.9375
         }
       ],
-      "n_points": 256
+      "n_points": 256,
+      "conformal_scale": 0.7179,
+      "nominal": 0.8,
+      "achieved_before": 0.9219,
+      "achieved_after": 0.8203
     }
   },
   "meta": {
     "origin": "observed",
-    "model_version": "2026-08-27T02:14Z/ens-v3",
-    "snapshot_id": "sha256:9f2c1a4b7e03",
-    "generated_at": "2026-08-27T02:14:11Z",
+    "model_version": "2026-08-28T1315Z/ens-v1",
+    "snapshot_id": "sha256:49e4f1c5c3da",
+    "generated_at": "2026-08-28T13:15:50Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"
