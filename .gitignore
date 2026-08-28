@@ -27,3 +27,7 @@ web/.vite/
 .env
 .env.local
 *.log
+
+# frontend build output
+web/dist/
+web/tsconfig.tsbuildinfo

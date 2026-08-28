@@ -111,7 +111,16 @@ def fit_predict(train: pd.DataFrame, h: int, grain: str = "week",
     if not PROPHET_AVAILABLE:
         return (empty, pd.DataFrame()) if with_components else empty
 
-    holidays = _holiday_frame(grain)
+    # Holidays are fitted at daily and weekly grain, where a named event lands
+    # in its own bucket and a per-holiday coefficient is identifiable.
+    #
+    # At MONTHLY grain they are dropped: every holiday falls in the same month
+    # every year, so its effect is collinear with the annual seasonal term, and
+    # fitting ~14 holiday coefficients on 70 monthly observations attributes
+    # large swings to the calendar that belong to the season. That showed up
+    # directly on the explainability screen as a +34-unit holiday effect on a
+    # 104-unit baseline.
+    holidays = _holiday_frame(grain) if grain != "month" else None
     yearly = 10 if grain in ("day", "week") else 4
 
     preds, comps = [], []
