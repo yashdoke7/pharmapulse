@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api import deps
-from api.routers import decisions, forecasting, ops
+from api.routers import decisions, forecasting, ops, replay
 
 app = FastAPI(
     title="PharmaPulse API",
@@ -42,6 +42,7 @@ app.add_middleware(
 app.include_router(ops.router)
 app.include_router(forecasting.router)
 app.include_router(decisions.router)
+app.include_router(replay.router)
 
 
 @app.exception_handler(500)

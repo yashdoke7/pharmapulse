@@ -498,6 +498,187 @@
         }
       }
     },
+    "/api/replay/start": {
+      "post": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Start",
+        "operationId": "start_api_replay_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Start Api Replay Start Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/replay/tick": {
+      "post": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Tick",
+        "operationId": "tick_api_replay_tick_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TickRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Tick Api Replay Tick Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/replay/stop": {
+      "post": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Stop",
+        "operationId": "stop_api_replay_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TickRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Stop Api Replay Stop Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/replay/business-case": {
+      "get": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Business Case",
+        "description": "Our policy against a min/max policy, over the identical real days.\n\nSame data, same costs, same lead time, same review cadence, same protection\ninterval. The ONLY difference is that min/max sizes against the mean while\nwe size against the quantile the pharmacy's own cost ratio implies.\n\nThat makes the difference attributable to the thesis rather than to a\nhandicap given to the baseline.",
+        "operationId": "business_case_api_replay_business_case_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "2019-01-01",
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "2019-03-31",
+              "title": "End Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Business Case Api Replay Business Case Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -701,6 +882,47 @@
         },
         "type": "object",
         "title": "RecommendRequest"
+      },
+      "StartRequest": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From",
+            "default": "2019-01-01"
+          },
+          "to": {
+            "type": "string",
+            "title": "To",
+            "default": "2019-03-31"
+          },
+          "policy": {
+            "type": "string",
+            "title": "Policy",
+            "default": "pharmapulse"
+          }
+        },
+        "type": "object",
+        "title": "StartRequest"
+      },
+      "TickRequest": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "steps": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Steps",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "TickRequest"
       },
       "ValidationError": {
         "properties": {

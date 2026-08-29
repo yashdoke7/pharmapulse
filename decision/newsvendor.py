@@ -103,6 +103,19 @@ class OrderResult:
 
 # --- distribution helpers -------------------------------------------------
 
+def protection_interval_days(lead_time_days: int, review_period_days: int) -> int:
+    """The window the order has to survive.
+
+    A periodic-review system is exposed for the lead time PLUS the review
+    period: after placing an order you cannot place another until the next
+    review, so today's order must cover demand until the order AFTER next
+    arrives. Sizing against the lead time alone systematically under-orders,
+    which the replay simulation surfaced as persistent stockouts under both
+    policies.
+    """
+    return max(int(lead_time_days), 1) + max(int(review_period_days), 0)
+
+
 def critical_fractile(cu: float, co: float) -> float:
     """q* = Cu / (Cu + Co). The probability of meeting demand you should target.
 

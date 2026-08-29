@@ -221,3 +221,52 @@ export interface Settings {
     { pack_size: number; unit_cost: number; unit_margin: number; stock_on_hand: number }
   >;
 }
+
+export interface ReplayPosition {
+  series_id: string;
+  stock_on_hand: number;
+  days_of_cover: number;
+  status: Status;
+  incoming: number;
+  units_short: number;
+}
+
+export interface ReplayEvent {
+  type: "order" | "delivery" | "stockout";
+  series_id: string;
+  date: string;
+  message: string;
+}
+
+export interface Scorecard {
+  units_short: number;
+  units_ordered: number;
+  holding_cost: number;
+  shortage_cost: number;
+  total_cost: number;
+  stockout_days: number;
+  orders_placed: number;
+}
+
+export interface ReplaySnapshot {
+  session_id: string;
+  policy: string;
+  current_date: string | null;
+  day_index: number;
+  total_days: number;
+  finished: boolean;
+  window: { from: string; to: string };
+  positions: ReplayPosition[];
+  events: ReplayEvent[];
+  scorecard: Scorecard;
+}
+
+export interface BusinessCase {
+  window: { from: string; to: string };
+  pharmapulse: Scorecard;
+  minmax: Scorecard;
+  saving: number;
+  saving_pct: number;
+  verdict: string;
+  method: string;
+}

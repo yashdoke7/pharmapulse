@@ -9,7 +9,11 @@ from pydantic import BaseModel, Field
 from api import deps
 from core import forecast_store as fs
 from decision import ledger, risk as risk_engine
-from decision.newsvendor import OrderParams, recommend_order
+from decision.newsvendor import (
+    OrderParams,
+    protection_interval_days,
+    recommend_order,
+)
 from pipelines.gold import read_gold
 
 router = APIRouter(prefix="/api", tags=["decision"])
@@ -55,7 +59,11 @@ def _params_for(series_id: str, body: RecommendRequest | None = None) -> OrderPa
 
 
 def _order_for(series_id: str, params: OrderParams):
-    dist = fs.lead_time_demand(series_id, params.lead_time_days)
+    # Size against the protection interval, not the lead time alone: with a
+    # weekly review and a 4-day lead time the order must last 11 days, not 4.
+    horizon = protection_interval_days(params.lead_time_days,
+                                       params.review_period_days)
+    dist = fs.lead_time_demand(series_id, horizon)
     return recommend_order(dist, params, series_id=series_id,
                            daily_mean=deps.DAILY_MEAN.get(series_id))
 

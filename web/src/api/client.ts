@@ -6,6 +6,7 @@
 // degraded it is. meta.degraded tells us, and the UI renders a badge.
 
 import type {
+  BusinessCase,
   Envelope,
   ExplainResponse,
   ForecastResponse,
@@ -15,6 +16,7 @@ import type {
   Recommendation,
   RiskResponse,
   Series,
+  ReplaySnapshot,
   Settings,
 } from "./types";
 
@@ -87,6 +89,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  replayStart: (from: string, to: string) =>
+    request<ReplaySnapshot>("/replay/start", {
+      method: "POST",
+      body: JSON.stringify({ from, to }),
+    }),
+
+  replayTick: (sessionId: string, steps = 1) =>
+    request<ReplaySnapshot>("/replay/tick", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, steps }),
+    }),
+
+  businessCase: (start: string, end: string) =>
+    request<BusinessCase>(
+      `/replay/business-case?start_date=${start}&end_date=${end}`,
+    ),
 
   commitOrder: (body: Record<string, unknown>) =>
     request<{ logged: boolean; hash: string; chain_valid: boolean }>("/orders", {
