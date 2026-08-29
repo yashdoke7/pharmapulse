@@ -11,43 +11,43 @@
         "pack_size": 10,
         "unit_cost": 9.0,
         "unit_margin": 3.0,
-        "stock_on_hand": 60
+        "stock_on_hand": 130
       },
       "M01AE": {
         "pack_size": 10,
         "unit_cost": 8.5,
         "unit_margin": 2.8,
-        "stock_on_hand": 18
+        "stock_on_hand": 80
       },
       "N02BA": {
         "pack_size": 10,
         "unit_cost": 6.0,
         "unit_margin": 2.0,
-        "stock_on_hand": 44
+        "stock_on_hand": 64
       },
       "N02BE": {
         "pack_size": 10,
         "unit_cost": 12.5,
         "unit_margin": 4.0,
-        "stock_on_hand": 95
+        "stock_on_hand": 310
       },
       "N05B": {
         "pack_size": 10,
         "unit_cost": 15.0,
         "unit_margin": 5.5,
-        "stock_on_hand": 30
+        "stock_on_hand": 180
       },
       "N05C": {
         "pack_size": 5,
         "unit_cost": 22.0,
         "unit_margin": 7.0,
-        "stock_on_hand": 9
+        "stock_on_hand": 14
       },
       "R03": {
         "pack_size": 10,
         "unit_cost": 45.0,
         "unit_margin": 14.0,
-        "stock_on_hand": 22
+        "stock_on_hand": 60
       },
       "R06": {
         "pack_size": 10,

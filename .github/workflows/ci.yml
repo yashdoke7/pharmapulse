@@ -18,16 +18,28 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Lint
         run: ruff check .
+      - name: Dataset
+        # salesdaily.csv is committed (117 kB, public, no personal data), so CI
+        # scores the same bytes a developer machine does. check_data.py asserts
+        # the row count, the eight columns and the 26 closure days, and prints
+        # the snapshot_id every reported number is tied to.
+        run: python scripts/check_data.py
+        env:
+          PYTHONPATH: .
+      - name: Build gold
+        run: python -m pipelines.run_nightly --stage gold
+        env:
+          PYTHONPATH: .
       - name: Tests
         run: pytest -q
         env:
           PYTHONPATH: .
-      # From Day 1: a model regression fails the build rather than surprising us on Day 4.
-      # --fast runs 2 folds instead of 4. Enable once scripts/day1_benchmark.py exists.
-      # - name: Benchmark
-      #   run: python scripts/day1_benchmark.py --fast
-      #   env:
-      #     PYTHONPATH: .
+      - name: Benchmark
+        # A model regression fails the build rather than surprising us later.
+        # --fast runs 2 folds and the cheap models, so it stays under a minute.
+        run: python scripts/day1_benchmark.py --fast --out /tmp/benchmarks.json
+        env:
+          PYTHONPATH: .
 
   web:
     runs-on: ubuntu-latest

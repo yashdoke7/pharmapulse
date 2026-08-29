@@ -46,16 +46,21 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "currency": "INR",
     "service_level_default": 0.95,
     "per_series": {
-        # Seeded so the demo opens on a realistic mix of states rather than
-        # everything red: some healthy, one overstocked, several needing a
-        # decision. All lane 2 - editable, and never seen by the trainer.
-        "M01AB": {"pack_size": 10, "unit_cost": 9.0, "unit_margin": 3.0, "stock_on_hand": 60},
-        "M01AE": {"pack_size": 10, "unit_cost": 8.5, "unit_margin": 2.8, "stock_on_hand": 18},
-        "N02BA": {"pack_size": 10, "unit_cost": 6.0, "unit_margin": 2.0, "stock_on_hand": 44},
-        "N02BE": {"pack_size": 10, "unit_cost": 12.5, "unit_margin": 4.0, "stock_on_hand": 95},
-        "N05B": {"pack_size": 10, "unit_cost": 15.0, "unit_margin": 5.5, "stock_on_hand": 30},
-        "N05C": {"pack_size": 5, "unit_cost": 22.0, "unit_margin": 7.0, "stock_on_hand": 9},
-        "R03": {"pack_size": 10, "unit_cost": 45.0, "unit_margin": 14.0, "stock_on_hand": 22},
+        # Seeded so the demo opens on a realistic MIX of states rather than a
+        # board of red: three healthy, two watching, two needing an order, one
+        # overstocked. Levels are set relative to each product's reorder point
+        # at the 11-day protection interval - they had to be re-seeded once the
+        # protection-interval fix raised every reorder point and turned all
+        # eight red.
+        #
+        # All lane 2: editable on the Settings screen, never seen by the trainer.
+        "M01AB": {"pack_size": 10, "unit_cost": 9.0, "unit_margin": 3.0, "stock_on_hand": 130},
+        "M01AE": {"pack_size": 10, "unit_cost": 8.5, "unit_margin": 2.8, "stock_on_hand": 80},
+        "N02BA": {"pack_size": 10, "unit_cost": 6.0, "unit_margin": 2.0, "stock_on_hand": 64},
+        "N02BE": {"pack_size": 10, "unit_cost": 12.5, "unit_margin": 4.0, "stock_on_hand": 310},
+        "N05B": {"pack_size": 10, "unit_cost": 15.0, "unit_margin": 5.5, "stock_on_hand": 180},
+        "N05C": {"pack_size": 5, "unit_cost": 22.0, "unit_margin": 7.0, "stock_on_hand": 14},
+        "R03": {"pack_size": 10, "unit_cost": 45.0, "unit_margin": 14.0, "stock_on_hand": 60},
         "R06": {"pack_size": 10, "unit_cost": 11.0, "unit_margin": 3.5, "stock_on_hand": 320},
     },
 }

@@ -5,140 +5,140 @@
     "q_star": 0.9484,
     "service_level_used": 0.95,
     "lead_time_demand": {
-      "0.01": 71.34,
-      "0.03": 75.01,
-      "0.05": 79.4,
-      "0.10": 91.56,
-      "0.15": 100.21,
-      "0.20": 107.09,
-      "0.25": 112.99,
-      "0.30": 118.28,
-      "0.35": 123.19,
-      "0.40": 127.85,
-      "0.50": 136.8,
-      "0.60": 145.74,
-      "0.65": 150.4,
-      "0.70": 155.31,
-      "0.75": 160.6,
-      "0.80": 166.5,
-      "0.85": 173.38,
-      "0.90": 182.03,
-      "0.95": 194.86,
-      "0.97": 205.98,
-      "0.99": 218.91
+      "0.01": 265.56,
+      "0.03": 267.77,
+      "0.05": 270.42,
+      "0.10": 279.89,
+      "0.15": 290.85,
+      "0.20": 302.53,
+      "0.25": 317.42,
+      "0.30": 330.82,
+      "0.35": 343.24,
+      "0.40": 355.02,
+      "0.50": 377.65,
+      "0.60": 400.27,
+      "0.65": 412.05,
+      "0.70": 424.47,
+      "0.75": 437.88,
+      "0.80": 452.8,
+      "0.85": 470.2,
+      "0.90": 492.09,
+      "0.95": 524.53,
+      "0.97": 552.67,
+      "0.99": 585.38
     },
-    "target_level": 194.86,
-    "stock_on_hand": 95.0,
-    "order_units": 99.86,
-    "order_packs": 10,
-    "order_quantity": 100,
-    "reorder_point": 194.86,
-    "days_of_cover": 3.18,
-    "p_stockout": 0.0497,
+    "target_level": 524.53,
+    "stock_on_hand": 310.0,
+    "order_units": 214.53,
+    "order_packs": 22,
+    "order_quantity": 220,
+    "reorder_point": 524.53,
+    "days_of_cover": 10.36,
+    "p_stockout": 0.0461,
     "expected_cost": {
-      "at_order": 15.5,
-      "minus_one_pack": 16.47,
-      "plus_one_pack": 15.99
+      "at_order": 38.49,
+      "minus_one_pack": 38.67,
+      "plus_one_pack": 38.98
     },
     "cost_curve": [
       {
         "service_level": 0.05,
         "order_quantity": 0,
-        "expected_cost": 175.91,
-        "p_stockout": 0.8801
+        "expected_cost": 318.62,
+        "p_stockout": 0.7749
       },
       {
         "service_level": 0.1,
         "order_quantity": 0,
-        "expected_cost": 175.91,
-        "p_stockout": 0.8801
+        "expected_cost": 318.62,
+        "p_stockout": 0.7749
       },
       {
         "service_level": 0.2,
-        "order_quantity": 20,
-        "expected_cost": 111.67,
-        "p_stockout": 0.731
+        "order_quantity": 0,
+        "expected_cost": 318.62,
+        "p_stockout": 0.7749
       },
       {
         "service_level": 0.3,
         "order_quantity": 30,
-        "expected_cost": 85.06,
-        "p_stockout": 0.6306
+        "expected_cost": 233.78,
+        "p_stockout": 0.663
       },
       {
         "service_level": 0.4,
-        "order_quantity": 40,
-        "expected_cost": 63.14,
-        "p_stockout": 0.5201
+        "order_quantity": 50,
+        "expected_cost": 186.31,
+        "p_stockout": 0.578
       },
       {
         "service_level": 0.5,
-        "order_quantity": 50,
-        "expected_cost": 45.58,
-        "p_stockout": 0.4083
+        "order_quantity": 70,
+        "expected_cost": 145.26,
+        "p_stockout": 0.4896
       },
       {
         "service_level": 0.6,
-        "order_quantity": 60,
-        "expected_cost": 32.68,
-        "p_stockout": 0.3032
+        "order_quantity": 100,
+        "expected_cost": 97.92,
+        "p_stockout": 0.3587
       },
       {
         "service_level": 0.7,
-        "order_quantity": 70,
-        "expected_cost": 24.12,
-        "p_stockout": 0.2127
+        "order_quantity": 120,
+        "expected_cost": 75.6,
+        "p_stockout": 0.2794
       },
       {
         "service_level": 0.75,
-        "order_quantity": 70,
-        "expected_cost": 24.12,
-        "p_stockout": 0.2127
+        "order_quantity": 130,
+        "expected_cost": 66.62,
+        "p_stockout": 0.2429
       },
       {
         "service_level": 0.8,
-        "order_quantity": 80,
-        "expected_cost": 18.94,
-        "p_stockout": 0.1406
+        "order_quantity": 150,
+        "expected_cost": 53.51,
+        "p_stockout": 0.1793
       },
       {
         "service_level": 0.85,
-        "order_quantity": 80,
-        "expected_cost": 18.94,
-        "p_stockout": 0.1406
+        "order_quantity": 170,
+        "expected_cost": 45.17,
+        "p_stockout": 0.1276
       },
       {
         "service_level": 0.9,
-        "order_quantity": 90,
-        "expected_cost": 16.47,
-        "p_stockout": 0.0884
+        "order_quantity": 190,
+        "expected_cost": 40.65,
+        "p_stockout": 0.0878
       },
       {
         "service_level": 0.925,
-        "order_quantity": 100,
-        "expected_cost": 15.5,
-        "p_stockout": 0.0497
+        "order_quantity": 200,
+        "expected_cost": 39.66,
+        "p_stockout": 0.0724
       },
       {
         "service_level": 0.95,
-        "order_quantity": 100,
-        "expected_cost": 15.5,
-        "p_stockout": 0.0497
+        "order_quantity": 220,
+        "expected_cost": 38.49,
+        "p_stockout": 0.0461
       },
       {
         "service_level": 0.975,
-        "order_quantity": 120,
-        "expected_cost": 17.24,
-        "p_stockout": 0.016
+        "order_quantity": 260,
+        "expected_cost": 41.91,
+        "p_stockout": 0.0194
       },
       {
         "service_level": 0.99,
-        "order_quantity": 130,
-        "expected_cost": 19.09,
+        "order_quantity": 280,
+        "expected_cost": 44.97,
         "p_stockout": 0.0
       }
     ],
-    "min_cost_service_level": 0.925,
+    "min_cost_service_level": 0.95,
     "inputs_used": [
       {
         "name": "forecast distribution",
@@ -152,7 +152,7 @@
       },
       {
         "name": "stock on hand",
-        "value": "95 units",
+        "value": "310 units",
         "lane": "user_setting"
       },
       {
@@ -171,7 +171,7 @@
         "lane": "user_setting"
       }
     ],
-    "projected_stockout_date": "2019-10-11"
+    "projected_stockout_date": "2019-10-17"
   },
   "meta": {
     "origin": "observed",

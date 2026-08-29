@@ -1,18 +1,29 @@
 {
   "data": {
-    "total_exposure": 746.01,
+    "total_exposure": 1099.03,
     "currency": "INR",
     "items": [
       {
         "series_id": "N02BE",
         "type": "stockout",
         "severity": "high",
-        "probability": 0.8801,
-        "exposure": 350.11,
-        "headline": "Paracetamol runs out before the next delivery",
-        "detail": "3.2 days of cover against a 4-day lead time.",
+        "probability": 0.7749,
+        "exposure": 661.75,
+        "headline": "Paracetamol runs below its reorder point",
+        "detail": "10.4 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
         "recommended_action": "order_now",
-        "recommended_quantity": 100
+        "recommended_quantity": 220
+      },
+      {
+        "series_id": "R03",
+        "type": "stockout",
+        "severity": "medium",
+        "probability": 0.3426,
+        "exposure": 274.71,
+        "headline": "Asthma / COPD runs below its reorder point",
+        "detail": "10.9 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 60
       },
       {
         "series_id": "R06",
@@ -24,39 +35,6 @@
         "detail": "Capital tied up against a 7-day review period.",
         "recommended_action": "slow_mover",
         "recommended_quantity": 0
-      },
-      {
-        "series_id": "N05B",
-        "type": "stockout",
-        "severity": "high",
-        "probability": 0.6696,
-        "exposure": 121.7,
-        "headline": "Anxiolytics runs out before the next delivery",
-        "detail": "3.4 days of cover against a 4-day lead time.",
-        "recommended_action": "order_now",
-        "recommended_quantity": 40
-      },
-      {
-        "series_id": "R03",
-        "type": "stockout",
-        "severity": "medium",
-        "probability": 0.3287,
-        "exposure": 100.84,
-        "headline": "Asthma / COPD runs out before the next delivery",
-        "detail": "4.0 days of cover against a 4-day lead time.",
-        "recommended_action": "order_now",
-        "recommended_quantity": 30
-      },
-      {
-        "series_id": "M01AE",
-        "type": "stockout",
-        "severity": "medium",
-        "probability": 0.4247,
-        "exposure": 10.8,
-        "headline": "Ibuprofen runs out before the next delivery",
-        "detail": "4.6 days of cover against a 4-day lead time.",
-        "recommended_action": "order_now",
-        "recommended_quantity": 10
       }
     ]
   },

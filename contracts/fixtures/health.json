@@ -4,7 +4,7 @@
     "ladder_rung": 1,
     "forecast_store": "present",
     "model_version": "2026-08-28T1718Z_ens-v1",
-    "uptime_s": 0.7
+    "uptime_s": 0.4
   },
   "meta": {
     "origin": "observed",

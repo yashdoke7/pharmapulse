@@ -19,6 +19,7 @@ from decision.newsvendor import (
     OrderParams,
     OrderResult,
     p_stockout,
+    protection_interval_days,
 )
 
 STOCKOUT = "stockout"
@@ -92,6 +93,8 @@ def detect(series_id: str, order: OrderResult, params: OrderParams,
     #    proposed order is added. order.p_stockout is the risk that REMAINS
     #    after ordering; the buyer needs to know the risk they have now, which
     #    is what makes this an exception worth surfacing.
+    protection = protection_interval_days(params.lead_time_days,
+                                          params.review_period_days)
     exposed = p_stockout(order.lead_time_demand, order.stock_on_hand)
     if exposed >= STOCKOUT_THRESHOLD:
         shortfall = max(0.0, order.target_level - order.stock_on_hand)
@@ -101,9 +104,11 @@ def detect(series_id: str, order: OrderResult, params: OrderParams,
             series_id=series_id, type=STOCKOUT,
             severity=_severity(exposed),
             probability=exposed, exposure=exposure,
-            headline=f"{name} runs out before the next delivery",
-            detail=(f"{cover:.1f} days of cover against a "
-                    f"{params.lead_time_days}-day lead time."),
+            headline=f"{name} runs below its reorder point",
+            detail=(f"{cover:.1f} days of cover. The order has to survive "
+                    f"{protection} days - a {params.lead_time_days}-day lead "
+                    f"time plus a {params.review_period_days}-day gap until "
+                    f"the next review."),
             recommended_action=ACTION_ORDER_NOW,
             recommended_quantity=order.order_quantity,
         ))
