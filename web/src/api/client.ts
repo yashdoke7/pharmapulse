@@ -84,6 +84,12 @@ export const api = {
 
   settings: () => request<Settings>("/settings"),
 
+  saveSettings: (patch: Partial<Settings>) =>
+    request<Settings>("/settings", {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+
   recommend: (body: Record<string, unknown>) =>
     request<Recommendation>("/recommend", {
       method: "POST",

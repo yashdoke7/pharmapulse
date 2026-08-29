@@ -85,6 +85,12 @@ accept numpy 2.x. Do not bump it. If `lightgbm` fails to build, install the whee
 
 ## 3 · `docker-compose.yml`
 
+> **Status: written, NOT verified.** Docker was not installed on the build machine, so
+> `docker compose up` has never actually been run against this repo. The Dockerfiles and compose
+> file are complete and the dependency pins are the ones the working venv uses, but treat the first
+> run as a task with unknown duration rather than a guarantee. The local venv path in the root
+> README is the one that is known to work.
+
 Already at the repo root. One command:
 
 ```bash
