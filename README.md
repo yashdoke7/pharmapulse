@@ -29,6 +29,13 @@ uvicorn api.main:app --port 8000                          # API
 cd web && npm install && npm run dev                      # app on :5173
 ```
 
+Or in containers — verified, and the API auto-detects the store:
+
+```bash
+docker compose up --build          # api on :8000, web on :5173
+python scripts/reset_demo.py       # put the board back before a rehearsal
+```
+
 **Dataset:** Kaggle *Pharma Sales Data* (milanzdravkovic). Put **`salesdaily.csv` only** into
 `data/observed/`. The supplied monthly file is corrupt — weekly and monthly grains are derived.
 
@@ -94,7 +101,7 @@ and pay *more* holding cost, and a test asserts that.
 
 ---
 
-## The six screens
+## The seven screens
 
 | Screen | The question it answers |
 |---|---|
@@ -178,7 +185,7 @@ web/         React + TypeScript + Vite + Tailwind
 scripts/     check_data · day1_benchmark · make_fixtures · dump_openapi
 contracts/   schemas, fixtures, generated openapi.json
 tests/       unit · property · contract  (135 tests)
-docs/        the design documents
+docs/        design proposal · architecture · RESULTS · model card
 ```
 
 Each folder has a README stating its target, inputs, outputs and definition of done.
