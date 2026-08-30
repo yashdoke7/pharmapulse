@@ -45,6 +45,7 @@ def _params_for(series_id: str, body: RecommendRequest | None = None) -> OrderPa
     base = deps.series_settings(series_id)
     overrides = body.model_dump(exclude_none=True) if body else {}
     merged = {**base, **{k: v for k, v in overrides.items() if k != "series_id"}}
+    merged.pop("opening_stock", None)
     return OrderParams(
         lead_time_days=int(merged["lead_time_days"]),
         stock_on_hand=float(merged["stock_on_hand"]),
@@ -131,7 +132,7 @@ def risk(limit: int = Query(20, ge=1, le=100)) -> dict:
 def positions() -> dict:
     """Live shelf position per product - what the dashboard opens on."""
     if deps.use_fixtures():
-        return deps.envelope({"positions": []})
+        return deps.envelope(deps.fixture("positions")["data"])
 
     out = []
     for sid in deps.SERIES_IDS:
@@ -185,6 +186,35 @@ def commit_order(body: OrderCommit) -> dict:
         raise HTTPException(status_code=422, detail=deps.error(
             "INVALID_PARAMS", str(exc))) from exc
 
+    # The order is a real movement, not just a log line: post it as a goods
+    # receipt so the position on the next screen reflects the decision. In
+    # production this would land when the delivery does; here it lands now,
+    # which is the honest simplification for a single-machine demo.
+    if body.accepted > 0:
+        ledger.post(body.series_id, pd.Timestamp.now().strftime("%Y-%m-%d"),
+                    "received", body.accepted,
+                    note=f"order accepted (recommended {body.recommended})")
+
+    settings = deps.series_settings(body.series_id)
     return deps.envelope({"logged": True, "hash": digest[:16],
-                          "chain_valid": ledger.verify_chain()},
+                          "chain_valid": ledger.verify_chain(),
+                          "stock_on_hand": round(settings["stock_on_hand"], 1),
+                          "received": body.accepted},
                          origin="user_setting")
+
+
+@router.get("/ledger")
+def stock_ledger(series_id: str = Query("N02BE")) -> dict:
+    """The movement trail behind the position - what the number is made of."""
+    deps.require_series(series_id)
+    frame = ledger.ledger_frame(series_id)
+    settings = deps.series_settings(series_id)
+
+    events = [{"ds": r.ds, "kind": r.kind, "quantity": round(float(r.quantity), 2)}
+              for r in frame.itertuples()]
+    return deps.envelope({
+        "series_id": series_id,
+        "opening_stock": settings["opening_stock"],
+        "movements": events,
+        "stock_on_hand": round(settings["stock_on_hand"], 1),
+    }, origin="user_setting")

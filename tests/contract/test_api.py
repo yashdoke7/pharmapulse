@@ -233,3 +233,26 @@ def test_accepting_a_recommendation_extends_the_audit_chain():
     d = data_of(client.post("/api/orders", json={
         "series_id": "N02BE", "recommended": 130, "accepted": 130}))
     assert d["logged"] and d["chain_valid"]
+
+
+def test_accepting_an_order_actually_moves_the_shelf():
+    """The decision has to change the position, or the two halves of the
+    product disagree: settings hold the OPENING stock, the ledger holds every
+    movement since, and the live position is the sum."""
+    def position(sid="N05C"):
+        rows = data_of(client.get("/api/positions"))["positions"]
+        return next(r for r in rows if r["series_id"] == sid)
+
+    before = position()["stock_on_hand"]
+    data_of(client.post("/api/orders", json={
+        "series_id": "N05C", "recommended": 25, "accepted": 25}))
+    after = position()["stock_on_hand"]
+
+    assert after == pytest.approx(before + 25)
+
+
+def test_the_ledger_shows_what_the_position_is_made_of():
+    d = data_of(client.get("/api/ledger?series_id=N02BE"))
+    assert {"series_id", "opening_stock", "movements", "stock_on_hand"} <= set(d)
+    moved = sum(m["quantity"] for m in d["movements"])
+    assert d["stock_on_hand"] == pytest.approx(d["opening_stock"] + moved)

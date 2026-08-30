@@ -85,11 +85,11 @@ accept numpy 2.x. Do not bump it. If `lightgbm` fails to build, install the whee
 
 ## 3 · `docker-compose.yml`
 
-> **Status: written, NOT verified.** Docker was not installed on the build machine, so
-> `docker compose up` has never actually been run against this repo. The Dockerfiles and compose
-> file are complete and the dependency pins are the ones the working venv uses, but treat the first
-> run as a task with unknown duration rather than a guarantee. The local venv path in the root
-> README is the one that is known to work.
+> **Status: VERIFIED.** `docker compose up --build` brings both services up and the API serves
+> real forecasts from the mounted store. Two things had to be fixed to make it true: the compose
+> file forced `PHARMAPULSE_FIXTURES=1` (a Day-0 default that survived), and the Vite proxy pointed
+> at `localhost:8000`, which inside the web container is the web container. The proxy target is now
+> `http://api:8000` via `VITE_PROXY_TARGET`.
 
 Already at the repo root. One command:
 

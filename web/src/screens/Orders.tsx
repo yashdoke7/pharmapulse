@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
@@ -18,6 +18,7 @@ export function Orders() {
   const [params, setParams] = useSearchParams();
   const selected = params.get("series") ?? "N02BE";
   const [toast, setToast] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   const series = useQuery({ queryKey: ["series"], queryFn: () => api.series() });
   const rec = useQuery({
@@ -25,12 +26,21 @@ export function Orders() {
     queryFn: () => api.recommend({ series_id: selected }),
   });
 
+  const stockLedger = useQuery({
+    queryKey: ["ledger", selected],
+    queryFn: () => api.ledger(selected),
+  });
+
   const commit = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.commitOrder(body),
-    onSuccess: (r) =>
+    onSuccess: (r) => {
       setToast(
-        `Logged. Audit chain ${r.data.chain_valid ? "valid" : "BROKEN"} · ${r.data.hash}`,
-      ),
+        `Received ${r.data.received} units — on hand is now ${r.data.stock_on_hand}. ` +
+          `Audit chain ${r.data.chain_valid ? "valid" : "BROKEN"} (${r.data.hash.slice(0, 8)}).`,
+      );
+      // The decision moved the shelf, so every position-derived view is stale.
+      qc.invalidateQueries();
+    },
     onError: (e: Error) => setToast(e.message),
   });
 
@@ -106,6 +116,45 @@ export function Orders() {
                   strong
                 />
               </dl>
+            </div>
+
+            <div className="card card-pad">
+              <div className="label">What the position is made of</div>
+              <p className="subtle mt-1">
+                Settings hold the opening stock; the ledger holds every movement since.
+              </p>
+              <div className="mt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between text-slate-400">
+                  <span>opening stock</span>
+                  <span className="font-mono">
+                    {units(stockLedger.data?.data.opening_stock ?? 0)}
+                  </span>
+                </div>
+                {(stockLedger.data?.data.movements ?? []).slice(-6).map((m, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-slate-400">
+                      {m.kind} <span className="text-slate-600">{m.ds}</span>
+                    </span>
+                    <span
+                      className={`font-mono ${
+                        m.quantity >= 0 ? "text-mint-400" : "text-alert-400"
+                      }`}
+                    >
+                      {m.quantity >= 0 ? "+" : ""}
+                      {units(m.quantity)}
+                    </span>
+                  </div>
+                ))}
+                {(stockLedger.data?.data.movements ?? []).length === 0 ? (
+                  <p className="text-xs text-slate-600">No movements recorded yet.</p>
+                ) : null}
+                <div className="flex justify-between border-t border-white/10 pt-1.5 font-medium">
+                  <span className="text-slate-300">on hand</span>
+                  <span className="font-mono text-white">
+                    {units(stockLedger.data?.data.stock_on_hand ?? r.stock_on_hand)}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="card card-pad">

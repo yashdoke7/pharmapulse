@@ -6,8 +6,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Day 0-1: serve fixtures. Flip to 0 once the forecast store is real.
-      PHARMAPULSE_FIXTURES: "${PHARMAPULSE_FIXTURES:-1}"
+      # Unset by default so the API AUTO-DETECTS: real forecast store present
+      # -> serve it; absent -> fall back to fixtures and say so via
+      # meta.degraded. Set PHARMAPULSE_FIXTURES=1 to force the fallback (rung 5
+      # of the degradation ladder, the switch to flip if the model layer dies).
+      PHARMAPULSE_FIXTURES: "${PHARMAPULSE_FIXTURES:-}"
       PHARMAPULSE_DATA_ROOT: "/app/data/warehouse"
     volumes:
       - ./data:/app/data
@@ -28,8 +31,10 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE: "http://localhost:8000/api"
-      VITE_USE_FIXTURES: "${VITE_USE_FIXTURES:-0}"
+      # The browser talks to the Vite dev server, which proxies /api to the api
+      # SERVICE - "localhost" inside this container is the web container itself.
+      VITE_API_BASE: "/api"
+      VITE_PROXY_TARGET: "http://api:8000"
     depends_on:
       - api
 

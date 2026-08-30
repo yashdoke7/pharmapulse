@@ -18,6 +18,7 @@ import type {
   Series,
   ReplaySnapshot,
   Settings,
+  StockLedger,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
@@ -113,8 +114,17 @@ export const api = {
       `/replay/business-case?start_date=${start}&end_date=${end}`,
     ),
 
+  ledger: (seriesId: string) =>
+    request<StockLedger>(`/ledger?series_id=${seriesId}`),
+
   commitOrder: (body: Record<string, unknown>) =>
-    request<{ logged: boolean; hash: string; chain_valid: boolean }>("/orders", {
+    request<{
+      logged: boolean;
+      hash: string;
+      chain_valid: boolean;
+      stock_on_hand: number;
+      received: number;
+    }>("/orders", {
       method: "POST",
       body: JSON.stringify(body),
     }),

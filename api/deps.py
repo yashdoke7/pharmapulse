@@ -165,9 +165,25 @@ def save_settings(patch: dict) -> dict:
     return merged
 
 
+def live_stock(series_id: str, opening: float) -> float:
+    """Opening position plus every movement the ledger has recorded.
+
+    Settings hold the OPENING stock - the number a pharmacist types after a
+    stock take. The ledger holds what has happened since: receipts, sales,
+    wastage, adjustments. The live position is the sum, so accepting an order
+    actually moves the shelf instead of the two halves disagreeing.
+    """
+    try:
+        moved = ledger.balance(series_id).get(series_id, 0.0)
+    except Exception:
+        moved = 0.0
+    return max(0.0, float(opening) + float(moved))
+
+
 def series_settings(series_id: str, settings: dict | None = None) -> dict:
     s = settings or load_settings()
     per = s.get("per_series", {}).get(series_id, {})
+    opening = per.get("stock_on_hand", 0.0)
     return {
         "lead_time_days": s.get("lead_time_days", 4),
         "holding_cost_rate": s.get("holding_cost_rate", 0.22),
@@ -176,7 +192,8 @@ def series_settings(series_id: str, settings: dict | None = None) -> dict:
         "pack_size": per.get("pack_size", 10),
         "unit_cost": per.get("unit_cost", 12.5),
         "unit_margin": per.get("unit_margin", 4.0),
-        "stock_on_hand": per.get("stock_on_hand", 0.0),
+        "opening_stock": opening,
+        "stock_on_hand": live_stock(series_id, opening),
     }
 
 

@@ -270,3 +270,16 @@ export interface BusinessCase {
   verdict: string;
   method: string;
 }
+
+export interface StockMovement {
+  ds: string;
+  kind: "opening" | "received" | "sold" | "wastage" | "adjustment";
+  quantity: number;
+}
+
+export interface StockLedger {
+  series_id: string;
+  opening_stock: number;
+  movements: StockMovement[];
+  stock_on_hand: number;
+}

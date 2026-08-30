@@ -193,5 +193,5 @@ Each folder has a README stating its target, inputs, outputs and definition of d
 | Data pipeline, forecast engine, decision engine, API, six screens, replay | **working on real data** |
 | `make benchmark` reproducing every number | **yes**, from a clean clone |
 | Tests | **135 green** |
-| Docker / Compose | **written, not verified** — no Docker on the build machine |
+| Docker / Compose | **verified** — `docker compose up --build`, API serves real forecasts |
 | Auth, multi-tenancy, Redis, Postgres | **deliberately not built** — see `team/05` §10 |
