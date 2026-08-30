@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 
 import pytest
-from hypothesis import assume, given, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from decision.newsvendor import (

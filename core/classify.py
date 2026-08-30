@@ -12,7 +12,7 @@ processes, the size of a sale and the gap between sales.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
 import pandas as pd

@@ -10,7 +10,6 @@ from pipelines.gold import aggregate
 from pipelines.ingest import ingest
 from pipelines.validate import assert_reconciles, validate
 
-
 # --- ingest ---------------------------------------------------------------
 
 def test_ingest_is_idempotent(tmp_path):

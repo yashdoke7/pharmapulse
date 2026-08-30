@@ -26,8 +26,11 @@ jobs:
         run: python scripts/check_data.py
         env:
           PYTHONPATH: .
-      - name: Build gold
-        run: python -m pipelines.run_nightly --stage gold
+      - name: Build the pipeline
+        # Full batch, not just gold: the replay tests and the business case
+        # need the forecast store, and running the real thing in CI is the
+        # point - a broken pipeline should fail the build, not the demo.
+        run: python -m pipelines.run_nightly --stage all
         env:
           PYTHONPATH: .
       - name: Tests

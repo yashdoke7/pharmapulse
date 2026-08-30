@@ -10,8 +10,6 @@ import pytest
 
 from decision.newsvendor import protection_interval_days
 from decision.replay import (
-    POLICY_MINMAX,
-    POLICY_PHARMAPULSE,
     ReplaySession,
     compare_policies,
 )
@@ -30,11 +28,17 @@ WINDOW = ("2019-01-01", "2019-02-28")
 
 @pytest.fixture(scope="module")
 def daily():
+    """Replay needs BOTH the gold history and the forecast store: it replays
+    real sales but sizes orders from the served distribution."""
+    from core import forecast_store as fs
     from pipelines.gold import read_gold
+
+    if not fs.store_available():
+        pytest.skip("no forecast store - run `python -m pipelines.run_nightly --stage all`")
     try:
         return read_gold("day")
     except FileNotFoundError:
-        pytest.skip("gold not built - run make pipeline")
+        pytest.skip("gold not built - run `python -m pipelines.run_nightly --stage gold`")
 
 
 # --- the protection interval ---------------------------------------------

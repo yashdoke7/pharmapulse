@@ -13,7 +13,7 @@ therefore never readable.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -64,7 +64,7 @@ def write_version(quantiles: pd.DataFrame, model_version: str, snapshot_id: str,
     payload = {
         "model_version": model_version,
         "snapshot_id": snapshot_id,
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         **(meta or {}),
     }
     (target / "meta.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -153,7 +153,7 @@ def read_quantiles(series_id: str, grain: str = "week", horizon: int = 8,
     for ds, grp in df.groupby("ds"):
         key = pd.Timestamp(ds).strftime("%Y-%m-%d")
         out[key] = {f"{q:.2f}": round(float(v), 2)
-                    for q, v in zip(grp["quantile"], grp["value"])}
+                    for q, v in zip(grp["quantile"], grp["value"], strict=True)}
     return dict(sorted(out.items()))
 
 

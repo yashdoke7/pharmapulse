@@ -108,7 +108,6 @@ def forecast(series_id: str = Query("N02BE"),
     for m in members:
         m["p50"] = m["p50"][:horizon]
 
-    cutoff = fs.read_forecast(series_id, grain, horizon)
     cutoff_str = (pd.Timestamp(hist["ds"].max()).strftime("%Y-%m-%d")
                   if not hist.empty else None)
 

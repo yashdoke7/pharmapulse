@@ -19,7 +19,7 @@ import argparse
 import json
 import platform
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -37,8 +37,7 @@ from core.backtest import (
 )
 from core.classify import classify
 from core.combine import ENSEMBLE_MEMBERS, combine_point
-from core.portfolio import lgbm_global, prophet_model
-from core.portfolio import statistical
+from core.portfolio import lgbm_global, prophet_model, statistical
 from pipelines.gold import fitting_frame
 from pipelines.ingest import snapshot_id
 
@@ -147,7 +146,7 @@ def run(folds_n: int, horizon: int, fast: bool, verbose: bool = True) -> dict:
     elapsed = time.perf_counter() - t_start
 
     bench = {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "snapshot_id": snap,
         "protocol": {
             "grain": "week", "horizon": horizon, "folds": folds_n,

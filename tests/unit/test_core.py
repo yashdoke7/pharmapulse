@@ -12,7 +12,6 @@ from core.classify import ERRATIC, INTERMITTENT, SMOOTH, adi_cv2, classify, clas
 from core.combine import combine_point, combine_quantiles, enforce_monotonic
 from core.forecast_store import quantile_at
 
-
 # --- demand classification ------------------------------------------------
 
 def test_adi_cv2_on_a_dense_stable_series():

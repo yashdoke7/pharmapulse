@@ -31,11 +31,11 @@ SEASON_LENGTH = {"day": 7, "week": 52, "month": 12}
 
 def _build_models(grain: str, names: list[str] | None = None):
     from statsforecast.models import (
+        MSTL,
         AutoARIMA,
         AutoETS,
         CrostonOptimized,
         DynamicOptimizedTheta,
-        MSTL,
         Naive,
         SeasonalNaive,
         WindowAverage,

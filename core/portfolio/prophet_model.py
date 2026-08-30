@@ -23,7 +23,6 @@ import logging
 import pathlib
 import warnings
 
-import numpy as np
 import pandas as pd
 
 warnings.filterwarnings("ignore")
@@ -150,7 +149,7 @@ def fit_predict(train: pd.DataFrame, h: int, grain: str = "week",
         fc = m.predict(future)
 
         tail = fc.tail(h)
-        for ds, yhat in zip(tail["ds"], tail["yhat"]):
+        for ds, yhat in zip(tail["ds"], tail["yhat"], strict=True):
             preds.append({"series_id": sid, "ds": ds, "model": "Prophet",
                           "value": max(0.0, float(yhat))})
 

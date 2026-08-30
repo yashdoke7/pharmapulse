@@ -109,7 +109,7 @@ def fit_predict(train: pd.DataFrame, h: int, grain: str = "week",
             Xp["series_id"] = pd.Categorical(Xp["series_id"], categories=X["series_id"].cat.categories)
             pred = np.clip(model.predict(Xp), 0.0, None)
 
-            for sid, ds, v in zip(target["series_id"].astype(str), target["ds"], pred):
+            for sid, ds, v in zip(target["series_id"].astype(str), target["ds"], pred, strict=True):
                 out.append({"series_id": sid, "ds": ds, "model": "LightGBM",
                             "value": float(v), "quantile": q, "horizon": step})
 

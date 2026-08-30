@@ -9,7 +9,7 @@ import pytest
 
 from pipelines.clean import clean
 from pipelines.gold import aggregate
-from pipelines.ingest import SERIES_IDS, DATE_FORMAT, DATE_COL
+from pipelines.ingest import DATE_COL, DATE_FORMAT, SERIES_IDS
 
 RAW = Path("data/observed/salesdaily.csv")
 

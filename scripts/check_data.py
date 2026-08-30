@@ -75,7 +75,7 @@ def main() -> int:
                 f"all-zero day count {all_zero_days} != 26. The closure calendar "
                 "assumption in the architecture doc is built on 26."
             )
-        print(f"daily means   " + ", ".join(f"{s}={vals[s].mean():.2f}" for s in EXPECTED_SERIES))
+        print("daily means   " + ", ".join(f"{s}={vals[s].mean():.2f}" for s in EXPECTED_SERIES))
 
     if problems:
         print("\nFAILED:")

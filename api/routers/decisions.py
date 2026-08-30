@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field
 
 from api import deps
 from core import forecast_store as fs
-from decision import ledger, risk as risk_engine
+from decision import ledger
+from decision import risk as risk_engine
 from decision.newsvendor import (
     OrderParams,
     protection_interval_days,

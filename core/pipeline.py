@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from core import calibrate, forecast_store
+from core import forecast_store
 from core.classify import classify, eligible_models
 from core.combine import ENSEMBLE_MEMBERS, combine_point, enforce_monotonic
 from core.portfolio import lgbm_global, prophet_model, statistical
@@ -76,7 +76,7 @@ def forecast_grain(grain: str, scale: float,
 
     classes = classify(gold)
     classes["grain"] = grain
-    route = dict(zip(classes["series_id"], classes["demand_class"]))
+    route = dict(zip(classes["series_id"], classes["demand_class"], strict=True))
     wanted: set[str] = set()
     for sid in gold["series_id"].unique():
         wanted.update(eligible_models(route.get(sid, "smooth")))
@@ -167,7 +167,7 @@ def build_forecast_store(verbose: bool = True) -> dict:
     classes = pd.concat(all_c, ignore_index=True)
 
     snap = snapshot_id(RAW) if RAW.exists() else "unknown"
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%MZ")
+    stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%MZ")
     model_version = f"{stamp}/ens-v1"
 
     target = forecast_store.write_version(
