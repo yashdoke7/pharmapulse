@@ -7,14 +7,168 @@
 > **Read this alongside the design documents.** If a judge holds you to something in them, this is
 > the file that says whether it survived contact with the implementation.
 
-Three categories:
+Five parts:
 
 | | |
 |---|---|
-| **A** | **Behavioural changes** — the system computes something different from what was specified |
+| **0** | **Structural** — the component map: what was removed, added, or moved between layers |
+| **A** | **Behavioural** — the system computes something different from what was specified |
 | **B** | **Simplifications** — specified components deliberately not built |
 | **C** | **Additions** — things built that were not in the design |
 | **D** | **Corrections to stated facts** — the design asserted something the data contradicts |
+
+---
+
+# 0 · Structural — the component map
+
+**This is the part that changes the architecture diagram.** Everything in §A is about what the
+components *compute*; this section is about which boxes exist and where they sit.
+
+## 0.1 Every numbered component, and what happened to it
+
+| # | Component (design) | Status | Where it lives now |
+|---|---|---|---|
+| 1.1 | Ingester | as designed | `pipelines/ingest.py` |
+| 1.2 | Validator | as designed | `pipelines/validate.py` |
+| 1.3 | Cleaner | as designed | `pipelines/clean.py` |
+| 1.4 | Feature Builder | as designed | `pipelines/features.py` |
+| 1.5 | Gold Store | as designed | `pipelines/gold.py` |
+| 2.1 | Demand Classifier | as designed | `core/classify.py` |
+| 2.2 | Model Portfolio | as designed | `core/portfolio/` |
+| 2.3 | Combiner | as designed | `core/combine.py` |
+| 2.4 | Calibrator | as designed | `core/calibrate.py` |
+| **2.5** | **Reconciler** | **REMOVED** | — see 0.2 |
+| 2.6 | Forecast Store | as designed | `core/forecast_store.py` |
+| 3.1 | Stock Ledger | **split in two** | `decision/ledger.py` + settings — see 0.4 |
+| 3.2 | Order Calculator | as designed | `decision/newsvendor.py` |
+| 3.3 | Risk Detector | as designed | `decision/risk.py` |
+| **3.4** | **Recommendation Builder** | **MERGED into 3.3** | `decision/risk.py::build_recommendation()` |
+| **4.1** | **Attribution Engine** | **MOVED to Layer 2** | `core/explain.py` — see 0.3 |
+| **4.2** | **Scenario Engine** | **REMOVED** | — |
+| **4.3** | **Assistant** | **REMOVED** | — |
+| 5.x | Service | as designed, widened | `api/` — 7 endpoints became 16 |
+| 6.x | Product | as designed, minus replay | `web/src/screens/` — see 0.3 |
+| **9.4** | **Stress Harness** | **REMOVED** | — |
+
+**Score: 4 components removed, 1 merged, 2 moved between layers, 5 added.**
+
+## 0.2 The one removal that changes the shape of the system
+
+**2.5 Reconciler is gone entirely.** It was the only component that made the three grains and the
+product hierarchy *cohere*. With it removed:
+
+- day, week and month forecasts are produced and served **independently**. They are not guaranteed to
+  sum. Nothing on any screen depends on them summing, but the design's "three clocks, one system"
+  claim does not hold in the build.
+- the design's *two hierarchies, one mechanism* argument (§4.9) — that cross-sectional and temporal
+  MinT are the same code with a different summing matrix — is untested, because neither half exists.
+
+**Why it went.** The cross-sectional half needs a store network, which would be lane-3 synthetic, and
+lane 3 cannot back a claim. The temporal half is real and defensible, but no screen depends on it.
+**Temporal MinT is the first thing to add.**
+
+## 0.3 Two components moved between layers
+
+**Attribution: Layer 4 (Intelligence) → Layer 2 (Forecast Engine).**
+
+The design puts the attribution engine in a separate Intelligence layer consuming a finished
+forecast. We built it as `core/explain.py`, inside the forecast engine.
+
+*Why:* it reads Prophet's fitted trend / seasonality / holiday components **directly**. Keeping it in
+a higher layer would mean either re-fitting the model or shipping fitted component frames across a
+layer boundary. Sitting next to the model that produces them is the smaller interface.
+
+**Replay: Layer 6 (Product) → Layer 3 (Decision).**
+
+The design describes replay as a *screen* — §5.5, "Live Ops — the replay mode", inside the Product
+layer. We built `decision/replay.py` as a **policy simulator in the decision layer**, with the screen
+as a thin client over it.
+
+*Why:* replay does not display a policy, it **runs** one — sell, deliver, decide, repeat. As a
+decision-layer component it can be driven headlessly, which is what let it become the delivery
+mechanism for evaluation **E5** (the business case) and the closest thing the project has to an
+end-to-end integration test. As a screen it could have been neither.
+
+**Consequence:** `decision/replay.py` contains a **second, independent policy implementation**
+(min/max). The design mentions min/max only as an evaluation baseline, never as something the system
+itself contains.
+
+## 0.4 Component 3.1 split into two stores that compose
+
+The design describes one Stock Ledger with opening stock *"seeded, editable in settings"*. It never
+says how the seed and the movements relate. Built naively they are two sources of truth that
+disagree — and in the first implementation the API read stock from settings while the ledger sat
+unused.
+
+```
+   settings (ops.db)            ledger (ops.db)
+   opening_stock          +     SUM(movements)        =    live position
+   lane 2, user-edited          receipts · sales ·         api/deps.py::live_stock()
+                                wastage · adjustments
+```
+
+That is a component-boundary decision the design does not make, and it is what allows accepting an
+order to actually move the shelf.
+
+## 0.5 Five components with no design number
+
+| New component | What it is | Why it exists |
+|---|---|---|
+| `core/pipeline.py` | forecast-stage orchestrator | The design has `run_nightly` calling stages directly. Once routing became per-grain, the fit → combine → calibrate → publish sequence needed its own coordinator |
+| `decision/replay.py` | policy simulator + a second policy | See 0.3 |
+| `api/deps.py` | envelope, settings, cache, live stock | The design implies these are per-route concerns. Centralising them is what puts provenance on **every** response rather than the ones an author remembered |
+| `contracts/fixtures/` + `scripts/make_fixtures.py` | a **fallback data plane** | Not in the design at all. It is degradation rung 5 and the parallel-work unblocker. Captured from the live API, so shapes cannot drift |
+| `scripts/day1_benchmark.py` → `artifacts/benchmarks.json` | the **evidence artifact**, promoted to a contract | The design uses MLflow. Making the artifact a file the API only *reads* is what makes "no number on this screen is typed by a human" literally true and checkable |
+
+## 0.6 Infrastructure components removed from the diagram
+
+Five boxes in the design's stack table do not exist in the build:
+
+| Design | Built | Effect |
+|---|---|---|
+| Redis | in-process `lru_cache` | one fewer service |
+| PostgreSQL + row-level security | SQLite | one fewer service; **no tenancy boundary** |
+| MLflow + model registry | `benchmarks.json` | no registry; **no champion/challenger gate** |
+| APScheduler / Prefect | none — `run_nightly` by hand or CI | **no scheduler**; the batch is triggered, not scheduled |
+| OpenTelemetry / prometheus | none | **no tracing**; `/metrics` reports process-local counters |
+
+**The promotion gate (§9.2) is the notable casualty.** The design has a challenger model that must
+beat SeasonalNaive on every series before publication. Without a registry there is no champion to
+pin, so `write_version()` publishes unconditionally, and the gate survives only as the CI benchmark
+failing a build.
+
+## 0.7 Contracts: three became five, and they became files
+
+The design freezes **three** contracts (§9.3). The build has **five**, materialised under
+`contracts/`:
+
+| | | |
+|---|---|---|
+| C1 | Gold schema | in the design |
+| C2 | **Forecast store schema** | **added** — the `core` → `decision` boundary was undefined |
+| C3 | HTTP API | in the design |
+| C4 | `benchmarks.json` | in the design |
+| C5 | **Fixtures** | **added** — see 0.5 |
+
+## 0.8 The redrawn diagram
+
+```
+  LAYER 1  DATA          ingest -> validate -> clean -> gold -> features     unchanged
+  LAYER 2  FORECAST      classify -> portfolio -> combine -> calibrate -> store
+                         + attribution                   <- MOVED IN from L4
+                         - reconciler                    <- REMOVED
+  LAYER 3  DECISION      newsvendor · risk (+ recommendation) · ledger
+                         + replay simulator + min/max policy   <- MOVED IN from L6
+  LAYER 4  INTELLIGENCE  EMPTY - attribution moved down, scenarios and
+                         assistant not built
+  LAYER 5  SERVICE       16 endpoints; envelope centralised in deps.py
+  LAYER 6  PRODUCT       7 screens; replay is now a thin client
+  SIDECAR  EVIDENCE      benchmark script -> benchmarks.json    (contract C4)
+                         fixtures <- captured from the live API (contract C5)
+```
+
+**Layer 4 no longer exists as a distinct layer.** That is the single biggest structural difference
+between the design and the build.
 
 ---
 
