@@ -40,11 +40,13 @@ OK.
 ### Build the pipeline
 
 ```bash
-python -m pipelines.run_nightly --stage all      # ~3 min
+python -m pipelines.run_nightly --stage all      # ~1 min
 ```
 
-Stage 1 (gold) takes 2.6 s. Stage 2 (forecast) takes ~170 s — it fits five model families across
-three grains.
+Stage 1 (gold) takes ~2 s. Stage 2 (forecast) takes ~25 s and **prints every model as it fits**, so
+you can see it working:
+
+
 
 ### Reproduce every accuracy number
 

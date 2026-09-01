@@ -20,7 +20,7 @@ If you read one file, read this one. It assumes nothing.
 
 ```bash
 python scripts/check_data.py                  # snapshot sha256:49e4f1c5c3da
-python -m pipelines.run_nightly --stage all   # ~3 min
+python -m pipelines.run_nightly --stage all   # ~1 min
 python scripts/day1_benchmark.py              # ~45 s
 pytest -q                                     # 138 tests
 ```

@@ -85,16 +85,30 @@ def forecast_grain(grain: str, scale: float,
                   if m in {"AutoARIMA", "MSTL", "SeasonalNaive",
                            "CrostonOptimized", "AutoETS", "DynamicOptimizedTheta"}]
 
-    preds = [statistical.fit_predict(gold, h=h, grain=grain, models=stat_names)]
+    if verbose:
+        print(f"  {grain:6} cutoff {cutoff.date()}  h={h}  fitting...", flush=True)
+
+    preds = []
+    for name in stat_names:
+        t0 = time.perf_counter()
+        preds.append(statistical.fit_predict(gold, h=h, grain=grain, models=[name]))
+        if verbose:
+            print(f"           {name:22} {time.perf_counter() - t0:6.1f}s", flush=True)
 
     if prophet_model.PROPHET_AVAILABLE and grain != "day":
+        t0 = time.perf_counter()
         p = prophet_model.fit_predict(gold, h=h, grain=grain)
         if not p.empty:
             preds.append(p)
+        if verbose:
+            print(f"           {'Prophet':22} {time.perf_counter() - t0:6.1f}s", flush=True)
 
+    t0 = time.perf_counter()
     g = lgbm_global.fit_predict(gold, h=h, grain=grain, quantiles=[0.5])
     if not g.empty:
         preds.append(g[["series_id", "ds", "model", "value"]])
+    if verbose:
+        print(f"           {'LightGBM':22} {time.perf_counter() - t0:6.1f}s", flush=True)
 
     allp = pd.concat(preds, ignore_index=True)
 
@@ -139,9 +153,8 @@ def forecast_grain(grain: str, scale: float,
     if verbose:
         routes = ", ".join(f"{r.series_id}:{r.demand_class[:4]}"
                            for r in classes.itertuples())
-        print(f"  {grain:6} cutoff {cutoff.date()}  h={h}")
-        print(f"         members {', '.join(sorted(routed['model'].unique()))}")
-        print(f"         routing {routes}")
+        print(f"           members {', '.join(sorted(routed['model'].unique()))}")
+        print(f"           routing {routes}", flush=True)
 
     return quantiles, members, classes
 

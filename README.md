@@ -34,15 +34,42 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 
 ## Run it
 
-```bash
-python -m venv .venv && source .venv/Scripts/activate     # Windows Git Bash
+**PowerShell** (the default Windows terminal — note `;` not `&&`):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python scripts/check_data.py                              # verifies the dataset
-python -m pipelines.run_nightly --stage all               # ~3 min: gold + forecast store
-python scripts/day1_benchmark.py                          # ~45 s: every accuracy number
-uvicorn api.main:app --port 8000                          # API
-cd web && npm install && npm run dev                      # app on :5173
+
+python scripts/check_data.py                    # verifies the dataset
+python -m pipelines.run_nightly --stage all     # ~4 min - see the note below
+python scripts/day1_benchmark.py                # ~45 s - every accuracy number
+
+uvicorn api.main:app --port 8000                # terminal 1
+cd web ; npm install ; npm run dev              # terminal 2 - PowerShell uses ;
 ```
+
+**Git Bash / macOS / Linux:**
+
+```bash
+python -m venv .venv && source .venv/Scripts/activate     # .venv/bin/activate on unix
+pip install -r requirements.txt
+python scripts/check_data.py
+python -m pipelines.run_nightly --stage all
+python scripts/day1_benchmark.py
+uvicorn api.main:app --port 8000
+cd web && npm install && npm run dev
+```
+
+> **The forecast stage takes about 4 minutes and prints progress per model.** Most of that is
+> AutoARIMA at daily grain. It is working, not hung — wait for it.
+>
+> **`Errno 10048 ... only one usage of each socket address`** means port 8000 is already taken by an
+> earlier server. Find and stop it:
+> ```powershell
+> netstat -ano | Select-String ":8000" | Select-String LISTENING
+> taskkill /F /PID <the-pid>
+> ```
 
 Or in containers — verified, and the API auto-detects the store:
 

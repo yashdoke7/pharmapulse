@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-28T13:11:27Z",
+  "generated_at": "2026-09-01T16:47:08Z",
   "snapshot_id": "sha256:49e4f1c5c3da",
   "protocol": {
     "grain": "week",
@@ -249,7 +249,7 @@
     ]
   },
   "runtime": {
-    "total_seconds": 43.03,
+    "total_seconds": 57.88,
     "series_model_folds": 292,
     "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
     "python": "3.11.9"

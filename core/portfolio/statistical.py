@@ -49,13 +49,17 @@ def _build_models(grain: str, names: list[str] | None = None):
         "AutoETS": AutoETS(season_length=m),
         "DynamicOptimizedTheta": DynamicOptimizedTheta(season_length=m),
         "CrostonOptimized": CrostonOptimized(),
-        # Seasonal ARIMA at m=52 is pathological: the order search explores
-        # seasonal lags 52 apart on ~300 observations and takes minutes per
-        # series without improving accuracy. Weekly annual seasonality is
-        # better handled by MSTL and Prophet, which are in the portfolio for
-        # exactly that. So ARIMA is fitted NON-seasonally and contributes what
-        # only it can - short-run autocorrelation.
-        "AutoARIMA": AutoARIMA(season_length=1 if m > 24 else m),
+        # ARIMA is fitted NON-SEASONALLY at every grain. Measured cost of the
+        # seasonal order search, on this data:
+        #
+        #   weekly  m=52, 300 obs/series   never terminated (killed at 20 min)
+        #   daily   m=7,  2106 obs/series  139 s   ->  7.3 s non-seasonal
+        #
+        # Seasonality is carried by MSTL (0.6 s at daily grain) and Prophet,
+        # which are in the portfolio for exactly that. ARIMA is there for
+        # short-run autocorrelation - the one thing a decomposition model has
+        # no mechanism for - and it does that job without a seasonal term.
+        "AutoARIMA": AutoARIMA(season_length=1),
         "MSTL": MSTL(season_length=m),
     }
     if names is None:
