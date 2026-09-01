@@ -10,6 +10,7 @@ If you read one file, read this one. It assumes nothing.
 |---|---|
 | `PHARMAPULSE_CONCEPT.md` | The original design proposal — component by component, no measurements |
 | `PHARMAPULSE_ARCHITECTURE.md` | The engineering reference — failure modes, evaluation design, self-critique |
+| **`ARCHITECTURE_DELTA.md`** | **Every place the built system differs from the design documents, and why** |
 | `PHARMAPULSE_RESULTS.md` | The condensed results + demo script |
 | `MODEL_CARD.md` | Intended use, evaluation, limitations |
 | `DEMONSTRATION.md` | Run it, and present it |

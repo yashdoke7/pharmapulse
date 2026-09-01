@@ -22,6 +22,7 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 | Document | What it is |
 |---|---|
 | **[docs/PHARMAPULSE_SYSTEM.md](docs/PHARMAPULSE_SYSTEM.md)** | **Start here.** The whole project in one file: how the pieces connect, every decision and the alternative it beat, the results, and where the code is |
+| **[docs/ARCHITECTURE_DELTA.md](docs/ARCHITECTURE_DELTA.md)** | **What changed against the submitted design, and why.** Three things in the design were wrong; two were internally inconsistent. Read it next to the design documents |
 | [docs/DEMONSTRATION.md](docs/DEMONSTRATION.md) | Run it, then present it — with the words |
 | [docs/PHARMAPULSE_RESULTS.md](docs/PHARMAPULSE_RESULTS.md) | Condensed results and the demo script |
 | [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Intended use, evaluation, seven named limitations |

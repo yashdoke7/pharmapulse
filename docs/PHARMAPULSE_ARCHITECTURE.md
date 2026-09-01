@@ -15,6 +15,7 @@
 | **`PHARMAPULSE_ARCHITECTURE.md`** *(this file)* | The engineering reference. Measured results, failure modes, evaluation design, self-critique. | Implementation decisions · defending a number · the Q&A |
 | **`pharmapulse_architecture.svg`** | The system diagram. Component numbers match both documents. | Slides · README |
 | **`mkdiagram.py`** | Diagram source. Edit the content lists, re-run, layout recomputes. | Keeping the diagram current |
+| **`ARCHITECTURE_DELTA.md`** | **Where the built system departs from THIS document, and why.** Three things here turned out to be wrong. | Read it before defending anything in this file |
 | **`PHARMAPULSE_RESULTS.md`** | **What actually happened when it was built.** Measured results, every decision with the alternative it beat, the nine things we got wrong, and the demo script. | The pitch · the Q&A · reporting outcomes |
 | **`MODEL_CARD.md`** | Intended use, evaluation, and seven named limitations. | Governance questions |
 | **`day1_benchmark.py`** | Reproduces every accuracy figure from a clean clone. | Verifying before building on a number |
