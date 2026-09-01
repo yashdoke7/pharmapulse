@@ -89,7 +89,7 @@ export function LiveOps() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="Live Ops"
+        title="Replay"
         subtitle="The real 2019 history, replayed one day per tick. Nothing is simulated except the shelf."
         right={
           <div className="flex flex-wrap items-center gap-2">
@@ -101,10 +101,10 @@ export function LiveOps() {
                   setSnap(null);
                   setWindow(w);
                 }}
-                className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                className={`px-3 py-1.5 text-sm transition-colors ${
                   w.from === window_.from
-                    ? "bg-white/10 text-white"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-wash-strong text-ink"
+                    : "text-ink-mute hover:text-ink"
                 }`}
               >
                 {w.label}
@@ -116,18 +116,18 @@ export function LiveOps() {
 
       {error ? <ErrorCard error={error} /> : null}
 
-      <div className="card card-pad relative overflow-hidden">
-        <div className="pointer-events-none absolute right-4 top-3 select-none text-[10px] font-bold uppercase tracking-[0.28em] text-white/15">
+      <div className="panel pad relative overflow-hidden">
+        <div className="pointer-events-none absolute right-4 top-3 select-none text-[10px] font-bold uppercase tracking-[0.28em] text-ink/15">
           Replay · {window_.label}
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="label">Simulated date</div>
-            <div className="metric mt-1 tabular-nums">
+            <div className="eyebrow">Simulated date</div>
+            <div className="figure text-[28px] font-medium leading-none mt-1 tabular-nums">
               {snap?.current_date ?? "—"}
             </div>
-            <div className="subtle mt-1">
+            <div className="fine mt-1">
               {snap
                 ? `day ${snap.day_index} of ${snap.total_days} · ${window_.note}`
                 : `${window_.label} · ${window_.note}`}
@@ -167,9 +167,9 @@ export function LiveOps() {
           </div>
         </div>
 
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+        <div className="mt-4 h-1.5 w-full overflow-hidden bg-wash">
           <div
-            className="h-full rounded-full bg-mint-500 transition-[width] duration-300"
+            className="h-full bg-signal-green transition-[width] duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -194,16 +194,16 @@ export function LiveOps() {
 
       {snap ? (
         <div className="grid gap-5 lg:grid-cols-3">
-          <div className="card overflow-hidden lg:col-span-2">
-            <div className="border-b border-white/10 px-5 py-3">
-              <div className="label">Shelf, right now</div>
+          <div className="panel overflow-hidden lg:col-span-2">
+            <div className="border-b border-line px-5 py-3">
+              <div className="eyebrow">Shelf, right now</div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10 text-left">
+                  <tr className="border-b border-line text-left">
                     {["Product", "On hand", "Incoming", "Cover", "Lost", "Status"].map((h) => (
-                      <th key={h} className="px-4 py-2.5 font-medium text-slate-400">
+                      <th key={h} className="px-4 py-2.5 font-medium text-ink-mute">
                         {h}
                       </th>
                     ))}
@@ -211,24 +211,24 @@ export function LiveOps() {
                 </thead>
                 <tbody>
                   {snap.positions.map((p) => (
-                    <tr key={p.series_id} className="border-b border-white/5 last:border-0">
-                      <td className="px-4 py-2.5 font-mono text-slate-300">{p.series_id}</td>
-                      <td className="px-4 py-2.5 tabular-nums text-slate-200">
+                    <tr key={p.series_id} className="border-b border-line-soft last:border-0">
+                      <td className="px-4 py-2.5 font-mono text-ink-soft">{p.series_id}</td>
+                      <td className="px-4 py-2.5 tabular-nums text-ink">
                         {units(p.stock_on_hand)}
                       </td>
-                      <td className="px-4 py-2.5 tabular-nums text-slate-500">
+                      <td className="px-4 py-2.5 tabular-nums text-ink-faint">
                         {p.incoming > 0 ? `+${units(p.incoming)}` : "—"}
                       </td>
                       <td
                         className={`px-4 py-2.5 tabular-nums ${
-                          p.days_of_cover < 5 ? "text-alert-400" : "text-slate-300"
+                          p.days_of_cover < 5 ? "text-signal-red" : "text-ink-soft"
                         }`}
                       >
                         {p.days_of_cover > 900 ? "—" : `${p.days_of_cover.toFixed(1)} d`}
                       </td>
                       <td
                         className={`px-4 py-2.5 tabular-nums ${
-                          p.units_short > 0 ? "text-alert-400" : "text-slate-600"
+                          p.units_short > 0 ? "text-signal-red" : "text-ink-pale"
                         }`}
                       >
                         {p.units_short > 0 ? units(p.units_short) : "—"}
@@ -243,27 +243,27 @@ export function LiveOps() {
             </div>
           </div>
 
-          <div className="card card-pad">
-            <div className="label">Event feed</div>
+          <div className="panel pad">
+            <div className="eyebrow">Event feed</div>
             <div className="mt-3 max-h-[340px] space-y-2 overflow-y-auto pr-1">
               {feed.length === 0 ? (
-                <p className="subtle">Nothing yet. Press start.</p>
+                <p className="fine">Nothing yet. Press start.</p>
               ) : (
                 feed.map((e, i) => (
                   <div key={i} className="flex gap-2 text-xs">
                     <span
-                      className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                      className={`mt-1 h-1.5 w-1.5 shrink-0 ${
                         e.type === "stockout"
-                          ? "bg-alert-400"
+                          ? "bg-signal-red"
                           : e.type === "delivery"
-                            ? "bg-sky-400"
-                            : "bg-mint-400"
+                            ? "bg-signal-blue"
+                            : "bg-signal-green"
                       }`}
                     />
                     <div>
-                      <span className="font-mono text-slate-500">{e.date}</span>{" "}
-                      <span className="font-mono text-slate-400">{e.series_id}</span>
-                      <div className="text-slate-300">{e.message}</div>
+                      <span className="font-mono text-ink-faint">{e.date}</span>{" "}
+                      <span className="font-mono text-ink-mute">{e.series_id}</span>
+                      <div className="text-ink-soft">{e.message}</div>
                     </div>
                   </div>
                 ))
@@ -283,21 +283,21 @@ export function LiveOps() {
         ) : businessCase.isError ? (
           <ErrorCard error={businessCase.error} />
         ) : bc ? (
-          <div className="card card-pad border-mint-500/25">
+          <div className="panel pad border-signal-green">
             <div className="grid gap-4 sm:grid-cols-3">
               <Policy label="Min/max on average demand" s={bc.minmax} worse />
               <Policy label="PharmaPulse" s={bc.pharmapulse} best />
-              <div className="rounded-xl border border-mint-500/40 bg-mint-500/10 px-4 py-3">
-                <div className="label">Lower total cost</div>
-                <div className="mt-1 text-3xl font-semibold tabular-nums text-mint-400">
+              <div className="border border-signal-green bg-signal-green/[0.07] px-4 py-3">
+                <div className="eyebrow">Lower total cost</div>
+                <div className="mt-1 text-3xl font-semibold tabular-nums text-signal-green">
                   {bc.saving_pct}%
                 </div>
-                <div className="subtle mt-1">
+                <div className="fine mt-1">
                   {inr(bc.saving)} over {window_.label}
                 </div>
               </div>
             </div>
-            <p className="subtle mt-4 text-xs">{bc.method}</p>
+            <p className="fine mt-4 text-xs">{bc.method}</p>
           </div>
         ) : null}
       </div>
@@ -318,19 +318,19 @@ function Policy({
 }) {
   return (
     <div
-      className={`rounded-xl border px-4 py-3 ${
-        best ? "border-mint-500/40 bg-mint-500/5" : worse ? "border-alert-500/25" : "border-white/10"
+      className={`border px-4 py-3 ${
+        best ? "border-signal-green bg-signal-green/[0.04]" : worse ? "border-signal-red" : "border-line"
       }`}
     >
-      <div className="label">{label}</div>
+      <div className="eyebrow">{label}</div>
       <div
         className={`mt-1 text-2xl font-semibold tabular-nums ${
-          best ? "text-mint-400" : "text-slate-300"
+          best ? "text-signal-green" : "text-ink-soft"
         }`}
       >
         {inr(s.total_cost)}
       </div>
-      <dl className="mt-2 space-y-1 text-xs text-slate-400">
+      <dl className="mt-2 space-y-1 text-xs text-ink-mute">
         <div className="flex justify-between">
           <dt>lost margin</dt>
           <dd className="font-mono">{inr(s.shortage_cost)}</dd>
@@ -358,11 +358,11 @@ function Mini({
   tone?: "mint" | "rose";
 }) {
   const cls =
-    tone === "mint" ? "text-mint-400" : tone === "rose" ? "text-alert-400" : "text-white";
+    tone === "mint" ? "text-signal-green" : tone === "rose" ? "text-signal-red" : "text-ink";
   return (
-    <div className="rounded-xl border border-white/10 bg-ink-900/40 px-3 py-2">
-      <div className="label">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${cls}`}>{value}</div>
+    <div className="border-t border-line pt-2">
+      <div className="eyebrow">{label}</div>
+      <div className={`figure mt-1 text-[19px] font-medium leading-none ${cls}`}>{value}</div>
     </div>
   );
 }

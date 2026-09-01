@@ -11,12 +11,12 @@ import { Orders } from "./screens/Orders";
 import { Settings } from "./screens/Settings";
 
 const NAV = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/orders", label: "Orders & Risk" },
+  { to: "/", label: "Decisions", end: true },
+  { to: "/orders", label: "Order" },
   { to: "/forecast", label: "Forecast" },
   { to: "/explain", label: "Why" },
-  { to: "/live", label: "Live Ops" },
-  { to: "/ops", label: "Ops" },
+  { to: "/live", label: "Replay" },
+  { to: "/ops", label: "Evidence" },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -26,63 +26,54 @@ export default function App() {
     queryFn: () => api.health(),
     refetchInterval: 60_000,
   });
-
   const meta = health.data?.meta;
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-ink-900/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-5 py-3">
-          <div className="flex items-center gap-2.5">
-            <Logo />
-            <div>
-              <div className="text-[15px] font-semibold leading-tight text-white">
-                PharmaPulse
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                Forecast to purchase order
-              </div>
+      <header className="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-sm">
+        <div className="mx-auto max-w-[1180px] px-6">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-3">
+            <div className="flex items-baseline gap-2.5">
+              <Mark />
+              <span className="display text-[21px] leading-none">PharmaPulse</span>
+              <span className="hidden font-mono text-[10px] uppercase tracking-micro text-ink-faint sm:inline">
+                forecast → purchase order
+              </span>
+            </div>
+
+            <div className="ml-auto flex items-center gap-3">
+              {meta ? (
+                <StaleBadge
+                  stale={meta.stale}
+                  degraded={meta.degraded}
+                  generatedAt={meta.generated_at}
+                />
+              ) : null}
+              <span
+                className="hidden font-mono text-[10px] text-ink-faint lg:inline"
+                title="the model version behind every number on screen"
+              >
+                {meta?.model_version ?? "…"}
+              </span>
             </div>
           </div>
 
-          <nav className="flex flex-wrap items-center gap-1">
+          <nav className="-mx-3 flex flex-wrap items-center">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-white/10 text-white"
-                      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                  }`
-                }
+                className={({ isActive }) => `tab ${isActive ? "tab-active" : ""}`}
               >
                 {n.label}
               </NavLink>
             ))}
           </nav>
-
-          <div className="ml-auto flex items-center gap-3">
-            {meta ? (
-              <StaleBadge
-                stale={meta.stale}
-                degraded={meta.degraded}
-                generatedAt={meta.generated_at}
-              />
-            ) : null}
-            <span
-              className="hidden font-mono text-[10px] text-slate-500 sm:inline"
-              title="the model version that produced every number on screen"
-            >
-              {meta?.model_version ?? "…"}
-            </span>
-          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-5 py-6">
+      <main className="mx-auto max-w-[1180px] px-6 py-8">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
@@ -95,27 +86,33 @@ export default function App() {
         </Routes>
       </main>
 
-      <footer className="mx-auto max-w-7xl px-5 pb-10 pt-2 text-[11px] leading-relaxed text-slate-500">
-        Forecasts are of <strong className="text-slate-400">sales</strong>, not demand: a
-        stockout records zero sales, so the observations are right-censored, worst on
-        exactly the products that matter most. Stated as a limitation rather than hidden.
-        Stock levels, costs and lead times are your settings, never model inputs.
+      <footer className="mx-auto max-w-[1180px] px-6 pb-12">
+        <div className="border-t border-line pt-4">
+          <p className="fine max-w-3xl">
+            <span className="font-medium text-ink-soft">A stated limitation.</span> These are
+            forecasts of <em>sales</em>, not demand. A stockout records zero sales, so the
+            observations are right-censored — worst on exactly the products that matter most.
+            Stock levels, costs and lead times are your settings; they enter at the decision
+            and never train a model.
+          </p>
+        </div>
       </footer>
     </div>
   );
 }
 
-function Logo() {
+/** A pulse trace that resolves into a fan — the whole product in one mark. */
+function Mark() {
   return (
-    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden>
-      <rect width="32" height="32" rx="9" fill="#12a771" fillOpacity="0.18" />
-      <path
-        d="M5 20.5h4.2l2.3-7.4 3.1 12.2 3.4-17.6 2.7 12.8 1.9-4.4H27"
-        stroke="#22c98a"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden className="shrink-0">
+      <path d="M1 17h4l2.4-8 3 13.5L13.8 3l2.6 12" stroke="#14110D" strokeWidth="1.6"
+            strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.4 15 19 9.5 25 4" stroke="#A32E22" strokeWidth="1.6"
+            strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.4 15 19 13l6 1.5" stroke="#A32E22" strokeWidth="1.6" strokeOpacity=".45"
+            strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.4 15 19 18l6 5" stroke="#A32E22" strokeWidth="1.6" strokeOpacity=".22"
+            strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

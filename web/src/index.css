@@ -2,84 +2,178 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PharmaPulse — an instrument, not a dashboard.
+ *
+ * The rules of this system:
+ *   1. Hairlines, never card borders or shadows. Structure comes from rules
+ *      and whitespace, the way a well-set report does.
+ *   2. Every figure is tabular mono. Numbers are the product; they line up.
+ *   3. One accent per meaning. Red is money leaving, blue is capital stuck,
+ *      green is fine. Nothing is decorative.
+ *   4. Warm paper and warm near-black. The warmth is what stops it reading as
+ *      a generic dark SaaS dashboard.
+ */
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply bg-ink-900 text-slate-200 font-sans antialiased;
+  @apply bg-paper text-ink font-sans;
+  font-feature-settings: "cv05" 1, "ss01" 1;
+}
+
+/* The measured-paper texture: a very faint ruled grid, like graph paper.
+   Almost invisible, but it stops the background reading as flat white. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
   background-image:
-    radial-gradient(900px 500px at 12% -8%, rgba(34, 201, 138, 0.10), transparent 60%),
-    radial-gradient(760px 460px at 88% 0%, rgba(96, 165, 250, 0.09), transparent 55%);
-  background-attachment: fixed;
+    linear-gradient(to right, rgba(20, 17, 13, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 17, 13, 0.028) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 120% 80% at 50% 0%, #000 30%, transparent 78%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 @layer components {
-  .card {
-    @apply rounded-2xl border border-white/10 bg-ink-800/70 backdrop-blur
-           shadow-lg shadow-black/20;
+  /* --- structure --------------------------------------------------- */
+
+  .rule {
+    @apply border-t border-line;
   }
-  .card-pad {
-    @apply p-5;
+  .rule-strong {
+    @apply border-t-2 border-ink;
   }
-  .label {
-    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400;
+
+  /* A "panel" is defined by its rules and its ground, not by a box. */
+  .panel {
+    @apply border-t-2 border-ink bg-paper-raised;
   }
-  .metric {
-    @apply text-3xl font-semibold tabular-nums text-white;
+  .panel-quiet {
+    @apply border-t border-line bg-paper-raised;
   }
-  .subtle {
-    @apply text-sm text-slate-400;
+  .pad {
+    @apply px-5 py-4;
   }
+
+  /* --- type --------------------------------------------------------- */
+
+  .eyebrow {
+    @apply font-mono text-[10px] font-medium uppercase tracking-micro text-ink-mute;
+  }
+  .display {
+    @apply font-display font-normal leading-[1.05] tracking-[-0.01em];
+  }
+  .figure {
+    @apply font-mono tabular-nums;
+  }
+  .lede {
+    @apply text-[15px] leading-relaxed text-ink-mute;
+  }
+  .fine {
+    @apply text-[12px] leading-relaxed text-ink-mute;
+  }
+
+  /* --- controls ----------------------------------------------------- */
+
   .btn {
-    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
-           transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 border border-ink px-4 py-2
+           font-mono text-[11px] font-medium uppercase tracking-micro
+           transition-colors disabled:cursor-not-allowed disabled:opacity-35;
   }
   .btn-primary {
-    @apply btn bg-mint-500 text-ink-900 hover:bg-mint-400;
+    @apply btn bg-ink text-paper hover:bg-ink-soft;
   }
   .btn-ghost {
-    @apply btn border border-white/10 text-slate-300 hover:bg-white/5;
+    @apply btn border-ink-pale text-ink-soft hover:border-ink hover:bg-wash-strong;
   }
+
+  /* Tabs read as a printed index, not as pills. */
+  .tab {
+    @apply relative px-3 py-2 font-mono text-[11px] uppercase tracking-micro
+           text-ink-mute transition-colors hover:text-ink;
+  }
+  .tab-active {
+    @apply text-ink;
+  }
+  .tab-active::after {
+    content: "";
+    @apply absolute inset-x-2 -bottom-px h-[2px] bg-ink;
+  }
+
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
-           text-[11px] font-semibold tracking-wide;
+    @apply inline-flex items-center gap-1.5 border px-2 py-[3px]
+           font-mono text-[10px] font-medium uppercase tracking-micro;
+  }
+
+  .cell {
+    @apply px-4 py-2.5 align-middle;
   }
 }
 
-/* The service-level slider. Styled explicitly because it is the demo. */
+/* --- the service-level slider: the demo control ---------------------- */
+
 input[type="range"].pp-slider {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  border-radius: 999px;
+  height: 2px;
+  background: rgba(20, 17, 13, 0.18);
   outline: none;
+  cursor: ew-resize;
 }
 input[type="range"].pp-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 3px solid #22c98a;
-  cursor: grab;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  width: 2px;
+  height: 30px;
+  border-radius: 0;
+  background: #14110d;
+  cursor: ew-resize;
+  box-shadow: 0 0 0 5px rgba(247, 244, 238, 0.95);
 }
 input[type="range"].pp-slider:active::-webkit-slider-thumb {
-  cursor: grabbing;
-  transform: scale(1.06);
+  background: #a32e22;
 }
 input[type="range"].pp-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 3px solid #22c98a;
-  cursor: grab;
+  width: 2px;
+  height: 30px;
+  border: none;
+  border-radius: 0;
+  background: #14110d;
+  cursor: ew-resize;
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+/* --- scrollbars ------------------------------------------------------ */
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(20, 17, 13, 0.16);
+  border: 3px solid #f7f4ee;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 17, 13, 0.3);
+}
+
+::selection {
+  background: #14110d;
+  color: #f7f4ee;
+}

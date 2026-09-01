@@ -130,8 +130,8 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
             <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="2" />
           </pattern>
           <linearGradient id="histFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+            <stop offset="0%" stopColor="#1C4E7A" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#1C4E7A" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -142,10 +142,10 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
               x2={W - pad.right}
               y1={y(t)}
               y2={y(t)}
-              stroke="rgba(255,255,255,.07)"
+              stroke="rgba(20,17,13,.08)"
               strokeWidth="1"
             />
-            <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="fill-slate-500" fontSize="11">
+            <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="fill-ink-faint" fontSize="11">
               {units(t)}
             </text>
           </g>
@@ -153,7 +153,7 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
 
         {/* forecast bands, widest first so narrower ones sit on top */}
         {BANDS.map(([loKey, hiKey, opacity]) => (
-          <path key={loKey} d={bandPath(loKey, hiKey)} fill="#22c98a" opacity={opacity} />
+          <path key={loKey} d={bandPath(loKey, hiKey)} fill="#14110D" opacity={opacity} />
         ))}
 
         {/* history */}
@@ -161,7 +161,7 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
           d={`${historyPath} L ${x(joinIndex)} ${H - pad.bottom} L ${x(0)} ${H - pad.bottom} Z`}
           fill="url(#histFill)"
         />
-        <path d={historyPath} fill="none" stroke="#93c5fd" strokeWidth="2" />
+        <path d={historyPath} fill="none" stroke="#1C4E7A" strokeWidth="2" />
 
         {/* partial buckets are shown, never hidden */}
         {history.map((h, i) =>
@@ -178,7 +178,7 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
           ) : null,
         )}
 
-        <path d={medianPath} fill="none" stroke="#22c98a" strokeWidth="2.5" />
+        <path d={medianPath} fill="none" stroke="#14110D" strokeWidth="2.5" />
 
         {/* the cutoff: everything right of this line is a forecast */}
         <line
@@ -186,11 +186,11 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
           x2={x(joinIndex)}
           y1={pad.top}
           y2={H - pad.bottom}
-          stroke="rgba(255,255,255,.35)"
+          stroke="rgba(20,17,13,.40)"
           strokeWidth="1"
           strokeDasharray="4 4"
         />
-        <text x={x(joinIndex) + 6} y={pad.top + 11} fontSize="10" className="fill-slate-400">
+        <text x={x(joinIndex) + 6} y={pad.top + 11} fontSize="10" className="fill-ink-mute">
           forecast
         </text>
 
@@ -200,7 +200,7 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
             x2={x(hover)}
             y1={pad.top}
             y2={H - pad.bottom}
-            stroke="rgba(255,255,255,.3)"
+            stroke="rgba(20,17,13,.35)"
             strokeWidth="1"
           />
         ) : null}
@@ -213,7 +213,7 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
               y={H - 12}
               textAnchor="middle"
               fontSize="10"
-              className="fill-slate-500"
+              className="fill-ink-faint"
             >
               {shortDate(ds)}
             </text>
@@ -223,18 +223,18 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
 
       {hover !== null && (hoverPoint || hoverHistory) ? (
         <div
-          className="pointer-events-none absolute top-2 rounded-xl border border-white/10 bg-ink-900/95 px-3 py-2 text-xs shadow-xl"
+          className="pointer-events-none absolute top-2 border border-line bg-paper-raised px-3 py-2 text-xs shadow-xl"
           style={{
             left: `calc(${(x(hover) / W) * 100}% + 8px)`,
             transform: x(hover) / W > 0.65 ? "translateX(-108%)" : undefined,
           }}
         >
-          <div className="font-semibold text-white">{shortDate(xs[hover])}</div>
+          <div className="font-semibold text-ink">{shortDate(xs[hover])}</div>
           {hoverHistory ? (
-            <div className="mt-1 text-slate-300">
-              actual <span className="font-mono text-white">{units(hoverHistory.y)}</span>
+            <div className="mt-1 text-ink-soft">
+              actual <span className="font-mono text-ink">{units(hoverHistory.y)}</span>
               {hoverHistory.completeness < 1 ? (
-                <span className="ml-1 text-warn-400">(partial)</span>
+                <span className="ml-1 text-signal-amber">(partial)</span>
               ) : null}
             </div>
           ) : null}
@@ -243,12 +243,12 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
               <tbody>
                 {["0.95", "0.75", "0.50", "0.25", "0.05"].map((q) => (
                   <tr key={q}>
-                    <td className="pr-3 text-slate-400">
+                    <td className="pr-3 text-ink-mute">
                       {q === "0.50" ? "median" : `p${Math.round(Number(q) * 100)}`}
                     </td>
                     <td
                       className={`text-right font-mono ${
-                        q === "0.50" ? "text-mint-400" : "text-slate-200"
+                        q === "0.50" ? "text-signal-green" : "text-ink"
                       }`}
                     >
                       {units(hoverPoint.q[q])}
@@ -261,10 +261,10 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
-        <Legend color="#93c5fd" label="actual" />
-        <Legend color="#22c98a" label="median forecast" />
-        <Legend color="#22c98a" label="50% / 80% / 90% bands" faded />
+      <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-ink-mute">
+        <Legend color="#1C4E7A" label="actual" />
+        <Legend color="#14110D" label="median forecast" />
+        <Legend color="#14110D" label="50% / 80% / 90% bands" faded />
       </div>
     </div>
   );

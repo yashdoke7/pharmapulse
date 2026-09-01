@@ -36,10 +36,10 @@ export function Forecast() {
   return (
     <div className="space-y-5">
       <SectionTitle
-        title="Forecast Center"
+        title="The forecast"
         subtitle={question}
         right={
-          <div className="flex items-center gap-1 rounded-xl border border-white/10 p-1">
+          <div className="flex items-center gap-1 border border-line p-1">
             {GRAINS.map((g) => (
               <button
                 key={g.value}
@@ -47,10 +47,10 @@ export function Forecast() {
                   setGrain(g.value);
                   setHorizon(g.value === "day" ? 21 : g.value === "week" ? 8 : 6);
                 }}
-                className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                className={`px-3 py-1.5 text-sm transition-colors ${
                   grain === g.value
-                    ? "bg-white/10 text-white"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-wash-strong text-ink"
+                    : "text-ink-mute hover:text-ink"
                 }`}
               >
                 {g.label}
@@ -65,10 +65,10 @@ export function Forecast() {
           <button
             key={s.series_id}
             onClick={() => setSelected(s.series_id)}
-            className={`rounded-xl border px-3 py-2 text-sm transition-colors ${
+            className={`border px-3 py-2 text-sm transition-colors ${
               s.series_id === selected
-                ? "border-mint-500/40 bg-mint-500/10 text-white"
-                : "border-white/10 text-slate-300 hover:bg-white/5"
+                ? "border-signal-green bg-signal-green/[0.07] text-ink"
+                : "border-line text-ink-soft hover:bg-wash"
             }`}
           >
             {s.short_name}
@@ -82,18 +82,18 @@ export function Forecast() {
         <Loading label="Loading forecast" />
       ) : (
         <>
-          <div className="card card-pad">
+          <div className="panel pad">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-white">{meta?.name}</h3>
+                  <h3 className="text-lg font-semibold text-ink">{meta?.name}</h3>
                   {meta ? <DemandClassChip value={meta.demand_class} /> : null}
                 </div>
-                <p className="subtle mt-1">
+                <p className="fine mt-1">
                   Last observation {data.cutoff}. {data.calibrated ? "Intervals are conformally calibrated." : ""}
                 </p>
               </div>
-              <label className="text-sm text-slate-400">
+              <label className="text-sm text-ink-mute">
                 Horizon
                 <input
                   type="range"
@@ -103,10 +103,10 @@ export function Forecast() {
                   value={horizon}
                   onChange={(e) => setHorizon(Number(e.target.value))}
                   style={{
-                    background: `linear-gradient(90deg,#22c98a ${(horizon / (grain === "day" ? 28 : grain === "week" ? 12 : 6)) * 100}%, rgba(255,255,255,.12) 0%)`,
+                    background: `linear-gradient(90deg,#14110D ${(horizon / (grain === "day" ? 28 : grain === "week" ? 12 : 6)) * 100}%, rgba(20,17,13,.14) 0%)`,
                   }}
                 />
-                <span className="ml-2 font-mono text-white">{horizon}</span>
+                <span className="ml-2 font-mono text-ink">{horizon}</span>
               </label>
             </div>
 
@@ -114,19 +114,19 @@ export function Forecast() {
           </div>
 
           <div className="grid gap-5 lg:grid-cols-3">
-            <div className="card card-pad lg:col-span-2">
-              <div className="label">The members behind the median</div>
-              <p className="subtle mt-1">
+            <div className="panel pad lg:col-span-2">
+              <div className="eyebrow">The members behind the median</div>
+              <p className="fine mt-1">
                 Each represents a different assumption about how demand is generated. We
                 combine them rather than picking one — measured, not asserted.
               </p>
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-left">
-                      <th className="py-2 font-medium text-slate-400">Model</th>
+                    <tr className="border-b border-line text-left">
+                      <th className="py-2 font-medium text-ink-mute">Model</th>
                       {data.points.slice(0, 6).map((p) => (
-                        <th key={p.ds} className="py-2 text-right font-medium text-slate-400">
+                        <th key={p.ds} className="py-2 text-right font-medium text-ink-mute">
                           h{p.h}
                         </th>
                       ))}
@@ -134,21 +134,21 @@ export function Forecast() {
                   </thead>
                   <tbody>
                     {data.members.map((m) => (
-                      <tr key={m.model} className="border-b border-white/5 last:border-0">
-                        <td className="py-2 text-slate-300">{m.model}</td>
+                      <tr key={m.model} className="border-b border-line-soft last:border-0">
+                        <td className="py-2 text-ink-soft">{m.model}</td>
                         {m.p50.slice(0, 6).map((v, i) => (
-                          <td key={i} className="py-2 text-right font-mono text-slate-400">
+                          <td key={i} className="py-2 text-right font-mono text-ink-mute">
                             {units(v)}
                           </td>
                         ))}
                       </tr>
                     ))}
-                    <tr className="border-t border-white/10">
-                      <td className="py-2 font-semibold text-mint-400">Ensemble (median)</td>
+                    <tr className="border-t border-line">
+                      <td className="py-2 font-semibold text-signal-green">Ensemble (median)</td>
                       {data.points.slice(0, 6).map((p) => (
                         <td
                           key={p.ds}
-                          className="py-2 text-right font-mono font-semibold text-mint-400"
+                          className="py-2 text-right font-mono font-semibold text-signal-green"
                         >
                           {units(p.q["0.50"])}
                         </td>
@@ -159,8 +159,8 @@ export function Forecast() {
               </div>
             </div>
 
-            <div className="card card-pad">
-              <div className="label">Series profile</div>
+            <div className="panel pad">
+              <div className="eyebrow">Series profile</div>
               {meta ? (
                 <dl className="mt-3 space-y-2.5 text-sm">
                   <Row label="Demand class" value={meta.demand_class} />
@@ -171,7 +171,7 @@ export function Forecast() {
                   <Row label="Peak month" value={meta.peak_month} />
                 </dl>
               ) : null}
-              <p className="subtle mt-4 text-xs">
+              <p className="fine mt-4 text-xs">
                 The demand class is computed nightly from ADI and CV², not configured.
                 When a product's behaviour changes, its model family changes with it.
               </p>
@@ -186,8 +186,8 @@ export function Forecast() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className="font-mono text-slate-200">{value}</dd>
+      <dt className="text-ink-mute">{label}</dt>
+      <dd className="font-mono text-ink">{value}</dd>
     </div>
   );
 }

@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Position, RiskItem } from "../api/types";
 import {
+  Bar,
   ErrorCard,
   Loading,
-  SectionTitle,
-  Stat,
+  PanelHead,
+  Readout,
   StatusChip,
   inr,
   units,
@@ -16,8 +17,8 @@ import {
  * The home screen opens on EXCEPTIONS, never on a chart.
  *
  * A dashboard that opens on a time series makes the user do the work of finding
- * the problem. A screen that opens on "four things need your decision today,
- * worth 735 rupees" has already done it.
+ * the problem. A screen that opens on "three products need your decision today,
+ * worth 677 rupees" has already done it.
  */
 export function Dashboard() {
   const nav = useNavigate();
@@ -25,117 +26,108 @@ export function Dashboard() {
   const positions = useQuery({ queryKey: ["positions"], queryFn: () => api.positions() });
 
   if (risk.isError) return <ErrorCard error={risk.error} />;
-  if (risk.isLoading || positions.isLoading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => (
-          <Loading key={i} />
-        ))}
-      </div>
-    );
-  }
+  if (risk.isLoading || positions.isLoading) return <Loading label="Reading the shelf" />;
 
   const items = risk.data?.data.items ?? [];
   const pos = positions.data?.data.positions ?? [];
-  const currency = risk.data?.data.currency ?? "INR";
+  const exposure = risk.data?.data.total_exposure ?? 0;
 
   const needsDecision = pos.filter((p) => p.status !== "ok").length;
   const orderNow = pos.filter((p) => p.status === "order_now");
   const overstocked = pos.filter((p) => p.status === "overstocked");
-  const totalOrder = orderNow.reduce((s, p) => s + p.order_quantity, 0);
+  const totalUnits = orderNow.reduce((s, p) => s + p.order_quantity, 0);
+  const maxExposure = Math.max(...items.map((i) => i.exposure), 1);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
+      {/* The statement. Not a KPI row - a sentence a buyer can act on. */}
       <section>
-        <div className="mb-5">
-          <h1 className="text-2xl font-semibold text-white sm:text-3xl">
-            {needsDecision === 0 ? (
-              "Nothing needs a decision today."
-            ) : (
-              <>
-                <span className="text-mint-400">{needsDecision}</span>{" "}
-                {needsDecision === 1 ? "product needs" : "products need"} your decision
-                today, worth{" "}
-                <span className="text-mint-400">
-                  {inr(risk.data?.data.total_exposure ?? 0)}
-                </span>
-                .
-              </>
-            )}
-          </h1>
-          <p className="subtle mt-1">
-            Ranked by money at risk, not by probability — a 30% chance on your
-            biggest seller matters more than a 90% chance on something that sells
-            twice a month.
-          </p>
-        </div>
+        <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:items-end">
+          <div>
+            <div className="eyebrow">Today · {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</div>
+            <h1 className="display mt-3 text-[42px] sm:text-[52px]">
+              {needsDecision === 0 ? (
+                <>Nothing needs a decision today.</>
+              ) : (
+                <>
+                  {word(needsDecision)} product{needsDecision === 1 ? "" : "s"} need
+                  {needsDecision === 1 ? "s" : ""} a decision,
+                  <br className="hidden sm:block" />{" "}
+                  <span className="text-signal-red">{inr(exposure)}</span> at risk.
+                </>
+              )}
+            </h1>
+            <p className="lede mt-4 max-w-xl">
+              Ranked by money, not by probability. A 30% chance on your biggest seller
+              matters more than a 90% chance on something that sells twice a month.
+            </p>
+          </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat
-            label="Exposure at risk"
-            value={inr(risk.data?.data.total_exposure ?? 0)}
-            hint={`${items.length} open exceptions · ${currency}`}
-            tone={items.length ? "bad" : "good"}
-          />
-          <Stat
-            label="Order now"
-            value={orderNow.length}
-            hint={`${units(totalOrder)} units across ${orderNow.length} products`}
-            tone={orderNow.length ? "warn" : "good"}
-          />
-          <Stat
-            label="Overstocked"
-            value={overstocked.length}
-            hint={
-              overstocked.length
-                ? `${overstocked[0].name} at ${Math.round(overstocked[0].days_of_cover)} days cover`
-                : "no capital stuck"
-            }
-          />
-          <Stat
-            label="Products healthy"
-            value={`${pos.length - needsDecision}/${pos.length}`}
-            hint="within cover and below the reorder point"
-            tone="good"
-          />
+          <div className="grid grid-cols-3 gap-5">
+            <Readout
+              label="Order now"
+              value={orderNow.length}
+              hint={`${units(totalUnits)} units`}
+              tone={orderNow.length ? "red" : "green"}
+            />
+            <Readout
+              label="Capital stuck"
+              value={overstocked.length}
+              hint={overstocked.length ? `${Math.round(overstocked[0].days_of_cover)}d cover` : "none"}
+              tone={overstocked.length ? "blue" : "green"}
+            />
+            <Readout
+              label="Healthy"
+              value={`${pos.length - needsDecision}/${pos.length}`}
+              hint="inside cover"
+              tone="green"
+            />
+          </div>
         </div>
       </section>
 
+      {/* Exceptions, as an editorial list rather than a grid of cards. */}
       <section>
-        <SectionTitle
-          title="What needs a decision"
-          subtitle="Every card is one click from the order that fixes it."
-        />
-        <div className="grid gap-3 lg:grid-cols-2">
-          {items.length === 0 ? (
-            <div className="card card-pad text-slate-400">
-              No exceptions. Every product is inside its cover window.
-            </div>
-          ) : (
-            items.map((item, i) => (
-              <ExceptionCard
+        <div className="mb-1 flex items-baseline justify-between border-b border-line pb-2">
+          <h2 className="eyebrow">What needs a decision</h2>
+          <span className="fine">every row is one click from the order that fixes it</span>
+        </div>
+
+        {items.length === 0 ? (
+          <p className="lede py-8">
+            No exceptions. Every product is inside its cover window.
+          </p>
+        ) : (
+          <ul>
+            {items.map((item, i) => (
+              <ExceptionRow
                 key={`${item.series_id}-${item.type}-${i}`}
                 item={item}
+                index={i + 1}
+                maxExposure={maxExposure}
                 onOpen={() => nav(`/orders?series=${item.series_id}`)}
               />
-            ))
-          )}
-        </div>
+            ))}
+          </ul>
+        )}
       </section>
 
+      {/* The full shelf. */}
       <section>
-        <SectionTitle
-          title="Shelf position"
-          subtitle="Days of cover against your lead time, per product."
-        />
-        <div className="card overflow-hidden">
+        <div className="panel">
+          <PanelHead right={<span className="fine">cover against an 11-day protection interval</span>}>
+            Shelf position
+          </PanelHead>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left">
-                  {["Product", "On hand", "Cover", "Reorder at", "Runs out", "Suggested", "Status"].map(
-                    (h) => (
-                      <th key={h} className="px-4 py-3 font-medium text-slate-400">
+                <tr className="border-b border-line text-left">
+                  {["Product", "On hand", "Cover", "Reorder at", "Runs out", "Suggest", ""].map(
+                    (h, i) => (
+                      <th
+                        key={h + i}
+                        className={`cell eyebrow font-normal ${i > 0 && i < 6 ? "text-right" : ""}`}
+                      >
                         {h}
                       </th>
                     ),
@@ -144,7 +136,11 @@ export function Dashboard() {
               </thead>
               <tbody>
                 {pos.map((p) => (
-                  <PositionRow key={p.series_id} p={p} onOpen={() => nav(`/orders?series=${p.series_id}`)} />
+                  <PositionRow
+                    key={p.series_id}
+                    p={p}
+                    onOpen={() => nav(`/orders?series=${p.series_id}`)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -155,93 +151,105 @@ export function Dashboard() {
   );
 }
 
-function ExceptionCard({ item, onOpen }: { item: RiskItem; onOpen: () => void }) {
+const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"];
+const word = (n: number) => WORDS[n] ?? String(n);
+
+function ExceptionRow({
+  item,
+  index,
+  maxExposure,
+  onOpen,
+}: {
+  item: RiskItem;
+  index: number;
+  maxExposure: number;
+  onOpen: () => void;
+}) {
   const tone =
-    item.type === "overstock"
-      ? "border-sky-500/25"
-      : item.severity === "high"
-        ? "border-alert-500/35"
-        : "border-warn-500/25";
+    item.type === "overstock" ? "blue" : item.severity === "high" ? "red" : "amber";
+  const accent = {
+    red: "text-signal-red",
+    amber: "text-signal-amber",
+    blue: "text-signal-blue",
+  }[tone];
 
   return (
-    <button
-      onClick={onOpen}
-      className={`card card-pad w-full border text-left transition-colors hover:bg-white/[0.04] ${tone}`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] text-slate-500">{item.series_id}</span>
-            <span
-              className={`chip ${
-                item.type === "overstock"
-                  ? "bg-sky-500/15 text-sky-300"
-                  : item.type === "anomaly"
-                    ? "bg-violet-500/15 text-violet-300"
-                    : "bg-alert-500/15 text-alert-400"
-              }`}
-            >
-              {item.type}
-            </span>
-          </div>
-          <h3 className="mt-2 font-semibold leading-snug text-white">{item.headline}</h3>
-          <p className="subtle mt-1">{item.detail}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="text-xl font-semibold tabular-nums text-white">
-            {inr(item.exposure)}
-          </div>
-          <div className="subtle">at risk</div>
-        </div>
-      </div>
+    <li>
+      <button
+        onClick={onOpen}
+        className="group w-full border-b border-line py-5 text-left transition-colors hover:bg-wash"
+      >
+        <div className="grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start">
+          <span className="figure pt-1 text-[11px] text-ink-faint">
+            {String(index).padStart(2, "0")}
+          </span>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
-        <span className="rounded-lg bg-white/5 px-2 py-1 text-slate-300">
-          {Math.round(item.probability * 100)}% likely
-        </span>
-        {item.recommended_quantity > 0 ? (
-          <span className="rounded-lg bg-mint-500/12 px-2 py-1 font-medium text-mint-400">
-            {item.recommended_action.replace(/_/g, " ")} · {item.recommended_quantity} units
-          </span>
-        ) : (
-          <span className="rounded-lg bg-white/5 px-2 py-1 text-slate-300">
-            {item.recommended_action.replace(/_/g, " ")}
-          </span>
-        )}
-        <span className="ml-auto text-slate-500">Open →</span>
-      </div>
-    </button>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="figure text-[11px] text-ink-faint">{item.series_id}</span>
+              <span className={`chip border-current ${accent}`}>{item.type}</span>
+              <span className="fine">{Math.round(item.probability * 100)}% likely</span>
+            </div>
+            <h3 className="display mt-1.5 text-[21px] leading-snug">{item.headline}</h3>
+            <p className="fine mt-1 max-w-2xl">{item.detail}</p>
+            {item.recommended_quantity > 0 ? (
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-micro text-ink-soft">
+                {item.recommended_action.replace(/_/g, " ")} · {item.recommended_quantity} units
+                <span className="ml-2 text-ink-faint transition-transform group-hover:translate-x-0.5">
+                  →
+                </span>
+              </p>
+            ) : (
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-micro text-ink-mute">
+                {item.recommended_action.replace(/_/g, " ")}
+                <span className="ml-2 text-ink-faint">→</span>
+              </p>
+            )}
+          </div>
+
+          <div className="sm:w-36 sm:text-right">
+            <div className={`figure text-[24px] font-medium leading-none ${accent}`}>
+              {inr(item.exposure)}
+            </div>
+            <div className="eyebrow mt-1">at risk</div>
+            <div className="mt-2">
+              <Bar value={item.exposure} max={maxExposure} tone={tone} />
+            </div>
+          </div>
+        </div>
+      </button>
+    </li>
   );
 }
 
 function PositionRow({ p, onOpen }: { p: Position; onOpen: () => void }) {
   const coverTone =
     p.status === "order_now"
-      ? "text-alert-400"
+      ? "text-signal-red"
       : p.status === "overstocked"
-        ? "text-sky-300"
-        : "text-slate-200";
+        ? "text-signal-blue"
+        : "text-ink-soft";
   return (
     <tr
       onClick={onOpen}
-      className="cursor-pointer border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.03]"
+      className="cursor-pointer border-b border-line-soft transition-colors last:border-0 hover:bg-wash"
     >
-      <td className="px-4 py-3">
-        <div className="font-medium text-white">{p.name}</div>
-        <div className="font-mono text-[11px] text-slate-500">{p.series_id}</div>
+      <td className="cell">
+        <div className="font-medium">{p.name}</div>
+        <div className="figure text-[10px] text-ink-faint">{p.series_id}</div>
       </td>
-      <td className="px-4 py-3 tabular-nums text-slate-300">{units(p.stock_on_hand)}</td>
-      <td className={`px-4 py-3 tabular-nums font-medium ${coverTone}`}>
-        {p.days_of_cover > 900 ? "—" : `${p.days_of_cover.toFixed(1)} d`}
+      <td className="cell figure text-right text-ink-soft">{units(p.stock_on_hand)}</td>
+      <td className={`cell figure text-right font-medium ${coverTone}`}>
+        {p.days_of_cover > 900 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
       </td>
-      <td className="px-4 py-3 tabular-nums text-slate-400">{units(p.reorder_point)}</td>
-      <td className="px-4 py-3 text-slate-400">
-        {p.projected_stockout_date ?? <span className="text-slate-600">—</span>}
+      <td className="cell figure text-right text-ink-mute">{units(p.reorder_point)}</td>
+      <td className="cell figure text-right text-ink-mute">
+        {p.projected_stockout_date?.slice(5) ?? <span className="text-ink-pale">—</span>}
       </td>
-      <td className="px-4 py-3 tabular-nums font-medium text-mint-400">
-        {p.order_quantity > 0 ? p.order_quantity : <span className="text-slate-600">—</span>}
+      <td className="cell figure text-right font-medium">
+        {p.order_quantity > 0 ? p.order_quantity : <span className="text-ink-pale">—</span>}
       </td>
-      <td className="px-4 py-3">
+      <td className="cell text-right">
         <StatusChip status={p.status} />
       </td>
     </tr>

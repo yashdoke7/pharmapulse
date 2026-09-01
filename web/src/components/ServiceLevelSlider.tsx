@@ -77,22 +77,22 @@ export function ServiceLevelSlider({
   const delta = current.expected_cost - cheapest.expected_cost;
 
   return (
-    <div className="card card-pad">
+    <div className="panel pad">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold text-white">
+          <h3 className="text-base font-semibold text-ink">
             How often are you willing to run out?
           </h3>
-          <p className="subtle mt-1 max-w-md">
+          <p className="fine mt-1 max-w-md">
             This moves the critical fractile <span className="font-mono">q*</span>, which
             moves the order quantity. Nothing is fetched while you drag - the whole cost
             curve arrived with the recommendation.
           </p>
         </div>
         <div className="text-right">
-          <div className="label">Order</div>
-          <div className="metric text-mint-400">{current.order_quantity}</div>
-          <div className="subtle">
+          <div className="eyebrow">Order</div>
+          <div className="figure text-[28px] font-medium leading-none text-signal-green">{current.order_quantity}</div>
+          <div className="fine">
             {Math.round(current.order_quantity / (rec.order_packs ? rec.order_quantity / rec.order_packs : 10))}{" "}
             packs
           </div>
@@ -109,12 +109,12 @@ export function ServiceLevelSlider({
           value={level}
           onChange={(e) => setLevel(Number(e.target.value))}
           style={{
-            background: `linear-gradient(90deg, #22c98a ${((level - 0.05) / 0.94) * 100}%, rgba(255,255,255,.12) ${
+            background: `linear-gradient(90deg,#14110D ${((level - 0.05) / 0.94) * 100}%, rgba(20,17,13,.14) ${
               ((level - 0.05) / 0.94) * 100
             }%)`,
           }}
         />
-        <div className="mt-2 flex justify-between text-[11px] text-slate-500">
+        <div className="mt-2 flex justify-between text-[11px] text-ink-faint">
           <span>run out often · cheap</span>
           <span>rarely run out · costly</span>
         </div>
@@ -132,24 +132,24 @@ export function ServiceLevelSlider({
       </div>
 
       <div className="mt-5">
-        <div className="label mb-1">Expected cost per order cycle, across service levels</div>
+        <div className="eyebrow mb-1">Expected cost per order cycle, across service levels</div>
         <svg viewBox={`0 0 ${chart.W} ${chart.H}`} className="w-full" style={{ height: 150 }}>
           <path
             d={`${chart.path} L ${chart.x(0.99)} ${chart.H - chart.pad.bottom} L ${chart.x(
               0.05,
             )} ${chart.H - chart.pad.bottom} Z`}
-            fill="#22c98a"
+            fill="#14110D"
             opacity="0.10"
           />
-          <path d={chart.path} fill="none" stroke="#22c98a" strokeWidth="2" />
+          <path d={chart.path} fill="none" stroke="#14110D" strokeWidth="2" />
 
           {/* the minimum-cost point: where the maths says to sit */}
           <circle
             cx={chart.x(cheapest.service_level)}
             cy={chart.y(cheapest.expected_cost)}
             r="4"
-            fill="#0b1020"
-            stroke="#fbbf24"
+            fill="#F7F4EE"
+            stroke="#8A6410"
             strokeWidth="2"
           />
           <text
@@ -157,7 +157,7 @@ export function ServiceLevelSlider({
             y={chart.y(cheapest.expected_cost) - 9}
             textAnchor="middle"
             fontSize="9"
-            className="fill-warn-400"
+            className="fill-signal-amber"
           >
             cheapest
           </text>
@@ -167,16 +167,16 @@ export function ServiceLevelSlider({
             x2={chart.x(level)}
             y1={chart.pad.top}
             y2={chart.H - chart.pad.bottom}
-            stroke="#ffffff"
-            strokeOpacity="0.5"
+            stroke="#14110D"
+            strokeOpacity="0.55"
             strokeWidth="1"
           />
           <circle
             cx={chart.x(level)}
             cy={chart.y(current.expected_cost)}
             r="5"
-            fill="#22c98a"
-            stroke="#0b1020"
+            fill="#14110D"
+            stroke="#F7F4EE"
             strokeWidth="2"
           />
 
@@ -187,7 +187,7 @@ export function ServiceLevelSlider({
               y={chart.H - 6}
               textAnchor="middle"
               fontSize="9"
-              className="fill-slate-500"
+              className="fill-ink-faint"
             >
               {pct(t)}
             </text>
@@ -195,7 +195,7 @@ export function ServiceLevelSlider({
         </svg>
       </div>
 
-      <div className="mt-4 grid gap-2 rounded-xl border border-white/10 bg-ink-900/40 p-3 text-xs sm:grid-cols-3">
+      <div className="mt-5 grid gap-4 border-t border-line pt-3 text-xs sm:grid-cols-3">
         <CostAt label="1 pack fewer" value={rec.expected_cost.minus_one_pack} base={rec.expected_cost.at_order} />
         <CostAt label="Recommended" value={rec.expected_cost.at_order} base={rec.expected_cost.at_order} highlight />
         <CostAt label="1 pack more" value={rec.expected_cost.plus_one_pack} base={rec.expected_cost.at_order} />
@@ -209,7 +209,7 @@ export function ServiceLevelSlider({
           >
             Accept {current.order_quantity} units
           </button>
-          <span className="subtle">
+          <span className="fine">
             q* from your costs is {pct(rec.q_star, 1)}; the target level is{" "}
             {units(rec.target_level)} units.
           </span>
@@ -230,19 +230,20 @@ function Mini({
 }) {
   const cls =
     tone === "mint"
-      ? "text-mint-400"
+      ? "text-signal-green"
       : tone === "rose"
-        ? "text-alert-400"
+        ? "text-signal-red"
         : tone === "amber"
-          ? "text-warn-400"
-          : "text-white";
+          ? "text-signal-amber"
+          : "text-ink";
   return (
-    <div className="rounded-xl border border-white/10 bg-ink-900/40 px-3 py-2">
-      <div className="label">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${cls}`}>{value}</div>
+    <div className="border-t border-line pt-2">
+      <div className="eyebrow">{label}</div>
+      <div className={`figure mt-1 text-[19px] font-medium leading-none ${cls}`}>{value}</div>
     </div>
   );
 }
+
 
 function CostAt({
   label,
@@ -257,12 +258,12 @@ function CostAt({
 }) {
   const diff = value - base;
   return (
-    <div className={highlight ? "text-mint-400" : "text-slate-300"}>
-      <div className="label">{label}</div>
+    <div className={highlight ? "text-signal-green" : "text-ink-soft"}>
+      <div className="eyebrow">{label}</div>
       <div className="mt-0.5 font-mono">
         {inr(value)}
         {!highlight && Math.abs(diff) > 0.5 ? (
-          <span className="ml-1 text-slate-500">(+{inr(diff)})</span>
+          <span className="ml-1 text-ink-faint">(+{inr(diff)})</span>
         ) : null}
       </div>
     </div>

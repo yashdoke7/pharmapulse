@@ -52,8 +52,8 @@ export function Orders() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="Orders & Risk"
-        subtitle="A demand distribution, your costs, and the quantity that minimises the total."
+        title="The order"
+        subtitle="A demand distribution, your costs, and the quantity that minimises the total cost of being wrong."
       />
 
       <div className="flex flex-wrap gap-2">
@@ -61,14 +61,14 @@ export function Orders() {
           <button
             key={s.series_id}
             onClick={() => setParams({ series: s.series_id })}
-            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+            className={`border px-3 py-2 text-left text-sm transition-colors ${
               s.series_id === selected
-                ? "border-mint-500/40 bg-mint-500/10 text-white"
-                : "border-white/10 text-slate-300 hover:bg-white/5"
+                ? "border-signal-green bg-signal-green/[0.07] text-ink"
+                : "border-line text-ink-soft hover:bg-wash"
             }`}
           >
             <div className="font-medium">{s.short_name}</div>
-            <div className="font-mono text-[10px] text-slate-500">{s.series_id}</div>
+            <div className="font-mono text-[10px] text-ink-faint">{s.series_id}</div>
           </button>
         ))}
       </div>
@@ -96,9 +96,9 @@ export function Orders() {
           </div>
 
           <div className="space-y-5">
-            <div className="card card-pad">
+            <div className="panel pad">
               <div className="flex items-center justify-between">
-                <div className="label">Position</div>
+                <div className="eyebrow">Position</div>
                 <StatusChip status={r.status} />
               </div>
               <dl className="mt-3 space-y-2.5 text-sm">
@@ -118,13 +118,13 @@ export function Orders() {
               </dl>
             </div>
 
-            <div className="card card-pad">
-              <div className="label">What the position is made of</div>
-              <p className="subtle mt-1">
+            <div className="panel pad">
+              <div className="eyebrow">What the position is made of</div>
+              <p className="fine mt-1">
                 Settings hold the opening stock; the ledger holds every movement since.
               </p>
               <div className="mt-3 space-y-1.5 text-sm">
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-ink-mute">
                   <span>opening stock</span>
                   <span className="font-mono">
                     {units(stockLedger.data?.data.opening_stock ?? 0)}
@@ -132,12 +132,12 @@ export function Orders() {
                 </div>
                 {(stockLedger.data?.data.movements ?? []).slice(-6).map((m, i) => (
                   <div key={i} className="flex justify-between">
-                    <span className="text-slate-400">
-                      {m.kind} <span className="text-slate-600">{m.ds}</span>
+                    <span className="text-ink-mute">
+                      {m.kind} <span className="text-ink-pale">{m.ds}</span>
                     </span>
                     <span
                       className={`font-mono ${
-                        m.quantity >= 0 ? "text-mint-400" : "text-alert-400"
+                        m.quantity >= 0 ? "text-signal-green" : "text-signal-red"
                       }`}
                     >
                       {m.quantity >= 0 ? "+" : ""}
@@ -146,20 +146,20 @@ export function Orders() {
                   </div>
                 ))}
                 {(stockLedger.data?.data.movements ?? []).length === 0 ? (
-                  <p className="text-xs text-slate-600">No movements recorded yet.</p>
+                  <p className="text-xs text-ink-pale">No movements recorded yet.</p>
                 ) : null}
-                <div className="flex justify-between border-t border-white/10 pt-1.5 font-medium">
-                  <span className="text-slate-300">on hand</span>
-                  <span className="font-mono text-white">
+                <div className="flex justify-between border-t border-line pt-1.5 font-medium">
+                  <span className="text-ink-soft">on hand</span>
+                  <span className="font-mono text-ink">
                     {units(stockLedger.data?.data.stock_on_hand ?? r.stock_on_hand)}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="card card-pad">
-              <div className="label">Lead-time demand</div>
-              <p className="subtle mt-1">
+            <div className="panel pad">
+              <div className="eyebrow">Lead-time demand</div>
+              <p className="fine mt-1">
                 The distribution the order is read from, over your{" "}
                 {r.inputs_used.find((i) => i.name === "lead time")?.value ?? "lead time"}.
               </p>
@@ -170,18 +170,18 @@ export function Orders() {
                   const max = r.lead_time_demand["0.95"] ?? 1;
                   return (
                     <div key={q} className="flex items-center gap-3">
-                      <span className="w-10 font-mono text-[11px] text-slate-500">
+                      <span className="w-10 font-mono text-[11px] text-ink-faint">
                         p{Math.round(Number(q) * 100)}
                       </span>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/5">
+                      <div className="h-2 flex-1 overflow-hidden bg-wash">
                         <div
-                          className={`h-full rounded-full ${
-                            q === "0.50" ? "bg-mint-500" : "bg-mint-500/40"
+                          className={`h-full ${
+                            q === "0.50" ? "bg-signal-green" : "bg-signal-green/40"
                           }`}
                           style={{ width: `${(v / max) * 100}%` }}
                         />
                       </div>
-                      <span className="w-14 text-right font-mono text-xs text-slate-300">
+                      <span className="w-14 text-right font-mono text-xs text-ink-soft">
                         {units(v)}
                       </span>
                     </div>
@@ -190,21 +190,21 @@ export function Orders() {
               </div>
             </div>
 
-            <div className="card card-pad">
-              <div className="label">Where each input came from</div>
+            <div className="panel pad">
+              <div className="eyebrow">Where each input came from</div>
               <ul className="mt-3 space-y-2 text-sm">
                 {r.inputs_used.map((i) => (
                   <li key={i.name} className="flex items-center justify-between gap-3">
-                    <span className="text-slate-300">{i.name}</span>
+                    <span className="text-ink-soft">{i.name}</span>
                     <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-slate-400">{i.value}</span>
+                      <span className="font-mono text-xs text-ink-mute">{i.value}</span>
                       <ProvenanceBadge lane={i.lane} />
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="subtle mt-3 text-xs">
-                Only <strong className="text-mint-400">measured</strong> values train the
+              <p className="fine mt-3 text-xs">
+                Only <strong className="text-signal-green">measured</strong> values train the
                 model. Your settings enter here, at the decision, and nowhere else.
               </p>
             </div>
@@ -214,7 +214,7 @@ export function Orders() {
 
       {toast ? (
         <div
-          className="card card-pad border-mint-500/30 text-sm"
+          className="panel pad border-signal-green text-sm"
           onClick={() => setToast(null)}
           role="status"
         >
@@ -228,8 +228,8 @@ export function Orders() {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-semibold text-mint-400" : "text-slate-200"}`}>
+      <dt className="text-ink-mute">{label}</dt>
+      <dd className={`tabular-nums ${strong ? "font-semibold text-signal-green" : "text-ink"}`}>
         {value}
       </dd>
     </div>
