@@ -31,3 +31,9 @@ web/.vite/
 # frontend build output
 web/dist/
 web/tsconfig.tsbuildinfo
+
+# deck build deps
+deck/node_modules/
+deck/package-lock.json
+deck/*.pdf
+deck/slide-*.jpg

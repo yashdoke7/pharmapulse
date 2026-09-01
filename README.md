@@ -17,6 +17,20 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 
 ---
 
+## The documents
+
+| Document | What it is |
+|---|---|
+| **[docs/PHARMAPULSE_SYSTEM.md](docs/PHARMAPULSE_SYSTEM.md)** | **Start here.** The whole project in one file: how the pieces connect, every decision and the alternative it beat, the results, and where the code is |
+| [docs/DEMONSTRATION.md](docs/DEMONSTRATION.md) | Run it, then present it — with the words |
+| [docs/PHARMAPULSE_RESULTS.md](docs/PHARMAPULSE_RESULTS.md) | Condensed results and the demo script |
+| [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Intended use, evaluation, seven named limitations |
+| [team/results/](team/results/) | Per-workstream deep dives with code walkthroughs |
+| [CONTRACTS.md](CONTRACTS.md) | The five frozen interfaces |
+| [docs/PHARMAPULSE_CONCEPT.md](docs/PHARMAPULSE_CONCEPT.md) · [ARCHITECTURE](docs/PHARMAPULSE_ARCHITECTURE.md) | The original design proposal and engineering reference |
+
+---
+
 ## Run it
 
 ```bash
