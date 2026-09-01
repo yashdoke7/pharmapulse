@@ -14,8 +14,8 @@ Run:  python deck/qa_deck.py deck/PharmaPulse.pptx
 from __future__ import annotations
 
 import sys
+
 from pptx import Presentation
-from pptx.util import Emu
 
 EMU_IN = 914400.0
 MARGIN = 0.5
