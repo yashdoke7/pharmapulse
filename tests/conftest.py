@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +13,23 @@ from pipelines.gold import aggregate
 from pipelines.ingest import DATE_COL, DATE_FORMAT, SERIES_IDS
 
 RAW = Path("data/observed/salesdaily.csv")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_ops_db(tmp_path_factory):
+    """Never let a test touch the demo board.
+
+    The contract tests POST /api/orders through the real application, which
+    writes a stock receipt and a hash-chained order_log row. Those were landing
+    in data/warehouse/ops.db - the database the demo runs on - so every `pytest`
+    run added +130 units of paracetamol to the shelf. After a few runs the Order
+    screen recommends 0 units and the demo looks broken for reasons nobody can
+    see. Point the ledger somewhere disposable for the whole session.
+    """
+    db = tmp_path_factory.mktemp("ops") / "ops.db"
+    os.environ["PHARMAPULSE_DB"] = str(db)
+    yield
+    os.environ.pop("PHARMAPULSE_DB", None)
 
 requires_data = pytest.mark.skipif(
     not RAW.exists(),

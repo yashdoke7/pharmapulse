@@ -194,3 +194,28 @@ def test_every_recommendation_carries_its_basis():
     assert rec.basis
     assert {i["lane"] for i in rec.basis} == {"observed", "user_setting"}
     assert rec.rationale
+
+
+def test_ledger_honours_the_db_env_var(tmp_path, monkeypatch):
+    """The demo board must be unreachable from a test.
+
+    Regression test for a real leak: db_path defaulted to the module constant
+    in the signature, so Python captured it at import time and no later
+    override could take effect. The contract tests POST /api/orders through the
+    real app, so every pytest run wrote a receipt and a hash-chained order_log
+    row into data/warehouse/ops.db - the board the demo runs on. After a few
+    runs the Order screen recommends 0 units and looks broken.
+    """
+    real = ledger.DB_PATH
+    before = real.read_bytes() if real.exists() else None
+
+    target = tmp_path / "elsewhere.db"
+    monkeypatch.setenv("PHARMAPULSE_DB", str(target))
+
+    ledger.post("N02BE", "2019-01-01", "received", 130)
+
+    assert target.exists(), "the env var did not redirect the write"
+    assert ledger.balance("N02BE")["N02BE"] == 130
+
+    after = real.read_bytes() if real.exists() else None
+    assert after == before, "the write reached the real demo database"

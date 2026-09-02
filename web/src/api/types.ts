@@ -226,7 +226,18 @@ export interface Settings {
   service_level_default: number;
   per_series: Record<
     string,
-    { pack_size: number; unit_cost: number; unit_margin: number; stock_on_hand: number }
+    {
+      pack_size: number;
+      unit_cost: number;
+      unit_margin: number;
+      stock_on_hand: number;
+      // Optional product overrides. Absent means "follow the shop-wide value",
+      // which is not the same as zero - a product nobody has touched keeps
+      // tracking a change to the global setting.
+      lead_time_days?: number | null;
+      holding_cost_rate?: number | null;
+      expiry_risk_rate?: number | null;
+    }
   >;
 }
 

@@ -18,6 +18,7 @@ quietly faked.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -27,6 +28,19 @@ from pathlib import Path
 import pandas as pd
 
 DB_PATH = Path("data/warehouse/ops.db")
+
+
+def db_path_default() -> Path:
+    """Resolved per call, never captured in a default argument.
+
+    It used to be `db_path: Path = DB_PATH`, which Python evaluates once at
+    import. That made the demo database unswappable, and the contract tests -
+    which POST /api/orders through the real app - were writing real receipts
+    and real hash-chained order_log rows into the board being demonstrated.
+    Every `pytest` run silently added +130 of paracetamol to the shelf, so the
+    Order screen drifted towards "recommended 0 units" and looked broken.
+    """
+    return Path(os.getenv("PHARMAPULSE_DB") or DB_PATH)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS stock_event (
@@ -82,8 +96,8 @@ class Position:
 
 
 @contextmanager
-def connect(db_path: Path | str = DB_PATH):
-    path = Path(db_path)
+def connect(db_path: Path | str | None = None):
+    path = Path(db_path) if db_path is not None else db_path_default()
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
@@ -95,13 +109,13 @@ def connect(db_path: Path | str = DB_PATH):
         conn.close()
 
 
-def reset(db_path: Path | str = DB_PATH) -> None:
+def reset(db_path: Path | str | None = None) -> None:
     with connect(db_path) as conn:
         conn.execute("DELETE FROM stock_event")
 
 
 def post(series_id: str, ds: str | date, kind: str, quantity: float,
-         note: str = "", db_path: Path | str = DB_PATH) -> None:
+         note: str = "", db_path: Path | str | None = None) -> None:
     """Record one stock movement. Quantities are given unsigned; the kind
     decides the sign, so a caller cannot accidentally add a sale."""
     if kind not in KIND_SIGN:
@@ -115,7 +129,7 @@ def post(series_id: str, ds: str | date, kind: str, quantity: float,
         )
 
 
-def post_many(events: list[dict], db_path: Path | str = DB_PATH) -> int:
+def post_many(events: list[dict], db_path: Path | str | None = None) -> int:
     rows = []
     for e in events:
         kind = e["kind"]
@@ -130,7 +144,7 @@ def post_many(events: list[dict], db_path: Path | str = DB_PATH) -> int:
 
 
 def seed_opening_stock(levels: dict[str, float], ds: str = "2019-01-01",
-                       db_path: Path | str = DB_PATH) -> None:
+                       db_path: Path | str | None = None) -> None:
     """Seed the shelf. Editable in settings, as every inventory system does."""
     post_many([{"series_id": s, "ds": ds, "kind": "opening", "quantity": q,
                 "note": "seeded opening stock"} for s, q in levels.items()],
@@ -138,7 +152,7 @@ def seed_opening_stock(levels: dict[str, float], ds: str = "2019-01-01",
 
 
 def balance(series_id: str | None = None, as_of: str | None = None,
-            db_path: Path | str = DB_PATH) -> dict[str, float]:
+            db_path: Path | str | None = None) -> dict[str, float]:
     """Running balance per series: the sum of every signed movement."""
     sql = "SELECT series_id, SUM(quantity) AS soh FROM stock_event WHERE 1=1"
     params: list = []
@@ -155,7 +169,7 @@ def balance(series_id: str | None = None, as_of: str | None = None,
     return {r["series_id"]: float(r["soh"]) for r in rows}
 
 
-def ledger_frame(series_id: str, db_path: Path | str = DB_PATH) -> pd.DataFrame:
+def ledger_frame(series_id: str, db_path: Path | str | None = None) -> pd.DataFrame:
     with connect(db_path) as conn:
         return pd.read_sql_query(
             "SELECT ds, kind, quantity FROM stock_event WHERE series_id = ? "
@@ -184,7 +198,7 @@ def projected_stockout(stock_on_hand: float, daily_forecast: list[tuple[str, flo
 
 def log_order(series_id: str, ds: str, recommended: int, accepted: int,
               service_level: float | None = None, reason: str = "",
-              actor: str = "demo", db_path: Path | str = DB_PATH) -> str:
+              actor: str = "demo", db_path: Path | str | None = None) -> str:
     """Append-only, hash-chained order log.
 
     Each entry stores the previous entry's hash, so deleting or editing one
@@ -216,7 +230,7 @@ def log_order(series_id: str, ds: str, recommended: int, accepted: int,
     return digest
 
 
-def verify_chain(db_path: Path | str = DB_PATH) -> bool:
+def verify_chain(db_path: Path | str | None = None) -> bool:
     """True if no entry has been edited or removed."""
     import hashlib
     import json

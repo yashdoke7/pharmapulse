@@ -201,7 +201,7 @@ export function Settings() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left">
-                {["Product", "Pack size", "Unit cost", "Unit margin", "Stock on hand", "q*"].map(
+                {["Product", "Pack size", "Unit cost", "Unit margin", "Stock on hand", "Lead time", "q*"].map(
                   (h) => (
                     <th key={h} className="px-4 py-2.5 font-medium text-ink-mute">
                       {h}
@@ -213,9 +213,11 @@ export function Settings() {
             <tbody>
               {Object.entries(draft.per_series).map(([sid, s]) => {
                 const cu = s.unit_margin;
-                const co =
-                  s.unit_cost * draft.holding_cost_rate * (draft.lead_time_days / 365) +
-                  s.unit_cost * draft.expiry_risk_rate;
+                // Product override if one is set, otherwise the shop-wide rate.
+                const lead = s.lead_time_days ?? draft.lead_time_days;
+                const hold = s.holding_cost_rate ?? draft.holding_cost_rate;
+                const expiry = s.expiry_risk_rate ?? draft.expiry_risk_rate;
+                const co = s.unit_cost * hold * (lead / 365) + s.unit_cost * expiry;
                 const qStar = cu / (cu + co);
                 return (
                   <tr key={sid} className="border-b border-line-soft last:border-0">
@@ -242,6 +244,42 @@ export function Settings() {
                         </td>
                       ),
                     )}
+                    {/* Lead time genuinely varies per line in a pharmacy - a
+                        controlled drug from one licensed distributor does not
+                        arrive on the same clock as generic paracetamol from a
+                        wholesaler who calls twice a week. Blank = follow the shop. */}
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          className={`w-16 border bg-paper-sunk px-2 py-1 text-right font-mono text-sm focus:border-ink focus:outline-none ${
+                            s.lead_time_days == null
+                              ? "border-line text-ink-faint"
+                              : "border-signal-blue text-ink"
+                          }`}
+                          placeholder={String(draft.lead_time_days)}
+                          value={s.lead_time_days ?? ""}
+                          step={1}
+                          min={1}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setDraft({
+                              ...draft,
+                              per_series: {
+                                ...draft.per_series,
+                                [sid]: {
+                                  ...s,
+                                  lead_time_days: raw === "" ? null : Number(raw),
+                                },
+                              },
+                            });
+                          }}
+                        />
+                        <span className="text-[10px] text-ink-faint">
+                          {s.lead_time_days == null ? "shop" : `+${lead + draft.review_period_days}d cover`}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-4 py-2 font-mono text-signal-green">{pct(qStar, 1)}</td>
                   </tr>
                 );
@@ -252,7 +290,9 @@ export function Settings() {
         <p className="fine px-5 py-3 text-xs">
           q* = Cu / (Cu + Co) is computed live from these values. Raise the margin and the
           system orders more; raise the holding cost and it orders less. That is the whole
-          decision, and it is visible here rather than buried.
+          decision, and it is visible here rather than buried. Leave lead time blank to
+          follow the shop-wide value &mdash; blank tracks a change to it, a typed number
+          does not.
         </p>
       </div>
     </div>

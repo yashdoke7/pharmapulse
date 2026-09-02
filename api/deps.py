@@ -180,15 +180,36 @@ def live_stock(series_id: str, opening: float) -> float:
     return max(0.0, float(opening) + float(moved))
 
 
+# Settings a product may override on its own. Lead time is the one that
+# actually varies in a pharmacy - a controlled drug from a single licensed
+# distributor does not arrive on the same clock as generic paracetamol from a
+# wholesaler who calls twice a week - and holding and expiry vary with the
+# storage the product needs (a cold-chain line costs more to hold and is
+# written off sooner). Everything else stays global because nothing in a real
+# shop would set it per line.
+OVERRIDABLE = ("lead_time_days", "holding_cost_rate", "expiry_risk_rate")
+
+
 def series_settings(series_id: str, settings: dict | None = None) -> dict:
     s = settings or load_settings()
     per = s.get("per_series", {}).get(series_id, {})
     opening = per.get("stock_on_hand", 0.0)
+
+    def either(key: str, default):
+        """Product override if one is set, otherwise the shop-wide value.
+
+        Absent means "follow the shop", not "zero" - so a product that has
+        never been touched keeps tracking a change to the global setting.
+        """
+        v = per.get(key)
+        return default if v is None else v
+
     return {
-        "lead_time_days": s.get("lead_time_days", 4),
-        "holding_cost_rate": s.get("holding_cost_rate", 0.22),
-        "expiry_risk_rate": s.get("expiry_risk_rate", 0.015),
+        "lead_time_days": either("lead_time_days", s.get("lead_time_days", 4)),
+        "holding_cost_rate": either("holding_cost_rate", s.get("holding_cost_rate", 0.22)),
+        "expiry_risk_rate": either("expiry_risk_rate", s.get("expiry_risk_rate", 0.015)),
         "review_period_days": s.get("review_period_days", 7),
+        "lead_time_is_override": per.get("lead_time_days") is not None,
         "pack_size": per.get("pack_size", 10),
         "unit_cost": per.get("unit_cost", 12.5),
         "unit_margin": per.get("unit_margin", 4.0),
