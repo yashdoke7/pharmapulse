@@ -9,7 +9,6 @@ import {
   ProvenanceBadge,
   SectionTitle,
   StatusChip,
-  inr,
   pct,
   units,
 } from "../components/ui";
@@ -38,7 +37,6 @@ export function Orders() {
         `Received ${r.data.received} units — on hand is now ${r.data.stock_on_hand}. ` +
           `Audit chain ${r.data.chain_valid ? "valid" : "BROKEN"} (${r.data.hash.slice(0, 8)}).`,
       );
-      // The decision moved the shelf, so every position-derived view is stale.
       qc.invalidateQueries();
     },
     onError: (e: Error) => setToast(e.message),
@@ -56,27 +54,31 @@ export function Orders() {
         subtitle="A demand distribution, your costs, and the quantity that minimises the total cost of being wrong."
       />
 
-      <div className="flex flex-wrap gap-2">
-        {list.map((s) => (
-          <button
-            key={s.series_id}
-            onClick={() => setParams({ series: s.series_id })}
-            className={`border px-3 py-2 text-left text-sm transition-colors ${
-              s.series_id === selected
-                ? "border-signal-green bg-signal-green/[0.07] text-ink"
-                : "border-line text-ink-soft hover:bg-wash"
-            }`}
-          >
-            <div className="font-medium">{s.short_name}</div>
-            <div className="font-mono text-[10px] text-ink-faint">{s.series_id}</div>
-          </button>
-        ))}
+      {/* Medicine Selector Pills */}
+      <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/70 rounded-2xl border border-slate-200/60">
+        {list.map((s) => {
+          const active = s.series_id === selected;
+          return (
+            <button
+              key={s.series_id}
+              onClick={() => setParams({ series: s.series_id })}
+              className={`px-3.5 py-2 rounded-xl text-left text-xs transition-all duration-200 ${
+                active
+                  ? "bg-white text-medical-teal-deep shadow-xs font-semibold border border-medical-teal/20"
+                  : "text-slate-600 hover:text-ink hover:bg-white/50"
+              }`}
+            >
+              <div className="font-semibold">{s.short_name}</div>
+              <div className="font-mono text-[10px] text-slate-400">{s.series_id}</div>
+            </button>
+          );
+        })}
       </div>
 
       {rec.isLoading || !r ? (
-        <Loading />
+        <Loading label="Computing optimal order" />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ServiceLevelSlider
               rec={r}
@@ -96,18 +98,19 @@ export function Orders() {
           </div>
 
           <div className="space-y-5">
+            {/* Position Card */}
             <div className="panel pad">
               <div className="flex items-center justify-between">
-                <div className="eyebrow">Position</div>
+                <div className="eyebrow text-slate-500">Current Position</div>
                 <StatusChip status={r.status} />
               </div>
-              <dl className="mt-3 space-y-2.5 text-sm">
+              <dl className="mt-3.5 space-y-2.5 text-sm">
                 <Row label="On hand" value={`${units(r.stock_on_hand)} units`} />
                 <Row label="Reorder point" value={`${units(r.reorder_point)} units`} />
                 <Row label="Days of cover" value={`${r.days_of_cover.toFixed(1)} days`} />
                 <Row
                   label="Runs out"
-                  value={r.projected_stockout_date ?? "not inside the horizon"}
+                  value={r.projected_stockout_date ?? "not inside horizon"}
                 />
                 <Row label="Target level" value={`${units(r.target_level)} units`} />
                 <Row
@@ -118,26 +121,28 @@ export function Orders() {
               </dl>
             </div>
 
+            {/* Ledger breakdown card */}
             <div className="panel pad">
-              <div className="eyebrow">What the position is made of</div>
-              <p className="fine mt-1">
+              <div className="eyebrow text-slate-500">What the position is made of</div>
+              <p className="fine mt-1 text-slate-400 text-xs">
                 Settings hold the opening stock; the ledger holds every movement since.
               </p>
-              <div className="mt-3 space-y-1.5 text-sm">
-                <div className="flex justify-between text-ink-mute">
+              <div className="mt-3 space-y-2 text-xs sm:text-sm">
+                <div className="flex justify-between text-slate-500">
                   <span>opening stock</span>
-                  <span className="font-mono">
+                  <span className="font-mono font-medium">
                     {units(stockLedger.data?.data.opening_stock ?? 0)}
                   </span>
                 </div>
                 {(stockLedger.data?.data.movements ?? []).slice(-6).map((m, i) => (
-                  <div key={i} className="flex justify-between">
-                    <span className="text-ink-mute">
-                      {m.kind} <span className="text-ink-pale">{m.ds}</span>
+                  <div key={i} className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                      {m.kind} <span className="text-slate-400 font-mono text-[11px]">{m.ds}</span>
                     </span>
                     <span
-                      className={`font-mono ${
-                        m.quantity >= 0 ? "text-signal-green" : "text-signal-red"
+                      className={`font-mono font-bold ${
+                        m.quantity >= 0 ? "text-emerald-600" : "text-rose-600"
                       }`}
                     >
                       {m.quantity >= 0 ? "+" : ""}
@@ -146,42 +151,45 @@ export function Orders() {
                   </div>
                 ))}
                 {(stockLedger.data?.data.movements ?? []).length === 0 ? (
-                  <p className="text-xs text-ink-pale">No movements recorded yet.</p>
+                  <p className="text-xs text-slate-400">No movements recorded yet.</p>
                 ) : null}
-                <div className="flex justify-between border-t border-line pt-1.5 font-medium">
-                  <span className="text-ink-soft">on hand</span>
-                  <span className="font-mono text-ink">
+                <div className="flex justify-between border-t border-slate-100 pt-2 font-semibold">
+                  <span className="text-slate-700">on hand</span>
+                  <span className="font-mono text-ink text-sm">
                     {units(stockLedger.data?.data.stock_on_hand ?? r.stock_on_hand)}
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Lead-time demand card */}
             <div className="panel pad">
-              <div className="eyebrow">Lead-time demand</div>
-              <p className="fine mt-1">
+              <div className="eyebrow text-slate-500">Lead-time demand</div>
+              <p className="fine mt-1 text-slate-400 text-xs">
                 The distribution the order is read from, over your{" "}
-                {r.inputs_used.find((i) => i.name === "lead time")?.value ?? "lead time"}.
+                <strong className="text-slate-600">
+                  {r.inputs_used.find((i) => i.name === "lead time")?.value ?? "lead time"}
+                </strong>.
               </p>
-              <div className="mt-3 space-y-1.5 text-sm">
+              <div className="mt-3.5 space-y-2 text-sm">
                 {["0.05", "0.25", "0.50", "0.75", "0.95"].map((q) => {
                   const v = r.lead_time_demand[q];
                   if (v === undefined) return null;
                   const max = r.lead_time_demand["0.95"] ?? 1;
                   return (
                     <div key={q} className="flex items-center gap-3">
-                      <span className="w-10 font-mono text-[11px] text-ink-faint">
+                      <span className="w-10 font-mono text-xs font-semibold text-slate-400">
                         p{Math.round(Number(q) * 100)}
                       </span>
-                      <div className="h-2 flex-1 overflow-hidden bg-wash">
+                      <div className="h-2.5 flex-1 rounded-full overflow-hidden bg-slate-100">
                         <div
-                          className={`h-full ${
-                            q === "0.50" ? "bg-signal-green" : "bg-signal-green/40"
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            q === "0.50" ? "bg-medical-teal" : "bg-medical-teal/40"
                           }`}
                           style={{ width: `${(v / max) * 100}%` }}
                         />
                       </div>
-                      <span className="w-14 text-right font-mono text-xs text-ink-soft">
+                      <span className="w-14 text-right font-mono text-xs font-bold text-slate-700">
                         {units(v)}
                       </span>
                     </div>
@@ -190,21 +198,22 @@ export function Orders() {
               </div>
             </div>
 
+            {/* Input Provenance card */}
             <div className="panel pad">
-              <div className="eyebrow">Where each input came from</div>
-              <ul className="mt-3 space-y-2 text-sm">
+              <div className="eyebrow text-slate-500">Where each input came from</div>
+              <ul className="mt-3 space-y-2.5 text-sm">
                 {r.inputs_used.map((i) => (
-                  <li key={i.name} className="flex items-center justify-between gap-3">
-                    <span className="text-ink-soft">{i.name}</span>
+                  <li key={i.name} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-slate-600 font-medium capitalize text-xs">{i.name}</span>
                     <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-ink-mute">{i.value}</span>
+                      <span className="font-mono text-xs font-semibold text-slate-700">{i.value}</span>
                       <ProvenanceBadge lane={i.lane} />
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="fine mt-3 text-xs">
-                Only <strong className="text-signal-green">measured</strong> values train the
+              <p className="fine mt-3 text-xs text-slate-400">
+                Only <strong className="text-medical-teal-deep">measured</strong> values train the
                 model. Your settings enter here, at the decision, and nowhere else.
               </p>
             </div>
@@ -214,11 +223,15 @@ export function Orders() {
 
       {toast ? (
         <div
-          className="panel pad border-signal-green text-sm"
+          className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-4 text-sm text-emerald-800 shadow-sm cursor-pointer flex items-center justify-between gap-3"
           onClick={() => setToast(null)}
           role="status"
         >
-          {toast}
+          <div className="flex items-center gap-2.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{toast}</span>
+          </div>
+          <span className="text-xs text-emerald-600 font-semibold underline">dismiss</span>
         </div>
       ) : null}
     </div>
@@ -227,9 +240,9 @@ export function Orders() {
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-ink-mute">{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-semibold text-signal-green" : "text-ink"}`}>
+    <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-1 last:border-0 last:pb-0">
+      <dt className="text-slate-500 text-xs font-medium">{label}</dt>
+      <dd className={`tabular-nums ${strong ? "font-bold text-medical-teal-deep text-sm" : "text-ink font-semibold"}`}>
         {value}
       </dd>
     </div>

@@ -12,11 +12,7 @@ import {
 
 /**
  * Lane 2: the pharmacy's own operational parameters.
- *
- * No inventory system on earth knows a pharmacy's lead time or cost of
- * capital - all of them ask. These are inputs to the DECISION and they never
- * reach the trainer, which is enforced by the shape of the pipeline rather
- * than by discipline.
+ * Redesigned with clinical parameter sliders and editable inventory table.
  */
 
 const GLOBAL_FIELDS: {
@@ -92,13 +88,12 @@ export function Settings() {
     onSuccess: () => {
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2500);
-      // Every downstream number depends on these, so invalidate broadly.
       qc.invalidateQueries();
     },
   });
 
   if (isError) return <ErrorCard error={error} />;
-  if (isLoading || !draft) return <Loading label="Loading settings" />;
+  if (isLoading || !draft) return <Loading label="Loading operational parameters" />;
 
   const protection = draft.lead_time_days + draft.review_period_days;
 
@@ -109,23 +104,29 @@ export function Settings() {
         subtitle="Lane 2 — the parameters only your pharmacy knows. They shape every order quantity and they never train a model."
         right={
           <div className="flex items-center gap-3">
-            {saved ? <span className="chip bg-signal-green/15 text-signal-green">saved</span> : null}
+            {saved ? (
+              <span className="chip bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold shadow-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                saved
+              </span>
+            ) : null}
             <button
-              className="btn-primary"
+              className="btn-primary shadow-sm hover:shadow-glow px-5 py-2.5"
               onClick={() => save.mutate(draft)}
               disabled={save.isPending}
             >
-              {save.isPending ? "Saving…" : "Save"}
+              {save.isPending ? "Saving…" : "Save Settings"}
             </button>
           </div>
         }
       />
 
-      <div className="panel pad border-signal-green">
+      {/* Lane 2 Credibility Notice */}
+      <div className="panel pad border border-medical-teal/20 bg-gradient-to-r from-white via-white to-medical-cyan/25">
         <div className="flex flex-wrap items-center gap-3">
           <ProvenanceBadge lane="user_setting" />
-          <p className="fine max-w-3xl">
-            Everything on this page is <strong className="text-ink-soft">lane 2</strong>.
+          <p className="fine max-w-3xl text-xs sm:text-sm text-slate-600">
+            Everything on this page is <strong className="text-ink font-bold">lane 2</strong>.
             No inventory system knows a pharmacy's cost of capital — all of them ask. These
             values enter at the decision engine and nowhere else, so no fitted coefficient
             can ever depend on them.
@@ -133,23 +134,24 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Across all products */}
         <div className="panel pad lg:col-span-2">
-          <div className="eyebrow">Across all products</div>
-          <div className="mt-4 space-y-5">
+          <div className="eyebrow text-slate-500">Across all products</div>
+          <div className="mt-5 space-y-6">
             {GLOBAL_FIELDS.map((f) => {
               const value = draft[f.key] as number;
               return (
-                <div key={String(f.key)}>
+                <div key={String(f.key)} className="rounded-2xl bg-slate-50/60 p-4 border border-slate-100">
                   <div className="flex items-baseline justify-between gap-3">
-                    <label className="text-sm font-medium text-ink">{f.label}</label>
-                    <span className="font-mono text-sm text-signal-green">
+                    <label className="text-xs font-bold text-slate-700">{f.label}</label>
+                    <span className="font-mono text-sm font-bold text-medical-teal-deep">
                       {f.asPercent ? pct(value, 1) : value}
                     </span>
                   </div>
                   <input
                     type="range"
-                    className="pp-slider mt-2 w-full"
+                    className="pp-slider mt-2.5 w-full"
                     min={f.min}
                     max={f.max}
                     step={f.step}
@@ -158,23 +160,24 @@ export function Settings() {
                       setDraft({ ...draft, [f.key]: Number(e.target.value) })
                     }
                     style={{
-                      background: `linear-gradient(90deg,#14110D ${
+                      background: `linear-gradient(90deg, #0F9FA8 ${
                         ((value - f.min) / (f.max - f.min)) * 100
-                      }%, rgba(20,17,13,.14) ${
+                      }%, rgba(15, 159, 168, 0.16) ${
                         ((value - f.min) / (f.max - f.min)) * 100
                       }%)`,
                     }}
                   />
-                  <p className="mt-1 text-xs text-ink-faint">{f.help}</p>
+                  <p className="mt-1.5 text-[11px] text-slate-400 leading-snug">{f.help}</p>
                 </div>
               );
             })}
           </div>
         </div>
 
+        {/* Implications */}
         <div className="panel pad">
-          <div className="eyebrow">What this implies</div>
-          <dl className="mt-3 space-y-2.5 text-sm">
+          <div className="eyebrow text-slate-500">What this implies</div>
+          <dl className="mt-4 space-y-3 text-sm">
             <Row
               label="Protection interval"
               value={`${protection} days`}
@@ -185,49 +188,49 @@ export function Settings() {
               value={draft.currency}
             />
           </dl>
-          <p className="fine mt-4 text-xs">
+          <div className="mt-5 rounded-xl bg-medical-cyan/25 p-3.5 border border-medical-teal/20 text-xs text-slate-600 leading-relaxed">
             An order has to survive the protection interval, not just the lead time: once
             you have ordered you cannot order again until the next review, so today's
             order must cover demand until the order after next arrives.
-          </p>
+          </div>
         </div>
       </div>
 
+      {/* Per product table */}
       <div className="panel overflow-hidden">
-        <div className="border-b border-line px-5 py-3">
-          <div className="eyebrow">Per product</div>
+        <div className="border-b border-slate-100 px-5 sm:px-6 py-3.5 bg-slate-50/50">
+          <div className="eyebrow text-slate-600">Per product operational parameters</div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-line text-left">
+              <tr className="border-b border-slate-100 bg-slate-50/30 text-left">
                 {["Product", "Pack size", "Unit cost", "Unit margin", "Stock on hand", "Lead time", "q*"].map(
                   (h) => (
-                    <th key={h} className="px-4 py-2.5 font-medium text-ink-mute">
+                    <th key={h} className="px-4 py-2.5 font-semibold text-xs text-slate-500">
                       {h}
                     </th>
                   ),
                 )}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100/70">
               {Object.entries(draft.per_series).map(([sid, s]) => {
                 const cu = s.unit_margin;
-                // Product override if one is set, otherwise the shop-wide rate.
                 const lead = s.lead_time_days ?? draft.lead_time_days;
                 const hold = s.holding_cost_rate ?? draft.holding_cost_rate;
                 const expiry = s.expiry_risk_rate ?? draft.expiry_risk_rate;
                 const co = s.unit_cost * hold * (lead / 365) + s.unit_cost * expiry;
                 const qStar = cu / (cu + co);
                 return (
-                  <tr key={sid} className="border-b border-line-soft last:border-0">
-                    <td className="px-4 py-2 font-mono text-ink-soft">{sid}</td>
+                  <tr key={sid} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-700">{sid}</td>
                     {(["pack_size", "unit_cost", "unit_margin", "stock_on_hand"] as const).map(
                       (field) => (
-                        <td key={field} className="px-4 py-2">
+                        <td key={field} className="px-4 py-2.5">
                           <input
                             type="number"
-                            className="w-24 border border-line bg-paper-sunk px-2 py-1 text-right font-mono text-sm text-ink focus:border-ink focus:outline-none"
+                            className="w-24 rounded-lg border border-slate-200 bg-slate-50/70 px-2 py-1 text-right font-mono text-xs font-medium text-ink focus:border-medical-teal focus:bg-white focus:outline-none transition-colors"
                             value={s[field]}
                             step={field === "pack_size" ? 1 : 0.5}
                             min={0}
@@ -244,18 +247,14 @@ export function Settings() {
                         </td>
                       ),
                     )}
-                    {/* Lead time genuinely varies per line in a pharmacy - a
-                        controlled drug from one licensed distributor does not
-                        arrive on the same clock as generic paracetamol from a
-                        wholesaler who calls twice a week. Blank = follow the shop. */}
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
-                          className={`w-16 border bg-paper-sunk px-2 py-1 text-right font-mono text-sm focus:border-ink focus:outline-none ${
+                          className={`w-16 rounded-lg border px-2 py-1 text-right font-mono text-xs font-medium focus:border-medical-teal focus:bg-white focus:outline-none transition-colors ${
                             s.lead_time_days == null
-                              ? "border-line text-ink-faint"
-                              : "border-signal-blue text-ink"
+                              ? "border-slate-200 bg-slate-50/70 text-slate-400"
+                              : "border-blue-300 bg-blue-50/50 text-blue-900 font-bold"
                           }`}
                           placeholder={String(draft.lead_time_days)}
                           value={s.lead_time_days ?? ""}
@@ -275,19 +274,21 @@ export function Settings() {
                             });
                           }}
                         />
-                        <span className="text-[10px] text-ink-faint">
+                        <span className="text-[10.5px] font-medium text-slate-400">
                           {s.lead_time_days == null ? "shop" : `+${lead + draft.review_period_days}d cover`}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2 font-mono text-signal-green">{pct(qStar, 1)}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-medical-teal-deep">
+                      {pct(qStar, 1)}
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-        <p className="fine px-5 py-3 text-xs">
+        <p className="fine px-5 sm:px-6 py-3.5 text-xs text-slate-400 bg-slate-50/30 border-t border-slate-100">
           q* = Cu / (Cu + Co) is computed live from these values. Raise the margin and the
           system orders more; raise the holding cost and it orders less. That is the whole
           decision, and it is visible here rather than buried. Leave lead time blank to
@@ -301,12 +302,12 @@ export function Settings() {
 
 function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div>
+    <div className="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
       <div className="flex items-center justify-between gap-3">
-        <dt className="text-ink-mute">{label}</dt>
-        <dd className="font-mono text-ink">{value}</dd>
+        <dt className="text-slate-500 text-xs font-medium">{label}</dt>
+        <dd className="font-mono font-bold text-ink text-sm">{value}</dd>
       </div>
-      {hint ? <p className="mt-0.5 text-xs text-ink-faint">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p> : null}
     </div>
   );
 }
