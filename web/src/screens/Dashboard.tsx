@@ -20,6 +20,93 @@ import {
  * the problem. A screen that opens on "three products need your decision today,
  * worth 677 rupees" has already done it.
  */
+// Lead time (4) + review period (7). Lane 2, and the Settings screen moves it.
+const PROTECTION = 11;
+
+/**
+ * Days of cover per product, as a horizontal runway, with the protection
+ * interval drawn through it. Anything whose bar ends left of that line runs out
+ * before the next delivery can possibly arrive.
+ */
+function CoverRunway({ positions, protection }: { positions: Position[]; protection: number }) {
+  if (!positions.length) return null;
+
+  // Cap the axis so one heavily overstocked product does not squash the rest,
+  // and mark the ones that overflow rather than pretending they fit.
+  const CAP = Math.max(protection * 3, 30);
+  const rows = [...positions].sort((a, b) => a.days_of_cover - b.days_of_cover);
+  const markerPct = (protection / CAP) * 100;
+
+  return (
+    <div>
+      <div>
+        <div className="space-y-2">
+          {rows.map((p) => {
+            const over = p.days_of_cover > CAP;
+            const pct = Math.min(p.days_of_cover / CAP, 1) * 100;
+            const tone =
+              p.status === "order_now"
+                ? "bg-signal-red"
+                : p.status === "overstocked"
+                  ? "bg-signal-blue"
+                  : p.days_of_cover < protection * 1.4
+                    ? "bg-signal-amber"
+                    : "bg-signal-green";
+            return (
+              <div key={p.series_id} className="flex items-center gap-3">
+                <div className="w-[9.5rem] shrink-0 truncate text-xs text-ink-soft" title={p.name}>
+                  {p.name}
+                </div>
+                <div className="relative h-5 flex-1 bg-wash">
+                  <div
+                    className={`h-full ${tone} transition-[width] duration-500`}
+                    style={{ width: `${pct}%` }}
+                  />
+                  {/* the protection interval, drawn through every track so it
+                      reads as one continuous rule down the chart */}
+                  <div
+                    className="pointer-events-none absolute inset-y-0 border-l border-dashed border-ink/45"
+                    style={{ left: `${markerPct}%` }}
+                  />
+                  {over ? (
+                    <div className="absolute inset-y-0 right-1 flex items-center text-[10px] text-ink-faint">
+                      ›
+                    </div>
+                  ) : null}
+                </div>
+                <div className="w-16 shrink-0 text-right font-mono text-xs tabular-nums text-ink-mute">
+                  {p.days_of_cover >= 999 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line-soft pt-3 text-[11px] text-ink-mute">
+        <Key className="bg-signal-red" label="order now" />
+        <Key className="bg-signal-amber" label="watch" />
+        <Key className="bg-signal-green" label="covered" />
+        <Key className="bg-signal-blue" label="capital tied up" />
+        <span className="ml-auto max-w-[30rem] text-right">
+          dashed line = {protection} days. A bar ending left of it runs out before the next
+          delivery can land. A slow mover can clear the line and still say “order now” —
+          its reorder point carries safety stock for how erratic it is.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Key({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block h-2 w-4 ${className}`} />
+      {label}
+    </span>
+  );
+}
+
 export function Dashboard() {
   const nav = useNavigate();
   const risk = useQuery({ queryKey: ["risk"], queryFn: () => api.risk(20) });
@@ -110,6 +197,21 @@ export function Dashboard() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* The one chart that belongs on this screen. Not a trend line - a buyer
+          cannot act on a trend line. This is every product's runway against the
+          window the next order has to survive, so "who falls short, and by how
+          much" is a single glance rather than eight rows of arithmetic. */}
+      <section>
+        <div className="panel">
+          <PanelHead right={<span className="fine">each bar is days of stock left</span>}>
+            Runway, against the {PROTECTION} days the next order must cover
+          </PanelHead>
+          <div className="px-5 py-5">
+            <CoverRunway positions={pos} protection={PROTECTION} />
+          </div>
+        </div>
       </section>
 
       {/* The full shelf. */}

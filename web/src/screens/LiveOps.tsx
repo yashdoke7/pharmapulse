@@ -20,6 +20,15 @@ import {
  * watermarked with the window being replayed.
  */
 
+// 320ms was unwatchable - a quarter went past in half a minute and nobody
+// could see a delivery land. Default to a pace where each day is legible, and
+// let the presenter speed up once the point has landed.
+const SPEEDS = [
+  { label: "1 day / 1.5s", ms: 1500 },
+  { label: "1 day / 0.7s", ms: 700 },
+  { label: "fast", ms: 250 },
+];
+
 const WINDOWS = [
   { from: "2019-01-01", to: "2019-03-31", label: "Jan–Mar 2019", note: "the flu wave" },
   { from: "2019-04-01", to: "2019-06-30", label: "Apr–Jun 2019", note: "pollen season" },
@@ -32,6 +41,7 @@ export function LiveOps() {
   const [running, setRunning] = useState(false);
   const [feed, setFeed] = useState<{ type: string; series_id: string; date: string; message: string }[]>([]);
   const [error, setError] = useState<unknown>(null);
+  const [speed, setSpeed] = useState(SPEEDS[0]);
   const timer = useRef<number | null>(null);
 
   const businessCase = useQuery({
@@ -75,11 +85,11 @@ export function LiveOps() {
         setError(e);
         stop();
       }
-    }, 320);
+    }, speed.ms);
     return () => {
       if (timer.current) window.clearInterval(timer.current);
     };
-  }, [running, snap?.session_id, stop]);
+  }, [running, snap?.session_id, stop, speed.ms]);
 
   useEffect(() => () => stop(), [stop]);
 
@@ -144,6 +154,39 @@ export function LiveOps() {
                 Pause
               </button>
             )}
+            <div className="flex items-center border border-line">
+              {SPEEDS.map((sp) => (
+                <button
+                  key={sp.label}
+                  onClick={() => setSpeed(sp)}
+                  className={`px-2.5 py-1.5 text-xs transition-colors ${
+                    sp.ms === speed.ms
+                      ? "bg-wash-strong text-ink"
+                      : "text-ink-mute hover:text-ink"
+                  }`}
+                >
+                  {sp.label}
+                </button>
+              ))}
+            </div>
+            {snap ? (
+              <button
+                className="btn-ghost"
+                onClick={async () => {
+                  const wasRunning = running;
+                  stop();
+                  const r = await api.replayTick(snap.session_id, 1);
+                  setSnap(r.data);
+                  if (r.data.events.length) {
+                    setFeed((f) => [...r.data.events, ...f].slice(0, 40));
+                  }
+                  if (wasRunning && !r.data.finished) setRunning(true);
+                }}
+                disabled={snap.finished}
+              >
+                Step 1 day
+              </button>
+            ) : null}
             {snap ? (
               <button
                 className="btn-ghost"
@@ -298,6 +341,46 @@ export function LiveOps() {
               </div>
             </div>
             <p className="fine mt-4 text-xs">{bc.method}</p>
+
+            {/* Nobody outside inventory knows what "min/max" or "lost margin"
+                mean, and a business case nobody can read is not a business
+                case. Spelled out on the screen rather than in a doc. */}
+            <div className="mt-5 border-t border-line pt-4">
+              <div className="eyebrow">Reading this comparison</div>
+              <dl className="mt-3 grid gap-x-8 gap-y-3 text-xs sm:grid-cols-2">
+                {[
+                  [
+                    "Min/max — what a pharmacy does today",
+                    "Hold a minimum. When stock drops below it, top back up to a maximum. Both levels are set from AVERAGE demand, so the policy is blind to how much that demand varies.",
+                  ],
+                  [
+                    "PharmaPulse — what we do instead",
+                    "Same shelf, same days, same costs. The only difference: we size against the quantile the cost ratio implies, not the average. Being wrong is asymmetric, so the target should not sit at the middle.",
+                  ],
+                  [
+                    "Lost margin",
+                    "Demand arrived and there was nothing to sell. Charged at the unit margin — the profit that walked out of the door. This is the number that dominates.",
+                  ],
+                  [
+                    "Holding",
+                    "Stock that sat on the shelf overnight, charged at the annual holding rate plus expiry risk. Ours is HIGHER than min/max, deliberately.",
+                  ],
+                  [
+                    "Units unsupplied",
+                    "Total units of real demand that could not be met over the window. The physical version of lost margin.",
+                  ],
+                  [
+                    "Why the saving is credible",
+                    "It does not come from holding less stock — we hold more. It comes entirely from running out less often, and a test asserts that relationship so the claim cannot drift.",
+                  ],
+                ].map(([term, body]) => (
+                  <div key={term}>
+                    <dt className="font-medium text-ink">{term}</dt>
+                    <dd className="mt-0.5 text-ink-mute">{body}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         ) : null}
       </div>

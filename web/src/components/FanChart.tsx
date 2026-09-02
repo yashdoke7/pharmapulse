@@ -63,31 +63,54 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
     const y = (v: number) =>
       pad.top + (1 - (v - lo) / (hi - lo)) * (H - pad.top - pad.bottom);
 
-    return { history, forecast, xs, x, y, lo, hi, joinIndex: history.length - 1 };
+    // The last bucket is almost always TRUNCATED - the file ends mid-week and
+    // mid-month, so that point is 2 days of sales, not 7. Anchoring the fan to
+    // it dragged the start of the forecast down to the partial value and then
+    // jumped back up, which reads as the model ignoring its own last
+    // observation. Anchor on the last COMPLETE bucket instead and draw the
+    // partial tail as a dashed stub, so it is visible but not load-bearing.
+    let anchorIndex = history.length - 1;
+    while (anchorIndex > 0 && history[anchorIndex].completeness < 1) anchorIndex--;
+
+    return {
+      history, forecast, xs, x, y, lo, hi,
+      joinIndex: history.length - 1,
+      anchorIndex,
+    };
   }, [data, historyWindow, H]);
 
-  const { history, forecast, xs, x, y, lo, hi, joinIndex } = model;
+  const { history, forecast, xs, x, y, lo, hi, joinIndex, anchorIndex } = model;
 
   const bandPath = (loKey: string, hiKey: string) => {
     if (!forecast.length) return "";
-    const anchor = history.length ? history[history.length - 1].y : forecast[0].q[loKey];
-    const top = [`M ${x(joinIndex)} ${y(anchor)}`];
+    const anchor = history.length ? history[anchorIndex].y : forecast[0].q[loKey];
+    const top = [`M ${x(anchorIndex)} ${y(anchor)}`];
     forecast.forEach((f, i) => top.push(`L ${x(joinIndex + 1 + i)} ${y(f.q[hiKey])}`));
     for (let i = forecast.length - 1; i >= 0; i--) {
       top.push(`L ${x(joinIndex + 1 + i)} ${y(forecast[i].q[loKey])}`);
     }
-    top.push(`L ${x(joinIndex)} ${y(anchor)} Z`);
+    top.push(`L ${x(anchorIndex)} ${y(anchor)} Z`);
     return top.join(" ");
   };
 
   const historyPath = history
+    .slice(0, anchorIndex + 1)
     .map((h, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(h.y)}`)
     .join(" ");
 
+  // The truncated tail, drawn dashed so nobody reads it as a real fall.
+  const partialPath =
+    anchorIndex < history.length - 1
+      ? history
+          .slice(anchorIndex)
+          .map((h, i) => `${i === 0 ? "M" : "L"} ${x(anchorIndex + i)} ${y(h.y)}`)
+          .join(" ")
+      : "";
+
   const medianPath = (() => {
     if (!forecast.length) return "";
-    const anchor = history.length ? history[history.length - 1].y : forecast[0].q["0.50"];
-    const parts = [`M ${x(joinIndex)} ${y(anchor)}`];
+    const anchor = history.length ? history[anchorIndex].y : forecast[0].q["0.50"];
+    const parts = [`M ${x(anchorIndex)} ${y(anchor)}`];
     forecast.forEach((f, i) => parts.push(`L ${x(joinIndex + 1 + i)} ${y(f.q["0.50"])}`));
     return parts.join(" ");
   })();
@@ -162,6 +185,36 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
           fill="url(#histFill)"
         />
         <path d={historyPath} fill="none" stroke="#1C4E7A" strokeWidth="2" />
+        {partialPath ? (
+          <>
+            <path
+              d={partialPath}
+              fill="none"
+              stroke="#1C4E7A"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+              opacity={0.5}
+            />
+            <circle
+              cx={x(joinIndex)}
+              cy={y(history[joinIndex].y)}
+              r={3.5}
+              fill="#F7F4EE"
+              stroke="#1C4E7A"
+              strokeWidth="1.5"
+              opacity={0.7}
+            />
+            <text
+              x={x(joinIndex)}
+              y={y(history[joinIndex].y) + 18}
+              textAnchor="middle"
+              fontSize="9"
+              fill="#8A6410"
+            >
+              part period
+            </text>
+          </>
+        ) : null}
 
         {/* partial buckets are shown, never hidden */}
         {history.map((h, i) =>
