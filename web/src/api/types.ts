@@ -151,6 +151,12 @@ export interface ExplainResponse {
     yearly: number[];
     holidays: number[];
   };
+  seasonal_profile: {
+    month: number;
+    label: string;
+    index: number;
+    n_years: number;
+  }[];
   calibration: {
     before: CoveragePoint[];
     after: CoveragePoint[];
@@ -200,6 +206,8 @@ export interface Benchmarks {
     achieved_after: number;
     conformal_scale: number;
     n_points: number;
+    curve_before?: CoveragePoint[];
+    curve_after?: CoveragePoint[];
   };
   runtime: Record<string, unknown>;
 }

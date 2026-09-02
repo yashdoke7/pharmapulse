@@ -31,12 +31,58 @@ SERIES_NAMES = {
     "R03": "Asthma / COPD", "R06": "Antihistamines",
 }
 
-SEASON_HINTS = {
-    "R06": "pollen season",
-    "N02BE": "flu wave",
-    "R03": "cold-air exacerbation",
-    "N05C": "winter",
-}
+MONTHS = ["January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"]
+
+
+def seasonal_profile(one: pd.DataFrame) -> list[dict]:
+    """Month-by-month demand index for one series, from observed data only.
+
+    1.0 is that product's own average month. This is what makes a seasonality
+    claim checkable on the screen instead of asserted: the shape IS the
+    evidence, and a reader can see the May peak rather than being told it.
+
+    Closure days are already masked upstream; incomplete trailing periods are
+    excluded so a part-month cannot drag its own index down.
+    """
+    d = one.dropna(subset=["y"])
+    if d.empty:
+        return []
+    if "completeness" in d.columns:
+        d = d[d["completeness"] >= 1.0]
+    if d.empty:
+        return []
+
+    ds = pd.to_datetime(d["ds"])
+    by_month = d.assign(_m=ds.dt.month).groupby("_m")["y"].mean()
+    overall = float(d["y"].mean())
+    if overall <= 0:
+        return []
+
+    return [
+        {"month": m, "label": MONTHS[m - 1][:3],
+         "index": round(float(by_month.get(m, overall)) / overall, 3),
+         "n_years": int((ds.dt.month == m).sum())}
+        for m in range(1, 13)
+    ]
+
+
+def _season_detail(profile: list[dict], season_delta: float) -> str:
+    """Name the season from the data, not from a lookup table.
+
+    An earlier version mapped series_id to a hand-written phrase - "pollen
+    season", "flu wave". The magnitude was measured and the noun was not,
+    which made it the only claim in the product the code could not defend.
+    """
+    if not profile:
+        return "the annual cycle"
+    peak = max(profile, key=lambda m: m["index"])
+    if peak["index"] < 1.08:
+        return "a flat annual cycle"
+    peak_name = MONTHS[peak["month"] - 1]
+    if season_delta >= 0:
+        return f"moving towards its {peak_name} peak"
+    return f"coming off its {peak_name} peak"
 
 
 @dataclass
@@ -47,6 +93,7 @@ class Attribution:
     baseline_units: float
     components: list[dict] = field(default_factory=list)
     decomposition: dict = field(default_factory=dict)
+    seasonal_profile: list[dict] = field(default_factory=list)
     method: str = "prophet_components"
 
     def as_dict(self) -> dict:
@@ -57,6 +104,7 @@ class Attribution:
             "baseline_units": round(self.baseline_units, 2),
             "components": self.components,
             "decomposition": self.decomposition,
+            "seasonal_profile": self.seasonal_profile,
             "method": self.method,
         }
 
@@ -125,13 +173,8 @@ def _prophet_attribution(series_id: str, one: pd.DataFrame,
         return float(future[col].mean()) - base
 
     season_delta = delta("yearly")
-    hint = SEASON_HINTS.get(series_id)
-    if hint and season_delta >= 0:
-        season_detail = f"moving into the {hint}"
-    elif hint:
-        season_detail = f"coming off the {hint}"
-    else:
-        season_detail = "annual cycle"
+    profile = seasonal_profile(one)
+    season_detail = _season_detail(profile, season_delta)
 
     raw = [
         ("seasonality", season_delta, season_detail),
@@ -161,6 +204,7 @@ def _prophet_attribution(series_id: str, one: pd.DataFrame,
     return Attribution(series_id=series_id, headline=headline,
                        total_change_units=total, baseline_units=baseline,
                        components=components, decomposition=decomposition,
+                       seasonal_profile=profile,
                        method="prophet_components")
 
 
@@ -187,9 +231,10 @@ def _seasonal_attribution(series_id: str, one: pd.DataFrame,
     total = season_effect + trend_effect
     baseline = overall
 
+    profile = seasonal_profile(one)
     components = _reconcile([
         {"name": "seasonality", "units": round(season_effect, 2),
-         "detail": f"{_label(series_id)} {SEASON_HINTS.get(series_id, 'annual cycle')}"},
+         "detail": _season_detail(profile, season_effect)},
         {"name": "trend", "units": round(trend_effect, 2),
          "detail": "underlying level"},
     ], total)
@@ -202,5 +247,6 @@ def _seasonal_attribution(series_id: str, one: pd.DataFrame,
         components=components,
         decomposition={"ds": [d.strftime("%Y-%m-%d") for d in ds.tail(18)],
                        "trend": [], "yearly": [], "holidays": []},
+        seasonal_profile=profile,
         method="seasonal_index_fallback",
     )

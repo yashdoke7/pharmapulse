@@ -1,3 +1,4 @@
+import { ReliabilityDiagram } from "../components/ReliabilityDiagram";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { ErrorCard, Loading, Readout, SectionTitle } from "../components/ui";
@@ -120,6 +121,35 @@ export function Ops() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Moved here from the Why screen. It is a GLOBAL result - it was
+            identical on all eight products there, which made it look broken.
+            Evidence is where a global result belongs. */}
+        <div className="panel pad lg:col-span-2">
+          <div className="eyebrow">Are our own confidence intervals honest?</div>
+          <p className="fine mt-1 max-w-3xl">
+            Every interval we ever stated, checked against what actually happened. A
+            stated{" "}
+            {((b.calibration?.nominal ?? 0.8) * 100).toFixed(0)}% band covered{" "}
+            <strong className="text-signal-red">
+              {((b.calibration?.achieved_before ?? 0) * 100).toFixed(1)}%
+            </strong>{" "}
+            of outcomes — too wide, which sounds like the safe direction and is not: an
+            over-wide band pushes the order quantity up and the buyer pays holding cost
+            for confidence the model has not earned. Conformal correction pulls it to{" "}
+            <strong className="text-signal-green">
+              {((b.calibration?.achieved_after ?? 0) * 100).toFixed(1)}%
+            </strong>
+            . Closer to the diagonal is better.
+          </p>
+          <div className="mt-4 max-w-xl">
+            <ReliabilityDiagram
+              before={b.calibration?.curve_before ?? []}
+              after={b.calibration?.curve_after ?? []}
+              nPoints={b.calibration?.n_points ?? 0}
+            />
           </div>
         </div>
 

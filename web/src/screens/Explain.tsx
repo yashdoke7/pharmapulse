@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "../api/client";
-import { ReliabilityDiagram } from "../components/ReliabilityDiagram";
-import { ErrorCard, Loading, SectionTitle, pct } from "../components/ui";
+import { SeasonalProfile } from "../components/SeasonalProfile";
+import { ErrorCard, Loading, SectionTitle } from "../components/ui";
 
 export function Explain() {
   const [selected, setSelected] = useState("R06");
@@ -116,37 +116,29 @@ export function Explain() {
             </p>
           </div>
 
+          {/* Was the reliability diagram, which is a GLOBAL result and so was
+              byte-identical on all eight products - a panel that does not
+              change when you change the subject is not about the subject. It
+              lives on Evidence now. This is per-medicine, and it is the
+              evidence for the seasonality line in the panel to the left. */}
           <div className="panel pad">
-            <div className="eyebrow">Are our confidence intervals honest?</div>
+            <div className="eyebrow">When does this one actually sell?</div>
             <p className="fine mt-1">
-              We measured our own intervals against what actually happened. The raw model
-              band covered{" "}
-              <strong className="text-signal-red">
-                {pct(d.calibration.achieved_before ?? 0, 1)}
-              </strong>{" "}
-              of outcomes at a stated {pct(d.calibration.nominal)} — so it was too{" "}
-              {(d.calibration.achieved_before ?? 0) > d.calibration.nominal
-                ? "wide, which causes over-ordering and ties up capital"
-                : "narrow, which silently under-orders"}
-              . Conformal correction pulls it to{" "}
-              <strong className="text-signal-green">
-                {pct(d.calibration.achieved_after ?? 0, 1)}
-              </strong>
-              .
+              Every month indexed against this product&rsquo;s own average, computed from
+              the observed sales file alone. 1.0 is a typical month. The seasonality
+              figure on the left is read off this shape &mdash; so the claim is checkable
+              here rather than taken on trust.
             </p>
 
             <div className="mt-4">
-              <ReliabilityDiagram
-                before={d.calibration.before}
-                after={d.calibration.after}
-                nPoints={d.calibration.n_points}
-              />
+              <SeasonalProfile months={d.seasonal_profile ?? []} />
             </div>
 
             <p className="fine mt-3 text-xs">
-              {d.calibration.n_points} points is enough to establish a consistent
-              direction of miscalibration, and not enough to certify a per-series level.
-              Stated rather than glossed over.
+              Six years of history, closure days masked and part-periods excluded. Nothing
+              here is configured: the peak month is measured per product, which is why
+              antihistamines and paracetamol peak six months apart and a single global
+              seasonal profile would have smeared both.
             </p>
           </div>
         </div>
