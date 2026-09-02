@@ -7,21 +7,31 @@ import type { LaneInput, Status } from "../api/types";
  *  screen differs by rupees, and rounding to whole rupees erases the very
  *  thing that panel exists to show. */
 export const inr = (n: number) => {
+  if (n == null || Number.isNaN(n)) return "₹0";
   const abs = Math.abs(n);
   if (abs > 0 && abs < 100) return "₹" + n.toFixed(2);
   return "₹" + Math.round(n).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 };
 
-export const units = (n: number) =>
-  n.toLocaleString("en-IN", { maximumFractionDigits: n < 10 ? 1 : 0 });
+export const units = (n: number) => {
+  if (n == null || Number.isNaN(n)) return "0";
+  return n.toLocaleString("en-IN", { maximumFractionDigits: n < 10 ? 1 : 0 });
+};
 
-export const pct = (n: number, digits = 0) => `${(n * 100).toFixed(digits)}%`;
+export const pct = (n: number, digits = 0) => {
+  if (n == null || Number.isNaN(n)) return "0%";
+  return `${(n * 100).toFixed(digits)}%`;
+};
 
-export const shortDate = (ds: string) =>
-  new Date(ds + "T00:00:00").toLocaleDateString("en-GB", {
+export const shortDate = (ds: string) => {
+  if (!ds) return "—";
+  const d = new Date(ds + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return ds;
+  return d.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
   });
+};
 
 /* --------------------------------------------------------------- status */
 

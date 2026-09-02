@@ -126,8 +126,8 @@ export function Dashboard() {
   const needsDecision = pos.filter((p) => p.status !== "ok").length;
   const orderNow = pos.filter((p) => p.status === "order_now");
   const overstocked = pos.filter((p) => p.status === "overstocked");
-  const totalUnits = orderNow.reduce((s, p) => s + p.order_quantity, 0);
-  const maxExposure = Math.max(...items.map((i) => i.exposure), 1);
+  const totalUnits = orderNow.reduce((s, p) => s + (p.order_quantity ?? 0), 0);
+  const maxExposure = Math.max(...items.map((i) => i.exposure ?? 0), 1);
 
   return (
     <div className="space-y-8">

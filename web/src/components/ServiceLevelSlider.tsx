@@ -102,20 +102,18 @@ export function ServiceLevelSlider({
         <div className="text-right bg-slate-50/80 border border-slate-200/70 px-4 py-3 rounded-2xl">
           <div className="eyebrow text-slate-500">Suggested Order</div>
           <div
-            className={`figure text-[36px] font-bold leading-none mt-1 transition-colors ${
-              atRecommendation ? "text-medical-teal-deep" : "text-ink"
-            }`}
+            className={`figure text-[36px] font-bold leading-none mt-1 transition-colors ${atRecommendation ? "text-medical-teal-deep" : "text-ink"
+              }`}
           >
             {current.order_quantity}
           </div>
           <div className="fine text-slate-500 font-medium mt-0.5">{packs} packs</div>
           {qtyDelta !== 0 ? (
             <div
-              className={`mt-1.5 inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-semibold ${
-                qtyDelta > 0
-                  ? "bg-blue-50 text-blue-700 border border-blue-200"
-                  : "bg-rose-50 text-rose-700 border border-rose-200"
-              }`}
+              className={`mt-1.5 inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-semibold ${qtyDelta > 0
+                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                : "bg-rose-50 text-rose-700 border border-rose-200"
+                }`}
             >
               {qtyDelta > 0 ? "+" : ""}
               {qtyDelta} vs recommended
@@ -132,11 +130,10 @@ export function ServiceLevelSlider({
           max={0.99}
           step={0.005}
           value={level}
-          onChange={(e) => setLevel(Number(e.target.value))}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLevel(Number(e.target.value))}
           style={{
-            background: `linear-gradient(90deg, #0F9FA8 ${((level - 0.05) / 0.94) * 100}%, rgba(15, 159, 168, 0.16) ${
-              ((level - 0.05) / 0.94) * 100
-            }%)`,
+            background: `linear-gradient(90deg, #0F9FA8 ${((level - 0.05) / 0.94) * 100}%, rgba(15, 159, 168, 0.16) ${((level - 0.05) / 0.94) * 100
+              }%)`,
           }}
         />
         <div className="mt-2 flex justify-between text-[11px] font-medium text-slate-400">
@@ -338,18 +335,17 @@ function CostAt({
   const diff = value - base;
   return (
     <div
-      className={`rounded-xl p-3 border ${
-        highlight
-          ? "bg-medical-cyan/30 border-medical-teal/30 text-medical-teal-deep shadow-xs"
-          : "bg-slate-50/60 border-slate-200/60 text-slate-600"
-      }`}
+      className={`rounded-xl p-3 border ${highlight
+        ? "bg-medical-cyan/30 border-medical-teal/30 text-medical-teal-deep shadow-xs"
+        : "bg-slate-50/60 border-slate-200/60 text-slate-600"
+        }`}
     >
       <div className="eyebrow text-[10px]">{label}</div>
       <div className="mt-1 font-mono font-bold text-sm text-ink">
         {inr(value)}
         {!highlight && Math.abs(diff) > 0.5 ? (
           <span className="ml-1 text-[11px] font-medium text-slate-400 font-mono">
-            (+{inr(diff)})
+            ({diff > 0 ? "+" : ""}{inr(diff)})
           </span>
         ) : null}
       </div>

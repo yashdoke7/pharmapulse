@@ -8,13 +8,13 @@ import { pct } from "./ui";
  * Staged in modern healthcare analytics aesthetic.
  */
 export function ReliabilityDiagram({
-  before,
-  after,
+  before = [],
+  after = [],
   nPoints,
   height = 320,
 }: {
-  before: CoveragePoint[];
-  after: CoveragePoint[];
+  before?: CoveragePoint[];
+  after?: CoveragePoint[];
   nPoints?: number | null;
   height?: number;
 }) {

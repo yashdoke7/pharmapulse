@@ -217,18 +217,18 @@ export function LiveOps() {
         </div>
 
         {/* Mini scorecard tiles */}
-        {snap ? (
+        {snap && snap.scorecard ? (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Mini label="Orders placed" value={String(snap.scorecard.orders_placed)} />
+            <Mini label="Orders placed" value={String(snap.scorecard.orders_placed ?? 0)} />
             <Mini
               label="Units short"
-              value={units(snap.scorecard.units_short)}
-              tone={snap.scorecard.units_short > 0 ? "rose" : "mint"}
+              value={units(snap.scorecard.units_short ?? 0)}
+              tone={(snap.scorecard.units_short ?? 0) > 0 ? "rose" : "mint"}
             />
-            <Mini label="Holding cost" value={inr(snap.scorecard.holding_cost)} />
+            <Mini label="Holding cost" value={inr(snap.scorecard.holding_cost ?? 0)} />
             <Mini
               label="Total cost"
-              value={inr(snap.scorecard.total_cost)}
+              value={inr(snap.scorecard.total_cost ?? 0)}
               tone="mint"
             />
           </div>

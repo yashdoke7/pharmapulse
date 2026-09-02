@@ -14,14 +14,14 @@ export function Ops() {
   const shipped = board.find((m) => m.is_shipped);
   const benchmark = board.find((m) => m.is_benchmark);
   const ablation = b.ablations?.selection_vs_combination;
-  const worst = Math.max(...board.map((m) => m.mase));
+  const worst = Math.max(...board.map((m) => m.mase), 1);
 
   const rows = b.per_series ?? [];
   const losses = rows.filter((r) => r.ensemble > 1.0005).length;
   const ties = rows.filter((r) => Math.abs(r.ensemble - 1) <= 0.0005).length;
 
   const improvement =
-    shipped && benchmark
+    shipped && benchmark && benchmark.mase > 0
       ? ((benchmark.mase - shipped.mase) / benchmark.mase) * 100
       : 0;
 
@@ -128,7 +128,7 @@ export function Ops() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Model leaderboard */}
-        <div className="panel pad">
+        <div className="panel pad lg:col-span-2">
           <div className="eyebrow text-slate-500">Model leaderboard</div>
           <p className="fine mt-1 text-slate-400 text-xs">
             {String(b.protocol?.grain)} grain, horizon {String(b.protocol?.horizon)},{" "}
