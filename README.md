@@ -71,12 +71,22 @@ cd web && npm install && npm run dev
 > taskkill /F /PID <the-pid>
 > ```
 
-Or in containers — verified, and the API auto-detects the store:
+Or in containers — the API auto-detects the store:
 
 ```bash
 docker compose up --build          # api on :8000, web on :5173
 python scripts/reset_demo.py       # put the board back before a rehearsal
 ```
+
+> **`docker : The term 'docker' is not recognized`** does not mean Docker is missing. Docker Desktop
+> puts its CLI on the **machine** PATH at install time, and a PowerShell window opened *before* that
+> never picks it up. Open a new terminal. To confirm without one:
+> ```powershell
+> & "C:\Program Files\Docker\Dockeresourcesin\docker.exe" version
+> ```
+> Stop anything already holding **:5173** or **:8000** first — a local `npm run dev` will make the web
+> container fail to bind. Find the owner with `netstat -ano | Select-String ":5173"`, and check the
+> PID is really yours before killing it; Docker's own port proxy also listens on those ports.
 
 **Dataset:** Kaggle *Pharma Sales Data* (milanzdravkovic). Put **`salesdaily.csv` only** into
 `data/observed/`. The supplied monthly file is corrupt — weekly and monthly grains are derived.
