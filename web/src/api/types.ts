@@ -2,7 +2,14 @@
 // contracts/openapi.json if the API changes shape.
 
 export interface Meta {
+  /** "observed" | "user_setting" | "synthetic" - the lane of the data behind
+   *  this response. Anything but "observed" means no number here may be
+   *  presented as a measured accuracy claim. */
   origin: string;
+  /** The day the system is deciding for: the day after the last observation.
+   *  NOT the browser's date - a buyer decides for the next period, not for
+   *  whenever the page happened to be opened. */
+  as_of: string | null;
   model_version: string;
   snapshot_id: string;
   generated_at: string | null;
@@ -297,6 +304,19 @@ export interface BusinessCase {
   saving_pct: number;
   verdict: string;
   method: string;
+  /** Every baseline, weakest first - including the ones we lose to. Min/max is
+   *  the "no system" floor; safety_stock is what an ERP actually does;
+   *  normal_approx runs on OUR forecast and differs only in sizing method,
+   *  which is the rung that carries the claim. */
+  ladder?: {
+    policy: string;
+    label: string;
+    total_cost: number;
+    saving: number;
+    saving_pct: number;
+    we_win: boolean;
+  }[];
+  policies?: Record<string, Scorecard>;
 }
 
 export interface StockMovement {

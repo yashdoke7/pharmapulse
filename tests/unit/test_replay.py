@@ -178,22 +178,77 @@ def test_both_policies_face_identical_conditions(daily):
     assert result["minmax"]["orders_placed"] > 0
 
 
-def test_the_cost_ratio_policy_beats_ordering_to_the_mean(daily):
-    """Both policies get the same protection interval. The only difference is
-    that min/max sizes against the MEAN while we size against the quantile the
-    pharmacy's cost ratio implies - which is the whole thesis."""
+def test_the_empirical_quantile_beats_a_normal_approximation(daily):
+    """THE claim, and the only one where everything else is held constant.
+
+    normal_approx gets our forecast, our protection interval and our service
+    level. It differs in exactly one thing: it sizes with mu + z*sigma instead
+    of reading the quantile off the distribution. So whatever separates them is
+    attributable to the DISTRIBUTION and to nothing else.
+
+    Beating min/max is a much softer result - that is the "no system at all"
+    case, and any policy carrying safety stock clears it.
+    """
     result = compare_policies(daily, SETTINGS, PER_SERIES, *WINDOW)
-    assert result["pharmapulse"]["total_cost"] < result["minmax"]["total_cost"]
-    assert result["saving"] > 0
+    ours = result["policies"]["pharmapulse"]["total_cost"]
+    normal = result["policies"]["normal_approx"]["total_cost"]
+    assert ours < normal, (
+        f"the empirical quantile cost {ours:.0f} against the normal "
+        f"approximation's {normal:.0f} - if this inverts, the distribution is "
+        f"not earning its place and the project should say so")
 
 
-def test_the_saving_comes_from_fewer_lost_sales(daily):
-    """Sized against a high quantile we hold MORE stock and pay more holding
-    cost - the win has to come from shortage, or the story is wrong."""
+def test_the_ladder_is_reported_in_full_including_where_we_lose(daily):
+    """We do NOT dominate the ladder, and the code must not pretend otherwise.
+
+    Across the three windows in the product we beat min/max everywhere, beat the
+    normal approximation everywhere, and split roughly level with an ERP-style
+    (s, S) safety-stock policy - winning one, losing two by a couple of percent.
+    In this shorter Jan-Feb window we lose to both.
+
+    THE REASON IS WORTH KNOWING, because it is the honest limit of the current
+    replay. Every policy now sizes off a trailing empirical window, and a
+    trailing window cannot anticipate a SEASONAL TURN: on 1 January the last 180
+    days are autumn, and paracetamol's January peak has not happened yet. A
+    policy that simply holds more - min/max orders up to 18 days of mean cover -
+    survives that turn by accident.
+
+    Anticipating the turn is exactly what the forecast layer is for, and the
+    replay does not currently exercise it: it would need a forecast produced at
+    each review point rather than one vintage. Until it does, the business case
+    measures the DECISION RULE on a common information set and nothing more,
+    and this test asserts that the comparison is reported in full rather than
+    filtered down to the flattering rungs.
+    """
     result = compare_policies(daily, SETTINGS, PER_SERIES, *WINDOW)
-    ours, theirs = result["pharmapulse"], result["minmax"]
-    assert ours["units_short"] < theirs["units_short"]
-    assert ours["holding_cost"] > theirs["holding_cost"]
+
+    reported = {row["policy"] for row in result["ladder"]}
+    assert reported == {"minmax", "safety_stock", "normal_approx"}, (
+        "a baseline vanished from the ladder - every rung ships, including the "
+        "ones we lose")
+
+    for row in result["ladder"]:
+        ours = result["policies"]["pharmapulse"]["total_cost"]
+        assert row["we_win"] == (row["total_cost"] > ours), (
+            f"{row['policy']} reports we_win={row['we_win']} against costs "
+            f"{row['total_cost']:.0f} vs our {ours:.0f}")
+
+
+def test_the_saving_where_it_exists_comes_from_fewer_lost_sales(daily):
+    """Whenever we are cheaper, it must be because we ran out less - never
+    because we held less stock.
+
+    That direction is the whole business argument, and it is the one thing that
+    could quietly invert without anybody noticing.
+    """
+    result = compare_policies(daily, SETTINGS, PER_SERIES, *WINDOW)
+    ours = result["policies"]["pharmapulse"]
+    for policy in ("minmax", "safety_stock", "normal_approx"):
+        other = result["policies"][policy]
+        if ours["total_cost"] < other["total_cost"]:
+            assert ours["units_short"] <= other["units_short"], (
+                f"we beat {policy} on cost while running out MORE - the saving "
+                f"is coming from holding less stock, which is not the claim")
 
 
 def test_scorecard_totals_are_consistent(daily):

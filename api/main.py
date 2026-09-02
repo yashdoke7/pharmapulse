@@ -17,7 +17,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -83,6 +83,16 @@ if (_DIST / "index.html").exists():
         app rather than a 404, or a refresh on any screen but the first one
         breaks.
         """
+        # Never swallow the API surface. Without this an unmatched /api path -
+        # a typo, a renamed route, a version skew between a deployed frontend
+        # and a deployed backend - returns index.html with a 200, and the
+        # caller gets HTML where it expected JSON. A 404 is the honest answer
+        # and it is far easier to debug than a page that silently arrives
+        # instead of data.
+        if full_path.startswith(("api/", "docs", "openapi.json", "redoc")):
+            raise HTTPException(status_code=404, detail=deps.error(
+                "NOT_FOUND", f"no such endpoint: /{full_path}"))
+
         candidate = _DIST / full_path
         if full_path and candidate.is_file():
             return FileResponse(candidate)

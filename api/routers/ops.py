@@ -33,6 +33,8 @@ def health() -> dict:
         "ladder_rung": rung,
         "forecast_store": "fixtures" if fixtures else ("present" if store else "missing"),
         "model_version": fs.current_version() or "none",
+        # The data's clock, not the browser's. See forecast_store.as_of.
+        "as_of": fs.as_of(),
         "uptime_s": deps.uptime_seconds(),
     })
 

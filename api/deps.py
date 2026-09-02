@@ -104,7 +104,7 @@ def meta(degraded: str | None = None, origin: str = "observed") -> dict:
     if use_fixtures():
         return {
             "origin": "synthetic", "model_version": "fixtures/day0",
-            "snapshot_id": "sha256:0000fixture0",
+            "snapshot_id": "sha256:0000fixture0", "as_of": None,
             "generated_at": None, "stale": True, "degraded": "fixtures",
             "correlation_id": correlation_id(),
         }
@@ -116,6 +116,9 @@ def meta(degraded: str | None = None, origin: str = "observed") -> dict:
     # lanes exist to prevent.
     return {
         "origin": m.get("origin", origin),
+        # The day the system is deciding FOR - derived from the data, not from
+        # the viewer's wall clock. On every response so no screen has to guess.
+        "as_of": fs.as_of(),
         "model_version": m.get("model_version", "unknown"),
         "snapshot_id": m.get("snapshot_id", "unknown"),
         "generated_at": m.get("generated_at"),

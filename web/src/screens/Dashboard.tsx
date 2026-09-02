@@ -115,6 +115,18 @@ export function Dashboard() {
   if (risk.isError) return <ErrorCard error={risk.error} />;
   if (risk.isLoading || positions.isLoading) return <Loading label="Reading the shelf" />;
 
+  // The system's clock comes from the DATA - the day after the last
+  // observation - not from new Date(). It used to print the viewer's real
+  // date above forecasts anchored to October 2019, and there was no coherent
+  // answer to "what day is this system operating on?". It also moves on its
+  // own when a different dataset is published.
+  const asOf = risk.data?.meta.as_of ?? null;
+  const asOfLabel = asOf
+    ? new Date(asOf + "T00:00:00").toLocaleDateString("en-GB", {
+        day: "numeric", month: "long", year: "numeric",
+      })
+    : "—";
+
   const items = risk.data?.data.items ?? [];
   const pos = positions.data?.data.positions ?? [];
   const exposure = risk.data?.data.total_exposure ?? 0;
@@ -131,7 +143,9 @@ export function Dashboard() {
       <section>
         <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:items-end">
           <div>
-            <div className="eyebrow">Today · {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</div>
+            <div className="eyebrow" title="The day after the last observation in the data">
+              Deciding for · {asOfLabel}
+            </div>
             <h1 className="display mt-3 text-[42px] sm:text-[52px]">
               {needsDecision === 0 ? (
                 <>Nothing needs a decision today.</>

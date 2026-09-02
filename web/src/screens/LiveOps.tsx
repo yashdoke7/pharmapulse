@@ -327,18 +327,21 @@ export function LiveOps() {
           <ErrorCard error={businessCase.error} />
         ) : bc ? (
           <div className="panel pad border-signal-green">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Policy label="Min/max on average demand" s={bc.minmax} worse />
+            {/* Four policies, weakest first. Showing only min/max would be the
+                easiest result in the project to discount: it is the "no system
+                at all" case, and anyone who works in inventory knows every ERP
+                carries safety stock. The rungs we lose ship too. */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Policy label="PharmaPulse" s={bc.pharmapulse} best />
-              <div className="border border-signal-green bg-signal-green/[0.07] px-4 py-3">
-                <div className="eyebrow">Lower total cost</div>
-                <div className="mt-1 text-3xl font-semibold tabular-nums text-signal-green">
-                  {bc.saving_pct}%
-                </div>
-                <div className="fine mt-1">
-                  {inr(bc.saving)} over {window_.label}
-                </div>
-              </div>
+              {(bc.ladder ?? []).map((row) => (
+                <Policy
+                  key={row.policy}
+                  label={POLICY_NAMES[row.policy] ?? row.policy}
+                  s={bc.policies?.[row.policy] ?? bc.minmax}
+                  worse={row.we_win}
+                  delta={row}
+                />
+              ))}
             </div>
             <p className="fine mt-4 text-xs">{bc.method}</p>
 
@@ -350,12 +353,20 @@ export function LiveOps() {
               <dl className="mt-3 grid gap-x-8 gap-y-3 text-xs sm:grid-cols-2">
                 {[
                   [
-                    "Min/max — what a pharmacy does today",
-                    "Hold a minimum. When stock drops below it, top back up to a maximum. Both levels are set from AVERAGE demand, so the policy is blind to how much that demand varies.",
+                    "Min/max on the mean — the floor",
+                    "Hold a minimum, top back up to a maximum, both set from AVERAGE demand. Blind to how much that demand varies. This is the “no system at all” case, and beating it alone would be a soft result.",
                   ],
                   [
-                    "PharmaPulse — what we do instead",
-                    "Same shelf, same days, same costs. The only difference: we size against the quantile the cost ratio implies, not the average. Being wrong is asymmetric, so the target should not sit at the middle.",
+                    "(s, S) safety stock — what an ERP does",
+                    "Order up to μ·L + z·σ·√L. Real inventory software implements this, so it is the baseline that actually matters. We run roughly level with it, and we say so rather than leaving it out.",
+                  ],
+                  [
+                    "Our forecast, sized the textbook way",
+                    "The rung that carries the claim. It gets OUR forecast, OUR service level, and differs in exactly one thing: it sizes with a normal approximation instead of reading the quantile off the calibrated distribution. Forecast quality is held constant, so the gap is the distribution and nothing else.",
+                  ],
+                  [
+                    "PharmaPulse",
+                    "Same shelf, same days, same costs, same information. We size against the quantile the cost ratio implies. Being wrong is asymmetric, so the target should not sit at the middle.",
                   ],
                   [
                     "Lost margin",
@@ -373,6 +384,10 @@ export function LiveOps() {
                     "Why the saving is credible",
                     "It does not come from holding less stock — we hold more. It comes entirely from running out less often, and a test asserts that relationship so the claim cannot drift.",
                   ],
+                  [
+                    "What this does NOT yet measure",
+                    "Every policy sizes off a trailing window of real sales, so the comparison isolates the decision rule. That means none of them can anticipate a seasonal turn — on 1 January the last 180 days are autumn. Anticipating it is what the forecast layer is for, and exercising it here needs a forecast produced at each review point rather than one vintage.",
+                  ],
                 ].map(([term, body]) => (
                   <div key={term}>
                     <dt className="font-medium text-ink">{term}</dt>
@@ -388,16 +403,24 @@ export function LiveOps() {
   );
 }
 
+const POLICY_NAMES: Record<string, string> = {
+  normal_approx: "Our forecast, sized the textbook way",
+  safety_stock: "(s, S) safety stock — what an ERP does",
+  minmax: "Min/max on the mean — no system",
+};
+
 function Policy({
   label,
   s,
   best,
   worse,
+  delta,
 }: {
   label: string;
   s: { total_cost: number; holding_cost: number; shortage_cost: number; units_short: number };
   best?: boolean;
   worse?: boolean;
+  delta?: { we_win: boolean; saving_pct: number };
 }) {
   return (
     <div
@@ -405,7 +428,7 @@ function Policy({
         best ? "border-signal-green bg-signal-green/[0.04]" : worse ? "border-signal-red" : "border-line"
       }`}
     >
-      <div className="eyebrow">{label}</div>
+      <div className="eyebrow min-h-[2.2em]">{label}</div>
       <div
         className={`mt-1 text-2xl font-semibold tabular-nums ${
           best ? "text-signal-green" : "text-ink-soft"
@@ -413,6 +436,19 @@ function Policy({
       >
         {inr(s.total_cost)}
       </div>
+      {delta ? (
+        <div
+          className={`mt-1 inline-block px-1.5 py-0.5 font-mono text-[10px] ${
+            delta.we_win
+              ? "bg-signal-green/[0.10] text-signal-green"
+              : "bg-signal-amber/[0.12] text-signal-amber"
+          }`}
+        >
+          {delta.we_win
+            ? `we are ${delta.saving_pct.toFixed(1)}% cheaper`
+            : `they are ${Math.abs(delta.saving_pct).toFixed(1)}% cheaper`}
+        </div>
+      ) : null}
       <dl className="mt-2 space-y-1 text-xs text-ink-mute">
         <div className="flex justify-between">
           <dt>lost margin</dt>

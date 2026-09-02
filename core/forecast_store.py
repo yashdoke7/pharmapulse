@@ -124,6 +124,30 @@ def _load(root: Path | None = None) -> pd.DataFrame:
     return df
 
 
+def as_of(root: Path | None = None) -> str | None:
+    """The day the system is deciding FOR: the day after the last observation.
+
+    There were two clocks and they disagreed. The Dashboard printed
+    `new Date()` - the viewer's real wall-clock date - while every forecast on
+    it was anchored to the last day in the file. On the real dataset that read
+    "Today, 2 September" above numbers computed for October 2019, and there was
+    no coherent answer to "what date is this system operating on?".
+
+    A buyer decides for the next period, not for whenever the browser happens
+    to be opened, so the clock belongs to the DATA. It moves on its own when a
+    different dataset is published - the synthetic extension reads 2026-09-29
+    without anything being configured.
+    """
+    try:
+        df = _load(root)
+    except Exception:
+        return None
+    if df.empty or "cutoff" not in df.columns:
+        return None
+    last = pd.to_datetime(df["cutoff"]).max()
+    return (last + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+
+
 def model_meta(root: Path | None = None) -> dict:
     d = _version_dir(root)
     if d is None or not (d / "meta.json").exists():

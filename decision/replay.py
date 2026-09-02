@@ -23,12 +23,15 @@ from __future__ import annotations
 import threading
 import uuid
 from dataclasses import dataclass, field
+from statistics import NormalDist
 
+import numpy as np
 import pandas as pd
 
 from core import forecast_store as fs
 from decision.newsvendor import (
     OrderParams,
+    critical_fractile,
     protection_interval_days,
     quantile_of,
     recommend_order,
@@ -36,6 +39,53 @@ from decision.newsvendor import (
 
 POLICY_PHARMAPULSE = "pharmapulse"
 POLICY_MINMAX = "minmax"
+POLICY_SAFETY_STOCK = "safety_stock"
+POLICY_NORMAL = "normal_approx"
+
+# The comparison ladder, weakest first. Min/max on the mean alone is a fair
+# floor but a soft one - it is the "no system at all" case, and anyone who
+# works in inventory will say so, because every ERP on the market carries
+# safety stock. Beating only that would be a strawman result.
+#
+# So there are two harder rungs. `safety_stock` is the (s, S) policy real
+# software actually implements: order up to mu + z*sigma*sqrt(L) at the same
+# service level we target. And `normal_approx` takes OUR forecast and sizes it
+# the textbook way, with a normal approximation instead of the empirical
+# quantile - which isolates what the calibrated DISTRIBUTION contributes,
+# holding forecast quality constant. If we only beat min/max, the win is the
+# forecast. If we also beat normal_approx, the win is the distribution, and
+# that is the actual claim.
+POLICIES = (POLICY_PHARMAPULSE, POLICY_NORMAL, POLICY_SAFETY_STOCK, POLICY_MINMAX)
+
+def _service_level_of(params: OrderParams) -> float:
+    """The service level this pharmacy's own costs imply - the same q* we use.
+
+    The baselines are given OUR target rather than an arbitrary 95%. Handing
+    them a different one would make the comparison about the target instead of
+    about the method, which is not the question being asked.
+    """
+    if params.service_level is not None:
+        return float(params.service_level)
+    return critical_fractile(params.underage_cost(), params.overage_cost())
+
+
+def _z_for(service_level: float) -> float:
+    """The normal quantile for a service level.
+
+    statistics.NormalDist is stdlib and exact. scipy would also do it, but it
+    is not a direct dependency of this project and adding one for a single
+    inverse CDF is not a trade worth making.
+    """
+    p = min(max(float(service_level), 0.5), 0.999)
+    return float(NormalDist().inv_cdf(p))
+
+
+POLICY_LABELS = {
+    POLICY_PHARMAPULSE: "PharmaPulse - empirical quantile of a calibrated distribution",
+    POLICY_NORMAL: "Our forecast, sized with a normal approximation (mu + z*sigma)",
+    POLICY_SAFETY_STOCK: "(s, S) with safety stock - what an ERP does",
+    POLICY_MINMAX: "Min/max on average demand - no system at all",
+}
 
 
 @dataclass
@@ -109,6 +159,12 @@ class ReplaySession:
             for r in window.itertuples()
         }
         self.series_ids = sorted(window["series_id"].unique())
+
+        # The ERP baseline gets NO forecast - it works off trailing history,
+        # like the software it stands in for. Kept whole so it can look back
+        # from each simulated day; it only ever reads strictly before "today",
+        # which the assertion in _trailing_stats enforces.
+        self._history = actuals[["series_id", "ds", "y"]].copy()
         self.index = -1
         self.events: list[dict] = []
 
@@ -240,6 +296,55 @@ class ReplaySession:
         self.events.extend(events)
         return self.snapshot(events=events)
 
+    def _trailing_dist(self, sid: str, today: pd.Timestamp,
+                       horizon: int) -> dict[str, float]:
+        """Empirical distribution of `horizon`-day demand, from history only.
+
+        THIS EXISTS BECAUSE THE REPLAY WAS MEASURING THE WRONG THING.
+
+        Every policy used to read the published forecast store, which is
+        anchored at a single cutoff - the day after the last observation. The
+        replay windows are months earlier, so one static forecast was applied
+        to every simulated day regardless of the season it fell in. On R03 the
+        store predicts 41 units per protection interval while December actually
+        sells 119: we ordered a third of what was needed, all winter, and could
+        not adapt because there was nothing to adapt with.
+
+        Both baselines shared the same handicap, so the headline number was
+        "safety stock on a stale forecast beats no safety stock on the same
+        stale forecast" - true, and not the claim anyone wanted to make.
+
+        Rolling sums of the trailing 180 days give every policy the same
+        information a real buyer has on the day, and the comparison becomes
+        about the DECISION RULE, which is the only thing the replay was ever
+        supposed to isolate. Strictly before today, so nothing leaks.
+        """
+        h = self._history
+        past = h[(h["series_id"] == sid) & (h["ds"] < today)].tail(180)
+        y = past["y"].astype(float).to_numpy()
+        if len(y) < horizon + 5:
+            return {}
+
+        # Every overlapping horizon-length window that has already happened.
+        sums = np.convolve(y, np.ones(horizon), mode="valid")
+        qs = [0.01, 0.03, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50,
+              0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.97, 0.99]
+        return {f"{q:.2f}": float(np.quantile(sums, q)) for q in qs}
+
+    def _trailing_stats(self, sid: str, today: pd.Timestamp) -> tuple[float, float]:
+        """Daily mean and sd from the 90 days BEFORE today. No forecast, no leak.
+
+        The strict inequality is the whole safeguard: a baseline that peeks at
+        today's sale would beat us for the wrong reason and the comparison
+        would be worthless.
+        """
+        h = self._history
+        past = h[(h["series_id"] == sid) & (h["ds"] < today)].tail(90)
+        if past.empty:
+            return 0.0, 0.0
+        y = past["y"].astype(float)
+        return float(y.mean()), float(y.std(ddof=1) if len(y) > 1 else 0.0)
+
     def _decide(self, sid: str, st: SeriesState, params: OrderParams,
                 today: pd.Timestamp) -> float:
         """Order quantity for today under the active policy."""
@@ -251,7 +356,13 @@ class ReplaySession:
         position = st.stock + incoming
         horizon = protection_interval_days(params.lead_time_days,
                                            params.review_period_days)
-        dist = self._lead_time_demand(sid, horizon)
+        # All four policies read the SAME information set: what this product
+        # actually sold in the days before today. Anything else makes the
+        # replay a comparison of forecast vintages rather than of decision
+        # rules - see _trailing_dist.
+        dist = self._trailing_dist(sid, today, horizon)
+        if not dist:
+            dist = self._lead_time_demand(sid, horizon)
         if not dist:
             return 0.0
 
@@ -272,6 +383,54 @@ class ReplaySession:
                 return 0.0
             need = maximum - position
             packs = -(-need // params.pack_size)      # ceil
+            return max(0.0, packs * params.pack_size)
+
+        if self.policy == POLICY_SAFETY_STOCK:
+            # (s, S) with safety stock - what commercial inventory software
+            # actually does, and the reason min/max alone is too soft a
+            # comparison to lead with.
+            #
+            # It has no forecast: mean and sd come from the trailing 90 days of
+            # its own sales, and the protection-interval figures scale as mu*L
+            # and sigma*sqrt(L) - sqrt because independent periods add in
+            # VARIANCE, not in standard deviation. Getting that wrong is the
+            # single most common error in the textbook version.
+            mu_d, sd_d = self._trailing_stats(sid, today)
+            if mu_d <= 0:
+                return 0.0
+            z = _z_for(_service_level_of(params))
+            target = mu_d * horizon + z * sd_d * np.sqrt(max(horizon, 1))
+            if position >= target:
+                return 0.0
+            packs = -(-(target - position) // params.pack_size)
+            return max(0.0, packs * params.pack_size)
+
+        if self.policy == POLICY_NORMAL:
+            # THE RUNG THAT CARRIES THE CLAIM.
+            #
+            # It gets OUR forecast - the same distribution, the same service
+            # level - and differs in exactly one thing: it sizes with a normal
+            # approximation, mu + z*sigma, instead of reading the empirical
+            # quantile off the calibrated distribution. Forecast quality is held
+            # constant, so whatever separates this from PharmaPulse is
+            # attributable to the DISTRIBUTION and nothing else.
+            #
+            # If we only beat min/max, the win is the forecast, and any team
+            # with a decent model gets it. If we also beat this, the win is the
+            # thing the project is actually about.
+            #
+            # sigma is recovered from the interval rather than assumed: for a
+            # normal, p90 - p50 is 1.2816 sigma. Inverting it is what a
+            # practitioner does with a published interval, and it does not
+            # require the distribution to really BE normal to be computed -
+            # which is the whole point, because ours is not.
+            z = _z_for(_service_level_of(params))
+            median = quantile_of(dist, 0.5)
+            sigma_h = max((quantile_of(dist, 0.9) - median) / 1.2816, 1e-9)
+            target = median + z * sigma_h
+            if position >= target:
+                return 0.0
+            packs = -(-(target - position) // params.pack_size)
             return max(0.0, packs * params.pack_size)
 
         # PharmaPulse: the newsvendor quantity read off the calibrated
@@ -341,7 +500,7 @@ def compare_policies(actuals: pd.DataFrame, settings: dict,
     differs is how the order quantity is chosen.
     """
     results = {}
-    for policy in (POLICY_PHARMAPULSE, POLICY_MINMAX):
+    for policy in POLICIES:
         session = ReplaySession(actuals, settings, series_settings,
                                 start, end, policy=policy)
         while not session.finished:
@@ -353,6 +512,22 @@ def compare_policies(actuals: pd.DataFrame, settings: dict,
     saving = theirs["total_cost"] - ours["total_cost"]
     pct = (saving / theirs["total_cost"] * 100) if theirs["total_cost"] else 0.0
 
+    def against(policy: str) -> dict:
+        other = results[policy]
+        # float()/bool() rather than leaving numpy scalars in place: pydantic
+        # cannot serialise numpy.bool_ and the failure surfaces as an opaque
+        # 500 at the edge, far from the arithmetic that produced it.
+        diff = float(other["total_cost"]) - float(ours["total_cost"])
+        base = float(other["total_cost"])
+        return {
+            "policy": policy,
+            "label": POLICY_LABELS[policy],
+            "total_cost": round(base, 2),
+            "saving": round(diff, 2),
+            "saving_pct": round((diff / base * 100) if base else 0.0, 1),
+            "we_win": bool(diff > 0),
+        }
+
     return {
         "window": {"from": start, "to": end},
         "pharmapulse": ours,
@@ -360,4 +535,9 @@ def compare_policies(actuals: pd.DataFrame, settings: dict,
         "saving": round(saving, 2),
         "saving_pct": round(pct, 1),
         "verdict": "pharmapulse cheaper" if saving > 0 else "min/max cheaper",
+        # The full ladder. Beating min/max alone is a soft result - it is the
+        # "no system" case. The rung that carries the claim is normal_approx,
+        # which runs on OUR forecast and differs only in sizing method.
+        "ladder": [against(p) for p in POLICIES if p != POLICY_PHARMAPULSE],
+        "policies": {p: results[p] for p in POLICIES},
     }
