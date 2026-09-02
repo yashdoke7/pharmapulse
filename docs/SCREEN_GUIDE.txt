@@ -1,0 +1,596 @@
+PHARMAPULSE - WHAT IS ON EACH SCREEN, PART BY PART
+==================================================
+
+Read this if you are presenting and you did not build it.
+
+You do not need to understand the maths. You need to be able to point at
+any panel on any screen and say what it is and why it is there. That is
+what this file gives you. Every panel on every screen is listed below.
+
+Read PART 0 first. It is six terms, and once you have them the rest of the
+document is just naming boxes on a screen.
+
+
+-------------------------------------------------------------------------
+PART 0 - THE SIX WORDS YOU NEED
+-------------------------------------------------------------------------
+
+Learn these six. Everything else you can read off the screen.
+
+1. FORECAST
+   Our guess at how much of a medicine will sell in the coming weeks. We
+   do not give one number - we give a range, because a single number
+   pretends to a certainty nobody has.
+
+2. ORDER QUANTITY
+   How many units to actually buy this week. This is the product. The
+   forecast is only the input to it.
+
+3. LEAD TIME
+   How long the supplier takes to deliver after you place an order.
+   Here it is 4 days by default.
+
+4. REVIEW PERIOD
+   How often the buyer sits down and places orders. Here, every 7 days.
+
+5. PROTECTION INTERVAL
+   Lead time PLUS review period. 4 + 7 = 11 days.
+   This is the one that catches people out. If you order today, the stock
+   has to last until the NEXT order arrives - not just until this one
+   does. So the order must cover 11 days, not 4. Sizing against 4 was an
+   actual bug we had, and it caused constant stockouts.
+
+6. MASE
+   The score we use for forecast accuracy. Lower is better.
+   Below 1.0 = better than the dumb baseline. Above 1.0 = worse than it.
+   Ours is 0.907. The baseline is 1.117.
+
+Two more that only come up if someone asks:
+
+   COST OF BEING WRONG IN TWO DIRECTIONS
+   Order too little and you lose the sale and maybe the customer. Order
+   too much and your cash sits on a shelf and the medicine can expire.
+   Both cost money. The system balances the two.
+
+   PROVENANCE
+   For every number on screen, we track where it came from - measured
+   from the real sales file, or entered by the user as a setting. It is
+   labelled on screen. Nothing is invented.
+
+
+-------------------------------------------------------------------------
+PART 1 - THE SHAPE OF THE WHOLE THING
+-------------------------------------------------------------------------
+
+Seven screens across the top bar, left to right:
+
+   DECISIONS   what needs my attention today
+   ORDER       what do I actually buy
+   FORECAST    what do we think will sell
+   WHY         why is it that number, and can I trust it
+   REPLAY      what would this have been worth last year
+   EVIDENCE    prove the accuracy claims
+   SETTINGS    my shop's numbers - lead time, costs, stock
+
+They are in that order on purpose. It is the order a real buyer's
+questions arrive in. You can present the whole thing by going left to
+right and never going back.
+
+Underneath the screens there are four parts to the system. If someone
+asks "what are the components", this is the answer:
+
+   1. DATA        reads the sales file, checks it, cleans it, builds
+                  daily / weekly / monthly views of it
+   2. FORECAST    classifies each medicine, runs several models on it,
+                  combines them, checks its own confidence
+   3. DECISION    turns a forecast into an order quantity, flags risks,
+                  tracks the shelf, and can replay history
+   4. INTERFACE   the seven screens, plus the API that feeds them
+
+Data flows one way only: 1 to 2 to 3 to 4. Nothing later reaches back.
+
+One more thing worth being able to say: the heavy work happens OFFLINE, in
+a batch that runs separately and saves its results. When you click around
+the screens, no model is being run - the screens are only reading saved
+results. That is why everything is instant.
+
+
+=========================================================================
+SCREEN 1 - DECISIONS
+=========================================================================
+
+The question it answers:  "What needs my decision today?"
+
+This is the landing screen. A buyer has ten minutes on a Monday morning.
+This screen is built for those ten minutes.
+
+THE PARTS ON IT
+---------------
+
+(a) THE HEADLINE, top left
+    "Four products need a decision, Rs 1,236 at risk."
+    A sentence, not a chart. It is a live count over all eight medicines.
+    Say: "It does not open on a graph. It opens on a sentence."
+
+(b) THE THREE COUNTERS, top right
+    ORDER NOW      - how many products need buying, and how many units
+    CAPITAL STUCK  - how many have too much stock sitting idle, and how
+                     many days of cover that represents
+    HEALTHY        - how many are fine (e.g. 4 out of 8)
+    Together they account for all eight products.
+
+(c) THE EXCEPTION LIST, the numbered rows
+    One row per product that needs attention. Each row has:
+      - a rank number (01, 02, 03)
+      - the product code and a coloured badge, STOCKOUT or OVERSTOCK
+      - a percentage: how likely that problem is
+      - a plain sentence naming the problem
+      - a line of explanation ("10.4 days of cover, the order has to
+        survive 11 days - a 4-day lead time plus a 7-day gap")
+      - the rupee amount at risk, on the right
+      - a link that takes you straight to the order that fixes it
+
+    THE POINT TO MAKE HERE. The list is sorted by MONEY, not by
+    probability. Look at the rows: one is 99% certain and it is ranked
+    LAST because it is only worth Rs 163. One is 34% likely and ranked
+    ABOVE it because it is worth Rs 276.
+    Say: "A 30% chance on your biggest seller matters more than a 90%
+    chance on something that sells twice a month."
+
+(d) SHELF POSITION, the table at the bottom
+    All eight products with their current stock, days of cover, reorder
+    point, when they run out, and a suggested quantity. This is the "show
+    me everything" view for a buyer who does not trust the shortlist.
+
+IF SOMEONE ASKS
+    "Where does the percentage come from?"  From the forecast. We forecast
+    a range, so we can read off how likely it is that demand exceeds what
+    is on the shelf.
+    "Where does the rupee figure come from?" For a shortage, it is the
+    profit you lose on the sales you cannot make. For overstock, it is the
+    cost of having cash tied up in stock you do not need.
+
+
+=========================================================================
+SCREEN 2 - ORDER
+=========================================================================
+
+The question it answers:  "What do I actually buy?"
+
+This is the most important screen in the whole project. Spend the most
+time here. Everything else exists to make this screen possible.
+
+THE PARTS ON IT
+---------------
+
+(a) THE PRODUCT TABS, across the top
+    Eight medicines. Click one to switch. Each shows the common name
+    (Paracetamol, Ibuprofen, Aspirin...) with its official drug code
+    underneath.
+
+(b) THE SLIDER PANEL, left, titled "How often are you willing to run out?"
+    This is the heart of it. The slider is the ONLY thing a buyer has to
+    have an opinion about. Drag it left = accept running out more often,
+    hold less stock, cheaper. Drag it right = almost never run out, hold
+    more stock, more expensive.
+
+    DRAG IT SLOWLY IN THE DEMO. Four things move together:
+      SERVICE LEVEL   the % of the time you will not run out
+      STOCKOUT RISK   the mirror of it
+      COST THIS CYCLE the total expected cost at this setting
+      ORDER (top right) the quantity, in units and in packs
+
+    And say this: nothing is being loaded while you drag. No spinner, no
+    network request. The whole cost curve was sent once, and the browser
+    is doing the rest.
+
+(c) THE COST CURVE, the graph underneath the slider
+    Expected cost at every possible service level. It is U-shaped.
+    Left side high  = you run out too often, you lose sales.
+    Right side high = you hold too much, you pay to store it.
+    The marked point is the bottom of the U - the cheapest place to be.
+    Say: "The recommendation is not a rule of thumb. It is the bottom of
+    that curve."
+
+(d) THE PLUS/MINUS ONE PACK PANEL, below the curve
+    Three prices side by side: one pack fewer, the recommendation, one
+    pack more. E.g. Rs 39.02 / Rs 38.58 / Rs 39.07.
+    Say: "This is what makes it usable. The buyer can see that being one
+    pack off in either direction costs about fifty paise. They can argue
+    with the number instead of just obeying it."
+
+(e) THE ACCEPT BUTTON
+    Black button, "ACCEPT 240 UNITS". Clicking it actually records the
+    order and moves the shelf. It is not a mock-up.
+
+(f) POSITION, right column, top
+    On hand, reorder point, days of cover, when it runs out, target level,
+    and the recommendation. The "on hand" number is not stored anywhere -
+    it is the starting stock plus every movement since.
+
+(g) WHAT THE POSITION IS MADE OF, right column
+    The movement trail. Opening stock, then every receipt and sale, adding
+    up to the number on the shelf. This is why the position is auditable -
+    you can see what it is made of.
+
+(h) LEAD-TIME DEMAND, right column
+    Five bars: p5, p25, p50, p75, p95. Read it as: "there is a 5% chance
+    demand over the next 11 days is below 287, a 50% chance it is below
+    399, a 95% chance it is below 546."
+    This is the forecast RANGE, over the whole 11-day protection interval,
+    and it is what the order is read from.
+
+(i) WHERE EACH INPUT CAME FROM, right column, bottom
+    The provenance panel. Every input labelled MEASURED (from the real
+    sales file) or YOUR SETTING (entered by the user). Point at it if
+    anyone asks whether data was invented.
+
+IF SOMEONE ASKS
+    "How does it decide the quantity?"
+    There is a formula. If running out is three times as expensive as
+    over-ordering, you order enough to cover demand three times out of
+    four. That ratio comes from your own costs. The formula is a
+    hundred years old and it is exact - we did not invent it, we shipped
+    it. It is called the newsvendor formula.
+
+    "Why packs?"
+    Medicines come in boxes. You cannot order 23.4 units. It rounds up
+    when running out is the more expensive mistake.
+
+
+=========================================================================
+SCREEN 3 - FORECAST
+=========================================================================
+
+The question it answers:  "What do we think will sell, and do I believe it?"
+
+THE PARTS ON IT
+---------------
+
+(a) DAILY / WEEKLY / MONTHLY toggle, top right
+    Three different clocks, three different questions:
+      Daily   - will I run out before the next delivery?
+      Weekly  - what do I order on Tuesday?
+      Monthly - how much cash do I need, and when?
+    Switch between them in the demo. It is a good ten seconds.
+
+(b) THE FAN CHART, the big graph
+    Blue line, left half   = what actually sold. Real history.
+    Dashed vertical line   = today. Everything right of it is a forecast.
+    Black line, right half = our forecast.
+    Three grey bands       = the 50%, 80% and 90% ranges.
+    The bands widen as you look further ahead, which is correct - you know
+    less about eight weeks from now than about next week.
+    Say: "It gives a range, not a single number, because a single number
+    pretends to a certainty nobody has."
+
+(c) THE HORIZON SLIDER, above the chart on the right
+    How many periods ahead to forecast. 8 by default.
+
+(d) THE MEMBERS TABLE, bottom left, "THE MEMBERS BEHIND THE MEDIAN"
+    Five rows, five different forecasting models, and their predictions
+    for each of the next several periods. The last row, in green, is the
+    Ensemble - which is the MIDDLE value of the five.
+    Say: "Five models, each with a different idea of how demand works. We
+    do not pick one. We take the middle value. Screen 6 shows why that is
+    the more interesting result."
+
+(e) SERIES PROFILE, bottom right
+    Facts about this medicine: its demand class, two statistics called ADI
+    and CV-squared, its daily average, how often it sells nothing, and its
+    peak month.
+    The demand class ("smooth", "intermittent", ...) decides WHICH models
+    this medicine gets routed to. It is recalculated every night from the
+    data - nobody configures it by hand. One product, the sedatives, sells
+    nothing on 68% of days, so it goes to models built for that.
+
+IF SOMEONE ASKS
+    "Why five models instead of the best one?"
+    Because we tested picking the best one and it scored worse. See
+    screen 6. Different models make different mistakes; taking the middle
+    value cancels them out.
+
+
+=========================================================================
+SCREEN 4 - WHY
+=========================================================================
+
+The question it answers:  "Why is it that number, and are you sure?"
+
+Two panels. They answer two different questions. Cover both.
+
+LEFT PANEL - ATTRIBUTION, IN UNITS
+----------------------------------
+    A headline like "Antihistamines is down 20 units next month", then
+    the reasons, each as a bar with a number:
+        Seasonality   -23.7 units    "coming off the pollen season"
+        Trend          +4.0 units    "underlying level"
+        Total change  -19.8 units
+
+    Say: "A normal machine learning tool would show you a chart of which
+    variables mattered. That explains the MODEL. A buyer needs an
+    explanation of the QUANTITY. So the answer is in units, and the parts
+    add up to the whole. There is a test that checks they add up, because
+    an explanation that does not add up to the number it explains is worse
+    than no explanation at all."
+
+RIGHT PANEL - ARE OUR CONFIDENCE INTERVALS HONEST?
+--------------------------------------------------
+    This is the panel most projects never build. Take your time.
+
+    What it is: we went back and checked our own predictions. Every time
+    we said "we are 80% confident demand will be in this range", did the
+    real answer actually land in that range 80% of the time?
+
+    The answer: no. It landed there 92.2% of the time.
+
+    That means our range was TOO WIDE. Which sounds like the safe
+    direction and is not - a range that is too wide pushes the order
+    quantity up, so the buyer buys more than they need and pays to store
+    it. We corrected it to 82.0%.
+
+    The graph:
+        Dashed diagonal = perfect. Closer to it is better.
+        Red line   = before correction. Bowed above the diagonal.
+        Black line = after correction. Sits on the diagonal.
+        "n = 256" = how many checks that is based on. Stated on purpose.
+
+    Say: "We measured whether to believe ourselves, we did not like the
+    answer, so we fixed it."
+
+    Worth adding: our own design document had predicted the opposite -
+    that our ranges would be too narrow. The measurement contradicted the
+    document, and we corrected the document.
+
+BOTTOM STRIP - A STATED LIMITATION
+    A paragraph at the bottom of several screens. It says we forecast
+    SALES, not DEMAND. See the closing section of this file.
+
+
+=========================================================================
+SCREEN 5 - REPLAY
+=========================================================================
+
+The question it answers:  "What would this actually have been worth?"
+
+THE PARTS ON IT
+---------------
+
+(a) THE WINDOW TABS, top right
+    Three real quarters of 2019/2018 history to replay.
+
+(b) THE REPLAY PANEL with START REPLAY
+    Click it and it plays the real history one day per tick. Real sales,
+    real dates. The date advances and the shelf moves as sales happen and
+    deliveries arrive.
+    Say: "Nothing here is simulated except the shelf and the ordering
+    policy. The sales are the real 2019 sales."
+    Let it run 15 seconds, then stop it. Do not let it run the whole
+    quarter on camera.
+
+(c) WHAT IT WAS WORTH - three cards. This is the business case.
+
+    Card 1, red border - MIN/MAX ON AVERAGE DEMAND
+        Rs 4,619 total, broken into lost margin, holding cost, and units
+        it failed to supply. This is the standard textbook policy - what a
+        real pharmacy would be doing today.
+
+    Card 2, green border - PHARMAPULSE
+        Rs 1,409, broken down the same way.
+
+    Card 3 - LOWER TOTAL COST
+        69.5%.
+
+    NOW THE LINE THAT MATTERS. Do not skip it.
+    Look at the two breakdowns. Our HOLDING cost is HIGHER - Rs 501
+    against Rs 389. We deliberately keep more stock and pay more to keep
+    it. The whole saving comes from lost margin dropping from Rs 4,230 to
+    Rs 908 - that is, from not running out.
+    Say: "We are not saving money by holding less stock. We hold more. The
+    saving is entirely fewer lost sales, and there is a test that asserts
+    that, so we cannot accidentally start claiming a saving that comes
+    from somewhere else."
+
+    Then switch to a second window tab. 64%. And a third. 75%.
+    Say: "Different quarter, same direction. It is not one lucky quarter."
+
+(d) The paragraph under the cards
+    States that both policies were given the identical days, identical
+    costs, identical lead time, identical review cadence and identical
+    protection interval. The only difference is that the old policy sizes
+    against the AVERAGE and we size against the range.
+
+IF SOMEONE ASKS
+    "Is min/max a fair comparison?"
+    Yes, and we gave it every advantage - the same protection interval as
+    ours. It is the standard policy, it is what a real shop uses, and an
+    earlier version of this comparison was accidentally unfair to it (it
+    produced an 88% saving). We found that and corrected it down to 70%.
+
+
+=========================================================================
+SCREEN 6 - EVIDENCE
+=========================================================================
+
+The question it answers:  "Prove it."
+
+This is the screen that makes a faculty member believe the other five.
+Do not skip it and do not rush it.
+
+Open with this line: "Every number on this screen was written by a script
+that runs from a clean copy of the project. None of it is typed by a
+human. The script writes a file, and this screen only reads that file."
+
+THE PARTS ON IT
+---------------
+
+(a) THE FOUR FIGURES, across the top
+    ENSEMBLE MASE     0.907   - our accuracy score
+    BENCHMARK TO BEAT 1.117   - the baseline's score
+    INTERVAL COVERAGE 82.0%   - from screen 4
+    CACHE HIT RATE    0%      - "no model runs per request", i.e. the
+                                screens only read saved results
+
+    Say: "0.907 against 1.117 is 18.8% better than the benchmark. And the
+    benchmark is not a weak one - it is 'repeat what happened this week
+    last year', and on pharmacy data that is genuinely hard to beat,
+    because pharmacy demand really is seasonal."
+
+(b) THE HIGHLIGHTED BOX - "THE RESULT WORTH LEADING WITH"
+    Three numbers:
+        Pick the best model per product   0.968
+        Combine them (take the middle)    0.907
+        Perfect hindsight                 0.843
+
+    THIS IS THE BEST THING IN THE PROJECT. Say it clearly:
+    "We built the obvious approach - work out which model is best for each
+    medicine and use that one - and we measured it LOSING. Selection
+    scores 0.968. Combining scores 0.907."
+
+    Why: with only about 300 weekly data points per medicine, 'which model
+    was best last time' is mostly luck. So selection chases luck. Whereas
+    different models make different mistakes, and taking the middle value
+    cancels them out.
+
+    "Perfect hindsight" at 0.843 is what you would score if you could see
+    the future and always pick right. It is a ceiling, not a model. We
+    include it so you know how much room is left.
+
+(c) MODEL LEADERBOARD, bottom left
+    Every model we tried, as a bar chart, best at top. Green is ours.
+    Amber is the benchmark. It shows we beat all eleven individual models.
+
+(d) PER SERIES - INCLUDING WHERE WE LOSE, bottom right
+    All eight medicines, the benchmark's score, our score, and the best
+    single model for that one.
+
+    SAY THIS PART OUT LOUD, DO NOT LET THEM FIND IT:
+    "We beat the benchmark on all eight. So that comparison is not the
+    interesting one. The honest column is the absolute one - a score above
+    1.000 means worse than simply repeating last week, and two of our
+    eight are. Antihistamines at 1.646 is our worst. Its peak is in May,
+    it is sharp, and its timing moves year to year - and we only have six
+    years, so six observations of it. We are not going to pretend
+    otherwise."
+
+    Say why this matters: a team that only reports its wins gets
+    discounted, and experienced judges do that quickly.
+
+(e) PROVENANCE, the footer strip
+    Snapshot hash (a fingerprint of the exact data file), generation
+    timestamp, model version, audit chain valid, ensemble members, how
+    long the backtest took, and how many model-fold combinations were run.
+    Say: "If the data file changes, that fingerprint changes, and every
+    claim on this screen is tied to it."
+
+IF SOMEONE ASKS
+    "How do I know it is not typed in?"
+    Run  python scripts/day1_benchmark.py  from a fresh copy. 45 seconds.
+    It rewrites the file this screen reads. The same script runs
+    automatically on every push to GitHub.
+
+    "What is MASE and why not percentage error?"
+    MASE compares us to the dumb baseline. Below 1 is better than it,
+    above 1 is worse. We cannot use percentage error because one of our
+    medicines sells zero on 68% of days, and you cannot compute a
+    percentage error against zero.
+
+
+=========================================================================
+SCREEN 7 - SETTINGS
+=========================================================================
+
+The question it answers:  "These are my shop's numbers, not yours."
+
+THE PARTS ON IT
+---------------
+    Lead time (days), review period (days), holding cost rate, expiry risk
+    rate, and per-product stock on hand, unit margin, unit cost and pack
+    size.
+
+THE DEMO TO DO HERE
+    Change LEAD TIME from 4 days to 9 days. Save. Go back to ORDER.
+    The recommended quantity jumps.
+    Say: "The supplier got slower, so the order has to cover a longer
+    window. Nothing was retrained. The forecast did not change. Only the
+    decision changed."
+
+WHY THIS SCREEN EXISTS AT ALL - THE MOST IMPORTANT IDEA IN THE PROJECT
+    The data file we were given has dates and units sold. That is all. It
+    has NO stock levels, NO prices, NO costs, NO lead times. Those columns
+    do not exist.
+
+    So we did not invent them. We split every value in the system into
+    three lanes with different rights:
+
+    LANE 1 - MEASURED. The sales file and things worked out from it.
+             Can train a model. Can explain. Can back an accuracy claim.
+
+    LANE 2 - YOUR SETTING. Lead time, costs, stock, pack size - the things
+             on this screen. Can appear in an explanation as a named
+             input. NEVER trains a model. NEVER backs an accuracy claim.
+
+    LANE 3 - MADE UP. Not allowed anywhere. The code physically refuses to
+             load a made-up data file - it throws an error - and there is
+             a test that checks it does.
+
+    Why it matters, in one sentence: if you invent a price column and
+    train on it, your model has learned from a random number generator,
+    and then the "Why" screen shows that noise to a pharmacist as if it
+    were a real commercial reason. That is worse than having no
+    explanation.
+
+    Every accuracy number in this project comes from the sales file alone.
+
+THIS IS THE ANSWER TO THE HARDEST QUESTION YOU WILL BE ASKED
+    Q: "Where did the cost and stock data come from? You made it up."
+    A: "Yes, and that is exactly why it is quarantined. Those are lane 2 -
+       user settings. They are entered on the Settings screen, labelled as
+       settings everywhere they appear, they never train a model and they
+       never back an accuracy claim. In a real deployment they come from
+       the pharmacy's own system."
+
+
+=========================================================================
+THE CLOSING - THE LIMITATION TO STATE BEFORE ANYONE ASKS
+=========================================================================
+
+Say this at the end. Volunteering it is the strongest thing in the
+presentation.
+
+    "We forecast SALES, not DEMAND.
+
+    When a shop runs out, the sales record shows zero. But zero sales is
+    not the same as zero demand - customers came and were turned away, and
+    nothing recorded that. So our data understates demand, and it
+    understates it worst on exactly the products that matter most.
+
+    Left uncorrected it feeds itself: a stockout lowers recorded sales,
+    which lowers the forecast, which lowers the order, which causes
+    another stockout.
+
+    What we do about it: we flag days where sales hit a suspicious
+    ceiling. What we cannot do: verify the correction, because this
+    dataset has no stock column to check against. It is written down in
+    our model card, and it is the first thing a real deployment would fix,
+    by connecting to the pharmacy's own inventory system."
+
+
+=========================================================================
+IF YOU ONLY REMEMBER FIVE THINGS
+=========================================================================
+
+1. It does not stop at a forecast. It produces a purchase order, in packs.
+   Almost every tool in this market stops at the chart.
+
+2. The list is ranked by MONEY, not by probability. A 30% chance on your
+   biggest seller beats a 90% chance on something that barely sells.
+
+3. We checked our own confidence and found it wrong (too wide, 92% instead
+   of 80%), and corrected it.
+
+4. We built the obvious approach - pick the best model per product - and
+   measured it LOSING to just combining all of them.
+
+5. The data has no costs or stock, so we never invented them. They are
+   settings, they are labelled as settings, and they never touch a model.
