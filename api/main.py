@@ -14,9 +14,13 @@ Contract: CONTRACTS.md section C3.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from api import deps
 from api.routers import decisions, forecasting, ops, replay
@@ -32,8 +36,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
-                   "http://localhost:4173"],
+    # Local dev origins, plus anything named at deploy time. In the single
+    # container the browser and the API share an origin, so CORS never applies -
+    # this list only matters when the two are hosted separately.
+    allow_origins=[
+        "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173",
+        *[o for o in os.getenv("PHARMAPULSE_ALLOWED_ORIGINS", "").split(",") if o],
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,6 +59,34 @@ async def internal_error(request: Request, exc: Exception) -> JSONResponse:
     """Never leak a stack trace to the browser; keep the envelope shape."""
     return JSONResponse(status_code=500, content=deps.error(
         "UPSTREAM_DEGRADED", "an internal error occurred"))
+
+
+# --- the built interface, when one is present ------------------------------
+#
+# A deployed container serves the API and the compiled frontend from the SAME
+# origin, so there is one URL to hand out, no CORS, and no second service to
+# keep alive on a free tier. When web/dist is absent - which is every local dev
+# run, where Vite serves the interface itself - none of this mounts and the
+# root stays the JSON index below.
+
+_DIST = Path(os.getenv("PHARMAPULSE_WEB_DIST", "web/dist"))
+
+if (_DIST / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str) -> FileResponse:
+        """Client-side routing: every unmatched path returns index.html.
+
+        Registered last, so it cannot shadow /api/* or /docs - FastAPI matches
+        routes in definition order. A direct hit on /orders has to return the
+        app rather than a 404, or a refresh on any screen but the first one
+        breaks.
+        """
+        candidate = _DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_DIST / "index.html")
 
 
 @app.get("/")
