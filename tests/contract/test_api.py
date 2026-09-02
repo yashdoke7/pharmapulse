@@ -256,3 +256,45 @@ def test_the_ledger_shows_what_the_position_is_made_of():
     assert {"series_id", "opening_stock", "movements", "stock_on_hand"} <= set(d)
     moved = sum(m["quantity"] for m in d["movements"])
     assert d["stock_on_hand"] == pytest.approx(d["opening_stock"] + moved)
+
+# --- datasets -------------------------------------------------------------
+
+def test_dataset_upload_rejects_a_non_csv():
+    r = client.post(
+        "/api/datasets/upload",
+        files={"file": ("sales.txt", b"datum,N02BE\n2019-01-01,10\n", "text/plain")},
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"]["error"]["code"] == "NOT_A_CSV"
+
+
+def test_dataset_upload_rejects_missing_columns():
+    r = client.post(
+        "/api/datasets/upload",
+        files={"file": ("sales.csv", b"datum,N02BE\n2019-01-01,10\n", "text/csv")},
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"]["error"]["code"] == "MISSING_COLUMNS"
+
+
+def test_dataset_rebuild_rejects_a_bad_date():
+    r = client.post("/api/datasets/rebuild", json={"as_of": "not-a-date"})
+    assert r.status_code == 422
+    assert r.json()["detail"]["error"]["code"] == "BAD_DATE"
+
+
+def test_dataset_activate_404s_on_an_unknown_slug():
+    r = client.post("/api/datasets/activate", json={"slug": "does-not-exist"})
+    assert r.status_code == 404
+    assert r.json()["detail"]["error"]["code"] == "NO_SUCH_VERSION"
+
+
+def test_dataset_delete_refuses_to_remove_the_live_version(monkeypatch):
+    from core import forecast_store as fs
+
+    live = "version-under-test"
+    monkeypatch.setattr(fs, "current_version", lambda: live)
+
+    r = client.delete(f"/api/datasets/versions/{live}")
+    assert r.status_code == 409
+    assert r.json()["detail"]["error"]["code"] == "VERSION_IS_LIVE"
