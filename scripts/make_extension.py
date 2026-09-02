@@ -367,11 +367,17 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     csv = out / "salesdaily_synthetic_2019_2026.csv"
-    df.to_csv(csv, index=False)
+    # Same date format as the real file (%m/%d/%Y). A drop-in replacement has to
+    # satisfy the input contract, not ask the ingest to be taught a second
+    # dialect - pipelines/ingest.py::DATE_FORMAT is the authority.
+    span = f"{df.datum.min().date()} -> {df.datum.max().date()}"
+    written = df.copy()
+    written["datum"] = written["datum"].dt.strftime("%m/%d/%Y")
+    written.to_csv(csv, index=False)
     (out / "extension_manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8")
 
-    print(f"wrote {csv}  ({len(df):,} rows, {df.datum.min().date()} -> {df.datum.max().date()})")
+    print(f"wrote {csv}  ({len(df):,} rows, {span})")
     print(f"wrote {out / 'extension_manifest.json'}  ({len(EVENTS)} labelled events)")
     print("\nEvery row is lane 3. The ingest entrypoint will refuse to train on it.")
     return 0

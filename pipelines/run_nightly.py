@@ -16,24 +16,28 @@ from pipelines.clean import clean, summarise
 from pipelines.features import build_features, write_features
 from pipelines.gold import build_gold, fitting_frame
 from pipelines.holidays import write_calendar
-from pipelines.ingest import ingest, read_bronze
+from pipelines.ingest import LANES, ingest, read_bronze
 from pipelines.validate import assert_reconciles, validate
 
 RAW = Path("data/observed/salesdaily.csv")
 
 
-def run_gold(raw: Path = RAW, verbose: bool = True) -> dict:
+def run_gold(raw: Path = RAW, verbose: bool = True,
+             origin: str = "observed") -> dict:
     t0 = time.perf_counter()
 
     calendar_path = write_calendar()
     if verbose:
         print(f"holiday calendar   {calendar_path}")
 
-    result = ingest(raw)
+    result = ingest(raw, origin=origin)
     if verbose:
         print(f"ingest             {result.rows_written} rows  "
               f"{result.first_ds} -> {result.last_ds}")
         print(f"snapshot_id        {result.snapshot_id}")
+        print(f"origin             {origin}  -  {LANES[origin]}")
+        if origin != "observed":
+            print("                   ^ every number downstream inherits this lane")
 
     bronze = read_bronze()
 
@@ -87,6 +91,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stage", default="all",
                         choices=["gold", "forecast", "all"])
     parser.add_argument("--raw", default=str(RAW))
+    parser.add_argument(
+        "--origin", default="observed", choices=sorted(LANES),
+        help="the lane this file belongs to. 'synthetic' is how you load lane 3 "
+             "knowingly: it is allowed, it is labelled on every row and on every "
+             "screen, and it may never back an accuracy claim.")
     args = parser.parse_args(argv)
 
     raw = Path(args.raw)
@@ -96,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.stage in ("gold", "all"):
-        run_gold(raw)
+        run_gold(raw, origin=args.origin)
     if args.stage in ("forecast", "all"):
         print()
         run_forecast()

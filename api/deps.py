@@ -109,8 +109,13 @@ def meta(degraded: str | None = None, origin: str = "observed") -> dict:
             "correlation_id": correlation_id(),
         }
     m = fs.model_meta()
+    # The store records the lane it was fitted on. It wins over the caller's
+    # default, because a route saying origin="observed" is stating a hope; the
+    # store is stating a fact. Without this, a run on lane 3 would serve
+    # synthetic forecasts under an "observed" badge - the exact failure the
+    # lanes exist to prevent.
     return {
-        "origin": origin,
+        "origin": m.get("origin", origin),
         "model_version": m.get("model_version", "unknown"),
         "snapshot_id": m.get("snapshot_id", "unknown"),
         "generated_at": m.get("generated_at"),

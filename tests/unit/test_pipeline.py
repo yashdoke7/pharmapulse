@@ -12,6 +12,14 @@ from pipelines.validate import assert_reconciles, validate
 
 # --- ingest ---------------------------------------------------------------
 
+def _one_row_csv(path):
+    """A minimal file that passes the column check, so a lane test tests lanes."""
+    from pipelines.ingest import SERIES_IDS
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("datum," + ",".join(SERIES_IDS) + "\n"
+                    + "1/2/2014," + ",".join("1" for _ in SERIES_IDS) + "\n")
+
+
 def test_ingest_is_idempotent(tmp_path):
     """Re-ingesting the same file changes nothing. The nightly job must be
     safely re-runnable, and a real POS feed resends after an outage."""
@@ -30,11 +38,37 @@ def test_ingest_is_idempotent(tmp_path):
 def test_ingest_refuses_a_synthetic_path(tmp_path):
     """Lane 3 may not train a model. Enforced in code, not by convention."""
     fake = tmp_path / "data" / "synthetic" / "salesdaily.csv"
-    fake.parent.mkdir(parents=True)
-    fake.write_text("datum,M01AB\n1/2/2014,1\n")
+    _one_row_csv(fake)
 
     with pytest.raises(ValueError, match="synthetic"):
         ingest(fake, out_root=tmp_path / "bronze")
+
+
+def test_ingest_accepts_synthetic_only_when_told_so(tmp_path):
+    """The guard's job is that lane 3 cannot enter DISGUISED, not that it
+    cannot enter at all.
+
+    Refusing outright made the lane unusable, so demonstrating the pipeline on
+    a second dataset would have meant deleting the guard - which is how a
+    safety rail becomes a formality. Loading it is allowed; loading it silently
+    is not, and every row carries the label onward.
+    """
+    fake = tmp_path / "data" / "synthetic" / "salesdaily.csv"
+    _one_row_csv(fake)
+
+    result = ingest(fake, out_root=tmp_path / "bronze", origin="synthetic")
+    assert result.rows_written > 0
+
+    written = pd.read_parquet(tmp_path / "bronze")
+    assert set(written["origin"]) == {"synthetic"}, (
+        "a synthetic row reached bronze without its lane attached")
+
+
+def test_ingest_rejects_an_unknown_lane(tmp_path):
+    fake = tmp_path / "salesdaily.csv"
+    _one_row_csv(fake)
+    with pytest.raises(ValueError, match="unknown origin"):
+        ingest(fake, out_root=tmp_path / "bronze", origin="probably_fine")
 
 
 # --- validation -----------------------------------------------------------

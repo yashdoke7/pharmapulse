@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipelines.paths import bronze_root, resolve
+
 SERIES_IDS = ["M01AB", "M01AE", "N02BA", "N02BE", "N05B", "N05C", "R03", "R06"]
 DATE_COL = "datum"
 DATE_FORMAT = "%m/%d/%Y"
@@ -31,6 +33,15 @@ class IngestResult:
     last_ds: str
 
 
+# The three lanes, and what each is allowed to do. This is the vocabulary the
+# origin column speaks; api/deps.py puts it in meta.origin on every response.
+LANES = {
+    "observed": "trains models, explains, may back an accuracy claim",
+    "user_setting": "explains as a named input; never trains, never backs a claim",
+    "synthetic": "demonstrates the pipeline; never trains, never backs a claim",
+}
+
+
 def snapshot_id(path: Path) -> str:
     """Content hash of the source file. Every downstream number is tied to it."""
     h = hashlib.sha256()
@@ -41,20 +52,39 @@ def snapshot_id(path: Path) -> str:
 
 
 def ingest(raw_path: str | Path,
-           out_root: str | Path = "data/warehouse/bronze") -> IngestResult:
+           out_root: str | Path | None = None,
+           origin: str = "observed") -> IngestResult:
     """Parse the daily CSV into long form and upsert into append-only bronze.
 
     The upsert is keyed on the natural key (series_id, ds), so re-ingesting the
     same file is a no-op. The nightly job must be safely re-runnable after a
     failure, and a real POS feed resends records after a network interruption.
+
+    `origin` is the lane, and it travels on every row from here to the browser.
+    It used to be hardcoded to "observed" while a path check refused anything
+    with "synthetic" in its name. That was the right instinct implemented as a
+    dead end: it made lane 3 unusable rather than accountable, so demonstrating
+    the pipeline on a second dataset meant deleting the guard.
+
+    The guard now enforces the thing actually worth enforcing - that synthetic
+    data cannot enter DISGUISED as observed. Loading it is allowed; loading it
+    silently is not. Everything downstream reads the origin column, so a
+    synthetic run labels itself all the way to the screen and its numbers
+    cannot be passed off as measured.
     """
     raw_path = Path(raw_path)
 
+    if origin not in LANES:
+        raise ValueError(f"unknown origin {origin!r}; expected one of {sorted(LANES)}")
+
     # Lane enforcement, in code rather than by convention (data/README.md).
-    if "synthetic" in str(raw_path).replace("\\", "/").lower():
+    looks_synthetic = "synthetic" in str(raw_path).replace("\\", "/").lower()
+    if looks_synthetic and origin != "synthetic":
         raise ValueError(
-            f"refusing to ingest from a synthetic path: {raw_path}. "
-            "Lane 3 data may not train a model or back an accuracy claim."
+            f"refusing to ingest {raw_path} as origin={origin!r}: the path says "
+            "synthetic. Pass origin='synthetic' to load it knowingly - lane 3 "
+            "data may demonstrate the pipeline, but it may never train a model "
+            "that backs an accuracy claim."
         )
 
     wide = pd.read_csv(raw_path)
@@ -75,12 +105,12 @@ def ingest(raw_path: str | Path,
     ).rename(columns={DATE_COL: "ds"})
 
     long["y"] = pd.to_numeric(long["y"], errors="coerce").astype("float64")
-    long["origin"] = "observed"
+    long["origin"] = origin
     long["snapshot_id"] = sid
     long["ingest_batch_id"] = batch_id
     long = long.sort_values(["series_id", "ds"]).reset_index(drop=True)
 
-    out_root = Path(out_root)
+    out_root = resolve(out_root, bronze_root())
     out_root.mkdir(parents=True, exist_ok=True)
     target = out_root / "bronze.parquet"
 
@@ -105,5 +135,5 @@ def ingest(raw_path: str | Path,
     )
 
 
-def read_bronze(root: str | Path = "data/warehouse/bronze") -> pd.DataFrame:
-    return pd.read_parquet(Path(root) / "bronze.parquet")
+def read_bronze(root: str | Path | None = None) -> pd.DataFrame:
+    return pd.read_parquet(resolve(root, bronze_root()) / "bronze.parquet")

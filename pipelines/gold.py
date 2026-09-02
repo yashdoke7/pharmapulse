@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipelines.paths import gold_root, resolve
+
 GRAINS = ("day", "week", "month")
 GOLD_COLUMNS = [
     "series_id", "ds", "grain", "y", "origin",
@@ -64,9 +66,9 @@ def aggregate(clean_daily: pd.DataFrame, grain: str) -> pd.DataFrame:
 
 
 def build_gold(clean_daily: pd.DataFrame,
-               out_root: str | Path = "data/warehouse/gold") -> dict[str, pd.DataFrame]:
+               out_root: str | Path | None = None) -> dict[str, pd.DataFrame]:
     """Write all three grains as partitioned parquet. Returns them keyed by grain."""
-    out_root = Path(out_root)
+    out_root = resolve(out_root, gold_root())
     frames: dict[str, pd.DataFrame] = {}
 
     for grain in GRAINS:
@@ -84,10 +86,10 @@ def build_gold(clean_daily: pd.DataFrame,
 
 
 def read_gold(grain: str = "week",
-              root: str | Path = "data/warehouse/gold",
+              root: str | Path | None = None,
               observed_only: bool = True) -> pd.DataFrame:
     """Read one grain back. Every consumer above this layer uses this function."""
-    root = Path(root) / f"grain={grain}"
+    root = resolve(root, gold_root()) / f"grain={grain}"
     if not root.exists():
         raise FileNotFoundError(
             f"{root} not found - run `make pipeline` (python -m pipelines.run_nightly --stage gold)"
@@ -98,12 +100,24 @@ def read_gold(grain: str = "week",
 
     df = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
     df["ds"] = pd.to_datetime(df["ds"])
+
+    # `observed_only` used to mean literally origin == "observed", which made a
+    # wholly synthetic warehouse read back EMPTY - models fitted on nothing, and
+    # the lane guard looked like a bug rather than a rule.
+    #
+    # The rule worth keeping is narrower: never fit on a MIXTURE. A frame that
+    # is mostly real with some invented rows in it produces a number nobody can
+    # characterise, and that is the failure the lanes exist to prevent. A frame
+    # that is entirely one lane is coherent, and what may be CLAIMED about it is
+    # decided downstream from its origin - which now travels to the browser.
     if observed_only:
-        df = df[df["origin"] == "observed"]
+        lanes = set(df["origin"].dropna().unique())
+        if len(lanes) > 1:
+            df = df[df["origin"] == "observed"]
     return df.sort_values(["series_id", "ds"]).reset_index(drop=True)
 
 
-def fitting_frame(grain: str = "week", root: str | Path = "data/warehouse/gold") -> pd.DataFrame:
+def fitting_frame(grain: str = "week", root: str | Path | None = None) -> pd.DataFrame:
     """Gold, filtered to what a model is allowed to fit on.
 
     Excludes partial periods (completeness < 1.0). Closure rows are KEPT and

@@ -51,3 +51,4 @@ data/pharma_sales_dataset/
 # The generated extension is reproducible from scripts/make_extension.py with
 # a fixed seed - the generator is the artefact, not the CSV.
 data/synthetic/*.csv
+data/warehouse-*/

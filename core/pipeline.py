@@ -159,6 +159,49 @@ def forecast_grain(grain: str, scale: float,
     return quantiles, members, classes
 
 
+def _snapshot_of_gold() -> str:
+    """The hash of the file this version was actually fitted on.
+
+    It used to re-hash the hardcoded data/observed/salesdaily.csv, which was
+    true only for as long as there was one possible input. Building from a
+    second file produced a store stamped with the FIRST file's hash - the
+    provenance chain claiming a lineage the data did not have, which is worse
+    than having no hash at all. Bronze already carries the snapshot per row;
+    read it back rather than recomputing it from an assumption.
+    """
+    try:
+        gold = fitting_frame("day")
+        snaps = sorted(gold["snapshot_id"].dropna().unique())
+    except Exception:
+        snaps = []
+    if len(snaps) == 1:
+        return str(snaps[0])
+    if snaps:
+        return f"mixed:{len(snaps)}"
+    return snapshot_id(RAW) if RAW.exists() else "unknown"
+
+
+def _origin_of_gold() -> str:
+    """The lane of the data this version was fitted on, read off gold.
+
+    Mixed input reports the WEAKEST lane present, not the most common one: a
+    store that is 99% observed and 1% synthetic cannot back an accuracy claim,
+    and averaging the label away is exactly the failure the lanes exist to
+    prevent.
+    """
+    try:
+        gold = fitting_frame("day")
+    except Exception:
+        return "observed"
+    if "origin" not in gold.columns:
+        return "observed"
+    present = set(gold["origin"].dropna().unique())
+    for lane in ("synthetic", "user_setting", "observed"):
+        if lane in present:
+            return lane
+    return "observed"
+
+
 def build_forecast_store(verbose: bool = True) -> dict:
     t0 = time.perf_counter()
 
@@ -179,7 +222,7 @@ def build_forecast_store(verbose: bool = True) -> dict:
     members = pd.concat(all_m, ignore_index=True)
     classes = pd.concat(all_c, ignore_index=True)
 
-    snap = snapshot_id(RAW) if RAW.exists() else "unknown"
+    snap = _snapshot_of_gold()
     stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%MZ")
     model_version = f"{stamp}/ens-v1"
 
@@ -189,8 +232,13 @@ def build_forecast_store(verbose: bool = True) -> dict:
         snapshot_id=snap,
         members=members,
         demand_classes=classes,
+        # The lane of the data this version was fitted on, read off gold rather
+        # than assumed. Every screen reads it back from here, so a run on lane 3
+        # labels itself all the way to the browser and its accuracy figures can
+        # be switched off rather than quietly presented as measured.
         meta={"grains": list(HORIZONS), "conformal_scale": scale,
-              "n_rows": int(len(quantiles))},
+              "n_rows": int(len(quantiles)),
+              "origin": _origin_of_gold()},
     )
 
     elapsed = time.perf_counter() - t0

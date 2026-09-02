@@ -19,8 +19,20 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from pipelines.paths import forecast_root, resolve
+
+# Kept for callers that import it, but every function resolves the root per
+# call from PHARMAPULSE_DATA_ROOT instead - see pipelines/paths.py for why a
+# default argument was the wrong place for this.
 ROOT = Path("data/warehouse/forecast")
-POINTER = ROOT / "CURRENT"
+# NOT a module constant any more. It was `ROOT / "CURRENT"`, computed once at
+# import from the hardcoded root - so after the root became configurable,
+# write_version wrote its version into the NEW warehouse and then repointed the
+# OLD one at it. The demo store ended up pointing at a version that did not
+# exist inside it. Exactly the failure the pointer swap exists to prevent,
+# reintroduced by leaving one path behind during the migration.
+def pointer_path(root: Path | None = None) -> Path:
+    return resolve(root, forecast_root()) / "CURRENT"
 
 QUANTILE_LEVELS = [
     0.01, 0.025, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50,
@@ -38,8 +50,9 @@ def version_slug(model_version: str) -> str:
 def write_version(quantiles: pd.DataFrame, model_version: str, snapshot_id: str,
                   members: pd.DataFrame | None = None,
                   demand_classes: pd.DataFrame | None = None,
-                  meta: dict | None = None, root: Path = ROOT) -> Path:
+                  meta: dict | None = None, root: Path | None = None) -> Path:
     """Write a complete forecast version, then swap the pointer."""
+    root = resolve(root, forecast_root())
     slug = version_slug(model_version)
     target = root / f"version={slug}"
     target.mkdir(parents=True, exist_ok=True)
@@ -71,20 +84,22 @@ def write_version(quantiles: pd.DataFrame, model_version: str, snapshot_id: str,
 
     # Last operation. Until this line runs, the new version is invisible.
     root.mkdir(parents=True, exist_ok=True)
-    POINTER.write_text(slug, encoding="utf-8")
+    (root / "CURRENT").write_text(slug, encoding="utf-8")
     return target
 
 
 # --- reading --------------------------------------------------------------
 
-def current_version(root: Path = ROOT) -> str | None:
+def current_version(root: Path | None = None) -> str | None:
+    root = resolve(root, forecast_root())
     pointer = root / "CURRENT"
     if not pointer.exists():
         return None
     return pointer.read_text(encoding="utf-8").strip()
 
 
-def _version_dir(root: Path = ROOT) -> Path | None:
+def _version_dir(root: Path | None = None) -> Path | None:
+    root = resolve(root, forecast_root())
     slug = current_version(root)
     if slug is None:
         return None
@@ -92,12 +107,12 @@ def _version_dir(root: Path = ROOT) -> Path | None:
     return d if d.exists() else None
 
 
-def store_available(root: Path = ROOT) -> bool:
+def store_available(root: Path | None = None) -> bool:
     d = _version_dir(root)
     return bool(d and (d / "forecast.parquet").exists())
 
 
-def _load(root: Path = ROOT) -> pd.DataFrame:
+def _load(root: Path | None = None) -> pd.DataFrame:
     d = _version_dir(root)
     if d is None:
         raise FileNotFoundError(
@@ -109,7 +124,7 @@ def _load(root: Path = ROOT) -> pd.DataFrame:
     return df
 
 
-def model_meta(root: Path = ROOT) -> dict:
+def model_meta(root: Path | None = None) -> dict:
     d = _version_dir(root)
     if d is None or not (d / "meta.json").exists():
         return {"model_version": "none", "snapshot_id": "none",
@@ -119,7 +134,7 @@ def model_meta(root: Path = ROOT) -> dict:
     return meta
 
 
-def series_catalogue(root: Path = ROOT) -> pd.DataFrame:
+def series_catalogue(root: Path | None = None) -> pd.DataFrame:
     d = _version_dir(root)
     if d is None or not (d / "demand_class.parquet").exists():
         return pd.DataFrame()
@@ -127,7 +142,7 @@ def series_catalogue(root: Path = ROOT) -> pd.DataFrame:
 
 
 def read_forecast(series_id: str, grain: str = "week", horizon: int = 8,
-                  cutoff: str | None = None, root: Path = ROOT) -> pd.DataFrame:
+                  cutoff: str | None = None, root: Path | None = None) -> pd.DataFrame:
     """Long frame: ds, horizon, quantile, value."""
     df = _load(root)
     df = df[(df["series_id"] == series_id) & (df["grain"] == grain)]
@@ -143,7 +158,7 @@ def read_forecast(series_id: str, grain: str = "week", horizon: int = 8,
 
 def read_quantiles(series_id: str, grain: str = "week", horizon: int = 8,
                    levels: list[float] | None = None,
-                   root: Path = ROOT) -> dict[str, dict[str, float]]:
+                   root: Path | None = None) -> dict[str, dict[str, float]]:
     """{"2019-10-06": {"0.05": 142.1, "0.50": 187.4, ...}, ...}"""
     df = read_forecast(series_id, grain, horizon, root=root)
     levels = levels or UI_LEVELS
@@ -158,7 +173,7 @@ def read_quantiles(series_id: str, grain: str = "week", horizon: int = 8,
 
 
 def read_members(series_id: str, grain: str = "week",
-                 root: Path = ROOT) -> list[dict]:
+                 root: Path | None = None) -> list[dict]:
     d = _version_dir(root)
     if d is None or not (d / "members.parquet").exists():
         return []
@@ -174,7 +189,7 @@ def read_members(series_id: str, grain: str = "week",
 
 
 def lead_time_demand(series_id: str, lead_time_days: int,
-                     root: Path = ROOT) -> dict[str, float]:
+                     root: Path | None = None) -> dict[str, float]:
     """Distribution of TOTAL demand over the next `lead_time_days` days.
 
     This is the only function the decision engine needs.

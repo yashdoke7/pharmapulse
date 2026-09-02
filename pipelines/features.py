@@ -15,6 +15,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from pipelines.paths import features_root, resolve
+
 LAGS = [1, 2, 3, 4, 8, 52]
 ROLLING_WINDOWS = [4, 13, 52]
 FOURIER_K = 3
@@ -116,10 +118,9 @@ def feature_columns(df: pd.DataFrame) -> list[str]:
 
 
 def write_features(features: pd.DataFrame,
-                   out_root: str = "data/warehouse/features",
+                   out_root: str | None = None,
                    grain: str = "week") -> None:
-    from pathlib import Path
-    target = Path(out_root) / f"grain={grain}"
+    target = resolve(out_root, features_root()) / f"grain={grain}"
     target.mkdir(parents=True, exist_ok=True)
     out = features.copy()
     out["series_id"] = out["series_id"].astype(str)
