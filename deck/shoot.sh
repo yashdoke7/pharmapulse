@@ -56,4 +56,9 @@ crop("dashboard.png", (0, 0, 3000, 1900), "dashboard_hero.png")
 crop("why.png",       (1480, 575, 2680, 1580), "why_calibration.png")
 crop("liveops.png",   (330, 690, 2680, 1350), "liveops_case.png")
 crop("ops.png",       (350, 1100, 1500, 2110), "ops_board.png")
+
+# Uniform 16:10 thumbnails for the "seven screens" contact sheet. Same crop
+# box on every screen so the grid does not look ragged.
+for name in ["dashboard", "orders", "forecast", "why", "liveops", "ops", "settings"]:
+    crop(f"{name}.png", (0, 0, 3000, 1875), f"thumb_{name}.png")
 PY
