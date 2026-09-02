@@ -76,6 +76,14 @@ export function ServiceLevelSlider({
 
   const delta = current.expected_cost - cheapest.expected_cost;
 
+  // The screen's whole point is that the slider MOVES the quantity, and the
+  // quantity was sitting in a corner where nothing connected the two. These
+  // drive a sentence directly under the slider that says what just changed.
+  const packSize = rec.order_packs ? rec.order_quantity / rec.order_packs : 10;
+  const packs = Math.round(current.order_quantity / (packSize || 10));
+  const qtyDelta = current.order_quantity - rec.order_quantity;
+  const atRecommendation = Math.abs(level - rec.service_level_used) < 0.0025;
+
   return (
     <div className="panel pad">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -91,11 +99,26 @@ export function ServiceLevelSlider({
         </div>
         <div className="text-right">
           <div className="eyebrow">Order</div>
-          <div className="figure text-[28px] font-medium leading-none text-signal-green">{current.order_quantity}</div>
-          <div className="fine">
-            {Math.round(current.order_quantity / (rec.order_packs ? rec.order_quantity / rec.order_packs : 10))}{" "}
-            packs
+          <div
+            className={`figure text-[34px] font-medium leading-none transition-colors ${
+              atRecommendation ? "text-signal-green" : "text-ink"
+            }`}
+          >
+            {current.order_quantity}
           </div>
+          <div className="fine">{packs} packs</div>
+          {qtyDelta !== 0 ? (
+            <div
+              className={`mt-1 inline-block px-1.5 py-0.5 font-mono text-[11px] ${
+                qtyDelta > 0
+                  ? "bg-signal-blue/[0.10] text-signal-blue"
+                  : "bg-signal-red/[0.08] text-signal-red"
+              }`}
+            >
+              {qtyDelta > 0 ? "+" : ""}
+              {qtyDelta} vs recommended
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -117,6 +140,34 @@ export function ServiceLevelSlider({
         <div className="mt-2 flex justify-between text-[11px] text-ink-faint">
           <span>run out often · cheap</span>
           <span>rarely run out · costly</span>
+        </div>
+
+        {/* Says out loud what the slider just did. Without this the quantity
+            in the corner changes and nobody connects the two. */}
+        <div className="mt-4 border-l-2 border-ink pl-3 text-sm text-ink-soft">
+          {/* p_stockout, not 1 - level. They differ by a few tenths and showing
+              both on one screen is exactly the kind of thing that makes a
+              reader stop trusting the screen. */}
+          Accept a{" "}
+          <strong className="text-ink">{pct(current.p_stockout, 1)}</strong> chance of
+          running out and you order{" "}
+          <strong className="font-mono text-ink">{current.order_quantity} units</strong> (
+          {packs} packs) at{" "}
+          <strong className="font-mono text-ink">{inr(current.expected_cost)}</strong>.
+          {atRecommendation ? (
+            <span className="text-signal-green">
+              {" "}
+              That is the recommendation — the cheapest point on the curve below.
+            </span>
+          ) : (
+            <span>
+              {" "}
+              The recommendation is{" "}
+              <span className="font-mono">{rec.order_quantity}</span> at{" "}
+              {pct(rec.service_level_used, 1)}; this costs{" "}
+              <span className="font-mono">{inr(Math.abs(delta))}</span> more per cycle.
+            </span>
+          )}
         </div>
       </div>
 
