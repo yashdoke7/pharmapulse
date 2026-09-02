@@ -11,6 +11,17 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
+# B008 forbids a function call in an argument default, which is right for
+# mutable defaults and wrong for FastAPI: Body/File/Form/Query in the signature
+# IS the framework's declaration syntax, and moving them into the body would
+# lose the generated schema. Ruff exempts Query and Depends already; these are
+# the same thing.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Body", "fastapi.File", "fastapi.Form",
+    "fastapi.Query", "fastapi.Path", "fastapi.Header", "fastapi.Depends",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

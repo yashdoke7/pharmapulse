@@ -8,6 +8,7 @@ import { Forecast } from "./screens/Forecast";
 import { LiveOps } from "./screens/LiveOps";
 import { Ops } from "./screens/Ops";
 import { Orders } from "./screens/Orders";
+import { Data } from "./screens/Data";
 import { Settings } from "./screens/Settings";
 
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/explain", label: "Why" },
   { to: "/live", label: "Replay" },
   { to: "/ops", label: "Evidence" },
+  { to: "/data", label: "Data" },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -81,6 +83,7 @@ export default function App() {
           <Route path="/explain" element={<Explain />} />
           <Route path="/live" element={<LiveOps />} />
           <Route path="/ops" element={<Ops />} />
+          <Route path="/data" element={<Data />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

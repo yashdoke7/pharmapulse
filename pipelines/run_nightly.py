@@ -77,13 +77,13 @@ def run_gold(raw: Path = RAW, verbose: bool = True,
     return {"snapshot_id": result.snapshot_id, "stats": stats, "elapsed_s": elapsed}
 
 
-def run_forecast(verbose: bool = True) -> dict:
+def run_forecast(verbose: bool = True, as_of: str | None = None) -> dict:
     try:
         from core.pipeline import build_forecast_store
     except ImportError:
         print("forecast stage not available yet (core/pipeline.py missing)")
         return {}
-    return build_forecast_store(verbose=verbose)
+    return build_forecast_store(verbose=verbose, as_of=as_of)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -91,6 +91,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stage", default="all",
                         choices=["gold", "forecast", "all"])
     parser.add_argument("--raw", default=str(RAW))
+    parser.add_argument(
+        "--as-of", dest="as_of", default=None,
+        help="run as if today were this date (YYYY-MM-DD). Gold is truncated "
+             "before anything is fitted, so the demand class, the routing, the "
+             "models and the calibration are all computed on what was knowable "
+             "then. Omit to use the whole file.")
     parser.add_argument(
         "--origin", default="observed", choices=sorted(LANES),
         help="the lane this file belongs to. 'synthetic' is how you load lane 3 "
@@ -108,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         run_gold(raw, origin=args.origin)
     if args.stage in ("forecast", "all"):
         print()
-        run_forecast()
+        run_forecast(as_of=args.as_of)
     return 0
 
 

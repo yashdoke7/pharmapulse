@@ -724,6 +724,269 @@
         }
       }
     },
+    "/api/datasets": {
+      "get": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "List Datasets",
+        "description": "What is live, and everything else that has been built.",
+        "operationId": "list_datasets_api_datasets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response List Datasets Api Datasets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/rebuild": {
+      "post": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "Rebuild",
+        "description": "Rebuild the forecast store, optionally from another file or date.\n\n`as_of` is the interesting one: it runs the whole system as it would have\nrun on that day. Gold is truncated before anything is fitted, so the demand\nclass, the routing, the models and the calibration are all computed on what\nwas knowable then - not filtered afterwards, which would already have\nleaked.",
+        "operationId": "rebuild_api_datasets_rebuild_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Body",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Rebuild Api Datasets Rebuild Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/upload": {
+      "post": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "Upload",
+        "description": "Accept a sales CSV and build from it.\n\nValidated here rather than inside the worker so a bad file fails in the\nrequest that sent it, where the person who chose it is still looking.",
+        "operationId": "upload_api_datasets_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_datasets_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Upload Api Datasets Upload Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "Job Status",
+        "operationId": "job_status_api_datasets_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Job Status Api Datasets Jobs  Job Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/jobs": {
+      "get": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "List Jobs",
+        "operationId": "list_jobs_api_datasets_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response List Jobs Api Datasets Jobs Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/activate": {
+      "post": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "Activate",
+        "description": "Point CURRENT at a version that already exists.\n\nInstant, because publication was always a pointer swap - the version\ndirectories are immutable and they all stay on disk. Switching back after\na demo costs nothing and refits nothing.",
+        "operationId": "activate_api_datasets_activate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Activate Api Datasets Activate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/versions/{slug}": {
+      "delete": {
+        "tags": [
+          "datasets"
+        ],
+        "summary": "Delete Version",
+        "description": "Remove a version. Refuses to delete the live one.",
+        "operationId": "delete_version_api_datasets_versions__slug__delete",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Delete Version Api Datasets Versions  Slug  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -746,6 +1009,25 @@
   },
   "components": {
     "schemas": {
+      "Body_upload_api_datasets_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin",
+            "default": "observed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_api_datasets_upload_post"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {

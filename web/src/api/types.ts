@@ -331,3 +331,47 @@ export interface StockLedger {
   movements: StockMovement[];
   stock_on_hand: number;
 }
+
+
+// --- datasets -------------------------------------------------------------
+
+export interface DatasetVersion {
+  slug: string;
+  is_current: boolean;
+  model_version: string;
+  snapshot_id: string | null;
+  origin: string;
+  /** The date the system was run AS IF it were - null means "the whole file". */
+  as_of: string | null;
+  generated_at: string | null;
+  n_rows: number | null;
+}
+
+export interface DatasetsResponse {
+  current: {
+    model_version: string | null;
+    snapshot_id: string | null;
+    origin: string;
+    as_of: string | null;
+    clock: string | null;
+    generated_at: string | null;
+  };
+  versions: DatasetVersion[];
+  data_root: string;
+  sources: { path: string; label: string; origin: string; size_kb: number }[];
+  lanes: Record<string, string>;
+}
+
+export interface BuildJob {
+  job_id: string;
+  status: "queued" | "running" | "done" | "failed";
+  step: string;
+  source?: string | null;
+  origin?: string;
+  as_of?: string | null;
+  error?: string | null;
+  model_version?: string;
+  as_of_clock?: string | null;
+  started_at?: string;
+  finished_at?: string;
+}

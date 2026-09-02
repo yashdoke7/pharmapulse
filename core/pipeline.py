@@ -58,8 +58,9 @@ def _conformal_scale() -> float:
         return 1.0
 
 
-def forecast_grain(grain: str, scale: float,
-                   verbose: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def forecast_grain(grain: str, scale: float, verbose: bool = True,
+                   as_of: str | pd.Timestamp | None = None,
+                   ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fit the routed portfolio at one grain.
 
     Routing is recomputed FOR THIS GRAIN. Aggregation removes sparsity, so a
@@ -72,6 +73,18 @@ def forecast_grain(grain: str, scale: float,
     h = HORIZONS[grain]
     season = SEASON[grain]
     gold = fitting_frame(grain)
+
+    # `as_of` runs the whole system as it would have run on a chosen day: the
+    # frame is truncated first, and everything below - the demand class, the
+    # routing, the fit, the calibration - is computed on what was knowable
+    # then. Truncating here rather than filtering later is the same guarantee
+    # pipelines/features.py makes, and for the same reason: a cutoff applied
+    # after a calculation is a cutoff that has already leaked.
+    if as_of is not None:
+        gold = gold[gold["ds"] <= pd.Timestamp(as_of)]
+        if gold.empty:
+            raise ValueError(f"no {grain} data on or before {as_of}")
+
     cutoff = pd.Timestamp(gold["ds"].max())
 
     classes = classify(gold)
@@ -202,7 +215,8 @@ def _origin_of_gold() -> str:
     return "observed"
 
 
-def build_forecast_store(verbose: bool = True) -> dict:
+def build_forecast_store(verbose: bool = True,
+                        as_of: str | pd.Timestamp | None = None) -> dict:
     t0 = time.perf_counter()
 
     scale = _conformal_scale()
@@ -211,9 +225,13 @@ def build_forecast_store(verbose: bool = True) -> dict:
         print("forecast stage")
         print(f"  conformal scale {scale:.3f} (from artifacts/benchmarks.json)")
 
+    if as_of is not None and verbose:
+        print(f"  as of {pd.Timestamp(as_of).date()} - everything after this "
+              f"date is withheld from the fit")
+
     all_q, all_m, all_c = [], [], []
     for grain in ("day", "week", "month"):
-        q, m, c = forecast_grain(grain, scale, verbose=verbose)
+        q, m, c = forecast_grain(grain, scale, verbose=verbose, as_of=as_of)
         all_q.append(q)
         all_m.append(m)
         all_c.append(c)
@@ -224,7 +242,11 @@ def build_forecast_store(verbose: bool = True) -> dict:
 
     snap = _snapshot_of_gold()
     stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%MZ")
-    model_version = f"{stamp}/ens-v1"
+    # The as-of date is IN the version name. Two stores built minutes apart from
+    # the same file but different cutoffs are different models, and a version
+    # string that cannot tell them apart is a provenance hole.
+    suffix = f"/asof-{pd.Timestamp(as_of).date()}" if as_of is not None else ""
+    model_version = f"{stamp}/ens-v1{suffix}"
 
     target = forecast_store.write_version(
         quantiles=quantiles,
@@ -238,7 +260,8 @@ def build_forecast_store(verbose: bool = True) -> dict:
         # be switched off rather than quietly presented as measured.
         meta={"grains": list(HORIZONS), "conformal_scale": scale,
               "n_rows": int(len(quantiles)),
-              "origin": _origin_of_gold()},
+              "origin": _origin_of_gold(),
+              "as_of": str(pd.Timestamp(as_of).date()) if as_of is not None else None},
     )
 
     elapsed = time.perf_counter() - t0

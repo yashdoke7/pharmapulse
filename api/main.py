@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api import deps
-from api.routers import decisions, forecasting, ops, replay
+from api.routers import datasets, decisions, forecasting, ops, replay
 
 app = FastAPI(
     title="PharmaPulse API",
@@ -52,6 +52,7 @@ app.include_router(ops.router)
 app.include_router(forecasting.router)
 app.include_router(decisions.router)
 app.include_router(replay.router)
+app.include_router(datasets.router)
 
 
 @app.exception_handler(500)

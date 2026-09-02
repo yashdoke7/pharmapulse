@@ -228,6 +228,17 @@ def series_settings(series_id: str, settings: dict | None = None) -> dict:
 
 # --- cache ----------------------------------------------------------------
 
+def clear_caches() -> None:
+    """Drop every memoised read.
+
+    The quantile cache is keyed on model_version, so publishing a NEW version
+    invalidates itself. Activating an OLD one does not - the key comes back
+    into scope with a stale value behind it. Anything that repoints CURRENT
+    has to call this.
+    """
+    _cached_quantiles.cache_clear()
+
+
 @lru_cache(maxsize=512)
 def _cached_quantiles(series_id: str, grain: str, horizon: int,
                       model_version: str) -> str:

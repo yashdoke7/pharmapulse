@@ -6,6 +6,8 @@
 // degraded it is. meta.degraded tells us, and the UI renders a badge.
 
 import type {
+  BuildJob,
+  DatasetsResponse,
   BusinessCase,
   Envelope,
   ExplainResponse,
@@ -82,6 +84,40 @@ export const api = {
     ),
 
   metrics: () => request<MetricsResponse>("/metrics"),
+
+  // --- datasets: which one is live, rebuild it at any date, upload another
+  datasets: () => request<DatasetsResponse>("/datasets"),
+
+  rebuild: (body: { as_of?: string | null; source?: string | null; origin?: string }) =>
+    request<BuildJob>("/datasets/rebuild", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  job: (id: string) => request<BuildJob>(`/datasets/jobs/${id}`),
+
+  activateVersion: (slug: string) =>
+    request<{ activated: string; clock: string | null; model_version: string }>(
+      "/datasets/activate",
+      { method: "POST", body: JSON.stringify({ slug }) },
+    ),
+
+  /** Multipart, so it cannot go through request() - that sets a JSON
+   *  Content-Type, and setting it by hand on a FormData body strips the
+   *  boundary the server needs to parse it. */
+  uploadDataset: async (file: File, origin: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("origin", origin);
+    const res = await fetch(`${BASE}/datasets/upload`, { method: "POST", body: form });
+    const body = await res.json();
+    if (!res.ok) {
+      const err = body?.detail?.error ?? body?.error;
+      throw new ApiError(res.status, err?.code ?? "UPLOAD_FAILED",
+                         err?.message ?? res.statusText);
+    }
+    return body as Envelope<{ stored: string; size_kb: number; origin: string }>;
+  },
 
   settings: () => request<Settings>("/settings"),
 
