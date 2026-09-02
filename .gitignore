@@ -37,3 +37,9 @@ deck/node_modules/
 deck/package-lock.json
 deck/*.pdf
 deck/slide-*.jpg
+
+# Office lock files (created when a .pptx/.docx is open)
+~$*
+
+# Not ours - a teammate's deck, kept locally only
+docs/PharmaPulse_Deck (1).pptx

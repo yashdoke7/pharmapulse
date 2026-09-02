@@ -21,6 +21,8 @@ import os
 import sys
 from pathlib import Path
 
+import _bootstrap  # noqa: F401  - repo root onto sys.path; must precede repo imports
+
 OUT = Path("contracts/fixtures")
 
 # Capture from the real implementation, never from fixtures.

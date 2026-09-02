@@ -15,6 +15,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import _bootstrap  # noqa: F401  - repo root onto sys.path; must precede repo imports
+
 from api.main import app
 
 OUT = Path("contracts/openapi.json")

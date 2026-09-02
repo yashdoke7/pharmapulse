@@ -22,6 +22,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import _bootstrap  # noqa: F401  - repo root onto sys.path; must precede repo imports
 import numpy as np
 import pandas as pd
 

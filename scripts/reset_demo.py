@@ -17,6 +17,8 @@ from __future__ import annotations
 import argparse
 import sys
 
+import _bootstrap  # noqa: F401  - repo root onto sys.path; must precede repo imports
+
 from decision import ledger
 
 
