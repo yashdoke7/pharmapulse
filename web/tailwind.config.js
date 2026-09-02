@@ -4,50 +4,68 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Warm paper and warm near-black. Not grey, not navy - the warmth is
-        // what stops it reading as a default dashboard.
+        // Clinical medical theme tokens
         paper: {
-          DEFAULT: "#F7F4EE",
-          raised: "#FCFAF6",
-          sunk: "#EFEBE2",
+          DEFAULT: "#F4FAFA",
+          raised: "#FFFFFF",
+          sunk: "#EBF5F6",
         },
-        // Named rather than numbered: numeric keys collide with Tailwind's
-        // opacity modifier inside @apply (border-ink/10 fails to resolve).
         ink: {
-          DEFAULT: "#14110D",
-          soft: "#3B362F",
-          mute: "#6B6459",
-          faint: "#9A9287",
-          pale: "#C9C2B6",
+          DEFAULT: "#172554", // Deep Navy
+          soft: "#334155",    // Slate body
+          mute: "#64748B",    // Secondary info
+          faint: "#94A3B8",   // Subtle labels
+          pale: "#CBD5E1",    // Muted borders
         },
-        // Structure comes from rules, so the rules are first-class tokens.
         line: {
-          DEFAULT: "rgba(20, 17, 13, 0.13)",
-          soft: "rgba(20, 17, 13, 0.07)",
-          hard: "#14110D",
+          DEFAULT: "rgba(15, 159, 168, 0.14)",
+          soft: "rgba(15, 159, 168, 0.07)",
+          hard: "#087F86",
         },
         wash: {
-          DEFAULT: "rgba(20, 17, 13, 0.030)",
-          strong: "rgba(20, 17, 13, 0.065)",
+          DEFAULT: "rgba(15, 159, 168, 0.04)",
+          strong: "rgba(15, 159, 168, 0.08)",
         },
-        // One accent per meaning, all deep and desaturated. No neon.
         signal: {
-          red: "#A32E22",      // shortage - money walking out of the door
-          amber: "#8A6410",    // watch
-          green: "#1F5D42",    // healthy
-          blue: "#1C4E7A",     // capital tied up
+          red: "#E11D48",      // Alert / shortage / critical
+          amber: "#D97706",    // Warning / low stock
+          green: "#059669",    // Healthy / growth
+          blue: "#2563EB",     // Analytics / capital
+        },
+        medical: {
+          teal: "#0F9FA8",
+          "teal-deep": "#087F86",
+          "teal-dark": "#055C62",
+          blue: "#2F80ED",
+          navy: "#172554",
+          cyan: "#DDF5F5",
+          "light-blue": "#E8F2FF",
+          "soft-green": "#E6F7EF",
+          "soft-amber": "#FFF4D6",
+          "soft-red": "#FFE7E7",
         },
       },
       fontFamily: {
-        display: ["Instrument Serif", "Georgia", "serif"],
-        sans: ["Inter Tight", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "Plus Jakarta Sans", "system-ui", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
+      boxShadow: {
+        xs: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        card: "0 4px 20px -2px rgba(15, 159, 168, 0.06), 0 2px 6px -1px rgba(23, 37, 84, 0.04)",
+        "card-hover": "0 12px 32px -4px rgba(15, 159, 168, 0.12), 0 4px 12px -2px rgba(23, 37, 84, 0.06)",
+        float: "0 20px 40px -8px rgba(15, 159, 168, 0.14)",
+        glow: "0 0 20px rgba(15, 159, 168, 0.25)",
+      },
+      borderRadius: {
+        "card": "22px",
+        "card-lg": "26px",
+      },
       letterSpacing: {
-        micro: "0.16em",
+        micro: "0.14em",
       },
       maxWidth: {
-        page: "1180px",
+        page: "1360px",
       },
     },
   },

@@ -7,12 +7,9 @@ import { inr, pct, units } from "./ui";
  *
  * /api/recommend ships the whole cost curve - 16 service levels with the order
  * quantity, expected cost and stockout probability at each. Dragging
- * interpolates that array in the browser and makes ZERO network calls, which is
- * only possible because the newsvendor calculation is closed form and the
- * demand distribution was already resolved by last night's batch.
+ * interpolates that array in the browser and makes ZERO network calls.
  *
- * If this fetched on drag, the control would stutter and the "closed form, O(1)"
- * claim would die on stage.
+ * Transformed into a modern AI-powered prediction & decision card.
  */
 
 function interpolate(curve: CostPoint[], level: number): CostPoint {
@@ -29,7 +26,6 @@ function interpolate(curve: CostPoint[], level: number): CostPoint {
       const t = (level - a.service_level) / (b.service_level - a.service_level || 1);
       return {
         service_level: level,
-        // Quantity is a whole number of packs, so it steps rather than glides.
         order_quantity: t < 0.5 ? a.order_quantity : b.order_quantity,
         expected_cost: a.expected_cost + t * (b.expected_cost - a.expected_cost),
         p_stockout: a.p_stockout + t * (b.p_stockout - a.p_stockout),
@@ -58,8 +54,8 @@ export function ServiceLevelSlider({
 
   const chart = useMemo(() => {
     const W = 600;
-    const H = 150;
-    const pad = { top: 12, right: 12, bottom: 22, left: 40 };
+    const H = 160;
+    const pad = { top: 16, right: 16, bottom: 26, left: 46 };
     const costs = curve.map((c) => c.expected_cost);
     const lo = Math.min(...costs);
     const hi = Math.max(...costs);
@@ -76,43 +72,49 @@ export function ServiceLevelSlider({
 
   const delta = current.expected_cost - cheapest.expected_cost;
 
-  // The screen's whole point is that the slider MOVES the quantity, and the
-  // quantity was sitting in a corner where nothing connected the two. These
-  // drive a sentence directly under the slider that says what just changed.
   const packSize = rec.order_packs ? rec.order_quantity / rec.order_packs : 10;
   const packs = Math.round(current.order_quantity / (packSize || 10));
   const qtyDelta = current.order_quantity - rec.order_quantity;
   const atRecommendation = Math.abs(level - rec.service_level_used) < 0.0025;
 
   return (
-    <div className="panel pad">
+    <div className="panel pad relative overflow-hidden">
+      {/* Subtle top teal glow */}
+      <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-medical-teal/10 blur-3xl" />
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold text-ink">
-            How often are you willing to run out?
-          </h3>
-          <p className="fine mt-1 max-w-md">
-            This moves the critical fractile <span className="font-mono">q*</span>, which
-            moves the order quantity. Nothing is fetched while you drag - the whole cost
-            curve arrived with the recommendation.
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-medical-cyan text-medical-teal-deep text-xs font-bold">
+              AI
+            </span>
+            <h3 className="text-lg font-bold text-ink">
+              How often are you willing to run out?
+            </h3>
+          </div>
+          <p className="fine mt-1 max-w-md text-slate-500">
+            This moves the critical fractile <span className="font-mono text-medical-teal-deep font-semibold">q*</span>, which
+            moves the order quantity. Nothing is fetched while you drag — the whole cost
+            curve is solved in closed form.
           </p>
         </div>
-        <div className="text-right">
-          <div className="eyebrow">Order</div>
+
+        <div className="text-right bg-slate-50/80 border border-slate-200/70 px-4 py-3 rounded-2xl">
+          <div className="eyebrow text-slate-500">Suggested Order</div>
           <div
-            className={`figure text-[34px] font-medium leading-none transition-colors ${
-              atRecommendation ? "text-signal-green" : "text-ink"
+            className={`figure text-[36px] font-bold leading-none mt-1 transition-colors ${
+              atRecommendation ? "text-medical-teal-deep" : "text-ink"
             }`}
           >
             {current.order_quantity}
           </div>
-          <div className="fine">{packs} packs</div>
+          <div className="fine text-slate-500 font-medium mt-0.5">{packs} packs</div>
           {qtyDelta !== 0 ? (
             <div
-              className={`mt-1 inline-block px-1.5 py-0.5 font-mono text-[11px] ${
+              className={`mt-1.5 inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-semibold ${
                 qtyDelta > 0
-                  ? "bg-signal-blue/[0.10] text-signal-blue"
-                  : "bg-signal-red/[0.08] text-signal-red"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                  : "bg-rose-50 text-rose-700 border border-rose-200"
               }`}
             >
               {qtyDelta > 0 ? "+" : ""}
@@ -132,45 +134,48 @@ export function ServiceLevelSlider({
           value={level}
           onChange={(e) => setLevel(Number(e.target.value))}
           style={{
-            background: `linear-gradient(90deg,#14110D ${((level - 0.05) / 0.94) * 100}%, rgba(20,17,13,.14) ${
+            background: `linear-gradient(90deg, #0F9FA8 ${((level - 0.05) / 0.94) * 100}%, rgba(15, 159, 168, 0.16) ${
               ((level - 0.05) / 0.94) * 100
             }%)`,
           }}
         />
-        <div className="mt-2 flex justify-between text-[11px] text-ink-faint">
-          <span>run out often · cheap</span>
-          <span>rarely run out · costly</span>
+        <div className="mt-2 flex justify-between text-[11px] font-medium text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+            run out often · cheap
+          </span>
+          <span className="flex items-center gap-1">
+            rarely run out · costly
+            <span className="h-1.5 w-1.5 rounded-full bg-medical-teal" />
+          </span>
         </div>
 
-        {/* Says out loud what the slider just did. Without this the quantity
-            in the corner changes and nobody connects the two. */}
-        <div className="mt-4 border-l-2 border-ink pl-3 text-sm text-ink-soft">
-          {/* p_stockout, not 1 - level. They differ by a few tenths and showing
-              both on one screen is exactly the kind of thing that makes a
-              reader stop trusting the screen. */}
+        {/* Narrative decision consequence */}
+        <div className="mt-4 rounded-xl border border-medical-teal/20 bg-medical-cyan/20 p-3.5 text-sm text-slate-700">
           Accept a{" "}
-          <strong className="text-ink">{pct(current.p_stockout, 1)}</strong> chance of
+          <strong className="text-ink font-semibold">{pct(current.p_stockout, 1)}</strong> chance of
           running out and you order{" "}
-          <strong className="font-mono text-ink">{current.order_quantity} units</strong> (
+          <strong className="font-mono text-medical-teal-deep font-bold">{current.order_quantity} units</strong> (
           {packs} packs) at{" "}
-          <strong className="font-mono text-ink">{inr(current.expected_cost)}</strong>.
+          <strong className="font-mono text-ink font-bold">{inr(current.expected_cost)}</strong>.
           {atRecommendation ? (
-            <span className="text-signal-green">
+            <span className="text-emerald-700 font-medium">
               {" "}
-              That is the recommendation — the cheapest point on the curve below.
+              That is the recommendation — the minimum cost point on the risk curve below.
             </span>
           ) : (
             <span>
               {" "}
               The recommendation is{" "}
-              <span className="font-mono">{rec.order_quantity}</span> at{" "}
+              <span className="font-mono font-medium">{rec.order_quantity}</span> at{" "}
               {pct(rec.service_level_used, 1)}; this costs{" "}
-              <span className="font-mono">{inr(Math.abs(delta))}</span> more per cycle.
+              <span className="font-mono font-medium">{inr(Math.abs(delta))}</span> more per cycle.
             </span>
           )}
         </div>
       </div>
 
+      {/* KPI statistics cards */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Mini label="Service level" value={pct(level, 1)} tone="mint" />
         <Mini label="Stockout risk" value={pct(current.p_stockout, 1)} tone="rose" />
@@ -182,63 +187,85 @@ export function ServiceLevelSlider({
         />
       </div>
 
-      <div className="mt-5">
-        <div className="eyebrow mb-1">Expected cost per order cycle, across service levels</div>
-        <svg viewBox={`0 0 ${chart.W} ${chart.H}`} className="w-full" style={{ height: 150 }}>
+      {/* Expected cost curve */}
+      <div className="mt-6">
+        <div className="eyebrow mb-1 text-slate-500">Expected cost per order cycle, across service levels</div>
+        <svg viewBox={`0 0 ${chart.W} ${chart.H}`} className="w-full select-none" style={{ height: 160 }}>
+          <defs>
+            <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0F9FA8" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#0F9FA8" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+
+          {/* Area under curve */}
           <path
             d={`${chart.path} L ${chart.x(0.99)} ${chart.H - chart.pad.bottom} L ${chart.x(
               0.05,
             )} ${chart.H - chart.pad.bottom} Z`}
-            fill="#14110D"
-            opacity="0.10"
+            fill="url(#curveFill)"
           />
-          <path d={chart.path} fill="none" stroke="#14110D" strokeWidth="2" />
+          {/* Main curve */}
+          <path d={chart.path} fill="none" stroke="#087F86" strokeWidth="2.5" strokeLinecap="round" />
 
-          {/* the minimum-cost point: where the maths says to sit */}
+          {/* The minimum-cost point */}
           <circle
             cx={chart.x(cheapest.service_level)}
             cy={chart.y(cheapest.expected_cost)}
-            r="4"
-            fill="#F7F4EE"
-            stroke="#8A6410"
-            strokeWidth="2"
+            r="5"
+            fill="#FFFFFF"
+            stroke="#D97706"
+            strokeWidth="2.5"
+          />
+          <rect
+            x={chart.x(cheapest.service_level) - 24}
+            y={chart.y(cheapest.expected_cost) - 22}
+            width="48"
+            height="15"
+            rx="3"
+            fill="#FFFBEB"
+            stroke="#FDE68A"
+            strokeWidth="1"
           />
           <text
             x={chart.x(cheapest.service_level)}
-            y={chart.y(cheapest.expected_cost) - 9}
+            y={chart.y(cheapest.expected_cost) - 11}
             textAnchor="middle"
-            fontSize="9"
-            className="fill-signal-amber"
+            fontSize="8.5"
+            fontWeight="bold"
+            className="fill-amber-800 uppercase tracking-wider font-mono"
           >
             cheapest
           </text>
 
+          {/* Current selected level vertical line */}
           <line
             x1={chart.x(level)}
             x2={chart.x(level)}
             y1={chart.pad.top}
             y2={chart.H - chart.pad.bottom}
-            stroke="#14110D"
-            strokeOpacity="0.55"
-            strokeWidth="1"
+            stroke="#0F9FA8"
+            strokeWidth="1.5"
+            strokeDasharray="3 3"
           />
           <circle
             cx={chart.x(level)}
             cy={chart.y(current.expected_cost)}
-            r="5"
-            fill="#14110D"
-            stroke="#F7F4EE"
-            strokeWidth="2"
+            r="6"
+            fill="#0F9FA8"
+            stroke="#FFFFFF"
+            strokeWidth="2.5"
           />
 
+          {/* X ticks */}
           {[0.05, 0.25, 0.5, 0.75, 0.95].map((t) => (
             <text
               key={t}
               x={chart.x(t)}
-              y={chart.H - 6}
+              y={chart.H - 8}
               textAnchor="middle"
-              fontSize="9"
-              className="fill-ink-faint"
+              fontSize="9.5"
+              className="fill-slate-400 font-mono"
             >
               {pct(t)}
             </text>
@@ -246,23 +273,24 @@ export function ServiceLevelSlider({
         </svg>
       </div>
 
-      <div className="mt-5 grid gap-4 border-t border-line pt-3 text-xs sm:grid-cols-3">
+      {/* Comparative packs */}
+      <div className="mt-5 grid gap-3 border-t border-slate-100 pt-4 text-xs sm:grid-cols-3">
         <CostAt label="1 pack fewer" value={rec.expected_cost.minus_one_pack} base={rec.expected_cost.at_order} />
         <CostAt label="Recommended" value={rec.expected_cost.at_order} base={rec.expected_cost.at_order} highlight />
         <CostAt label="1 pack more" value={rec.expected_cost.plus_one_pack} base={rec.expected_cost.at_order} />
       </div>
 
       {onCommit ? (
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-4 pt-2">
           <button
-            className="btn-primary"
+            className="btn-primary px-5 py-2.5 shadow-sm hover:shadow-glow text-sm font-semibold rounded-xl"
             onClick={() => onCommit(level, current.order_quantity)}
           >
             Accept {current.order_quantity} units
           </button>
-          <span className="fine">
-            q* from your costs is {pct(rec.q_star, 1)}; the target level is{" "}
-            {units(rec.target_level)} units.
+          <span className="fine text-slate-500">
+            q* from your costs is <strong className="text-slate-700">{pct(rec.q_star, 1)}</strong>; the target level is{" "}
+            <strong className="text-slate-700 font-mono">{units(rec.target_level)} units</strong>.
           </span>
         </div>
       ) : null}
@@ -281,20 +309,20 @@ function Mini({
 }) {
   const cls =
     tone === "mint"
-      ? "text-signal-green"
+      ? "text-emerald-700 bg-emerald-50/80 border-emerald-200/70"
       : tone === "rose"
-        ? "text-signal-red"
+        ? "text-rose-700 bg-rose-50/80 border-rose-200/70"
         : tone === "amber"
-          ? "text-signal-amber"
-          : "text-ink";
+          ? "text-amber-700 bg-amber-50/80 border-amber-200/70"
+          : "text-ink bg-slate-50 border-slate-200/70";
+
   return (
-    <div className="border-t border-line pt-2">
-      <div className="eyebrow">{label}</div>
-      <div className={`figure mt-1 text-[19px] font-medium leading-none ${cls}`}>{value}</div>
+    <div className={`rounded-xl border p-3 ${cls}`}>
+      <div className="eyebrow text-[10px] text-slate-500">{label}</div>
+      <div className="figure mt-1 text-[20px] font-bold leading-none">{value}</div>
     </div>
   );
 }
-
 
 function CostAt({
   label,
@@ -309,12 +337,20 @@ function CostAt({
 }) {
   const diff = value - base;
   return (
-    <div className={highlight ? "text-signal-green" : "text-ink-soft"}>
-      <div className="eyebrow">{label}</div>
-      <div className="mt-0.5 font-mono">
+    <div
+      className={`rounded-xl p-3 border ${
+        highlight
+          ? "bg-medical-cyan/30 border-medical-teal/30 text-medical-teal-deep shadow-xs"
+          : "bg-slate-50/60 border-slate-200/60 text-slate-600"
+      }`}
+    >
+      <div className="eyebrow text-[10px]">{label}</div>
+      <div className="mt-1 font-mono font-bold text-sm text-ink">
         {inr(value)}
         {!highlight && Math.abs(diff) > 0.5 ? (
-          <span className="ml-1 text-ink-faint">(+{inr(diff)})</span>
+          <span className="ml-1 text-[11px] font-medium text-slate-400 font-mono">
+            (+{inr(diff)})
+          </span>
         ) : null}
       </div>
     </div>
