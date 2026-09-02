@@ -86,7 +86,11 @@ export function Forecast() {
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-ink">{meta?.name}</h3>
+                  {/* The tab says "Paracetamol", so the card has to as well. The ATC
+                      class is the secondary label, not the headline - a buyer does
+                      not shop by "Anilides". */}
+                  <h3 className="text-lg font-semibold text-ink">{meta?.short_name}</h3>
+                  <span className="fine">{meta?.name}</span>
                   {meta ? <DemandClassChip value={meta.demand_class} /> : null}
                 </div>
                 <p className="fine mt-1">

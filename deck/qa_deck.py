@@ -75,6 +75,9 @@ def estimate_height(shape) -> float:
 
 
 def main(path: str) -> int:
+    # The Windows console is cp1252 and the deck is full of typographic marks.
+    # Losing a glyph in a QA report is fine; crashing on one is not.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     prs = Presentation(path)
     SW, SH = inches(prs.slide_width), inches(prs.slide_height)
     print(f"{path}  —  {len(prs.slides.__iter__.__self__._sldIdLst)} slides, {SW:.2f}in x {SH:.2f}in\n")

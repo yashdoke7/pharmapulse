@@ -1,15 +1,23 @@
 /**
  * PharmaPulse — hackathon deck generator.
  *
+ *   bash deck/shoot.sh        # refresh the product screenshots first
  *   node deck/build_deck.js
+ *   python deck/qa_deck.py deck/PharmaPulse.pptx
  *
  * Every figure in here is pulled from artifacts/benchmarks.json or from
  * decision/replay.py::compare_policies. If a number changes, regenerate the
  * benchmark and rerun this script - do not hand-edit the .pptx.
  *
- * The deck deliberately uses the product's own visual language: warm paper,
- * warm near-black, one accent colour per meaning, and large tabular figures as
- * the recurring motif.
+ * The deck uses the product's own visual language: warm paper, warm near-black,
+ * one accent colour per meaning, and large tabular figures as the recurring
+ * motif. Where a slide can show the running product instead of describing it,
+ * it shows the running product - screenshots live in deck/img and are captured
+ * by deck/shoot.sh against the live app.
+ *
+ * Slide order: what it is -> what was asked -> who uses it -> what they see
+ * -> how it is built -> what it measures -> what it is worth -> where it
+ * fails -> close.
  */
 
 const pptxgen = require("pptxgenjs");
@@ -20,12 +28,15 @@ const path = require("path");
 
 const PAPER = "F7F4EE";
 const PAPER_RAISED = "FCFAF6";
+const PAPER_SUNK = "EFEBE2";
 const INK = "14110D";
 const INK_SOFT = "3B362F";
 const INK_MUTE = "6B6459";
 const INK_FAINT = "9A9287";
+const RULE = "E4DFD5";
 const RED = "A32E22"; // money leaving
 const GREEN = "1F5D42"; // healthy / what we ship
+const GREEN_LIT = "5FD39B"; // the same meaning, on a dark slide
 const BLUE = "1C4E7A"; // capital stuck
 const AMBER = "8A6410"; // watch
 
@@ -34,8 +45,9 @@ const BODY = "Calibri";
 const MONO = "Courier New";
 
 const W = 13.333;
-const H = 7.5;
 const M = 0.85; // page margin
+
+const IMG = (name) => path.join(__dirname, "img", `${name}.png`);
 
 /* ------------------------------------------------------------- benchmarks */
 
@@ -79,31 +91,22 @@ function title(s, text, { y = 0.95, color = INK, size = 40, w = W - M * 2, h = 1
   });
 }
 
-function body(s, text, opts = {}) {
-  s.addText(text, {
-    x: M, y: 2.3, w: 5.5, h: 2.2,
-    isTextBox: true, margin: 0,
-    fontFace: BODY, fontSize: 15, color: INK_SOFT, lineSpacing: 22,
-    ...opts,
-  });
-}
-
 /** The motif: a very large tabular figure with a caption underneath. */
-function figure(s, value, caption, { x, y, w = 3.2, color = INK, size = 60 } = {}) {
+function figure(s, value, cap, { x, y, w = 3.2, color = INK, size = 60, capColor = INK_MUTE } = {}) {
   s.addText(value, {
     x, y, w, h: 0.95,
     isTextBox: true, margin: 0,
     fontFace: MONO, fontSize: size, color, bold: true,
   });
-  s.addText(caption, {
-    x, y: y + 0.95, w, h: 0.75,
+  s.addText(cap, {
+    x, y: y + 0.95, w, h: 0.9,
     isTextBox: true, margin: 0,
-    fontFace: BODY, fontSize: 12.5, color: INK_MUTE, lineSpacing: 16,
+    fontFace: BODY, fontSize: 12.5, color: capColor, lineSpacing: 16,
   });
 }
 
 /** A tinted card. Background tint, never an edge stripe. */
-function card(s, { x, y, w, h, fill = PAPER_RAISED, line = "E4DFD5" }) {
+function card(s, { x, y, w, h, fill = PAPER_RAISED, line = RULE }) {
   s.addShape(pres.ShapeType.rect, {
     x, y, w, h,
     fill: { color: fill },
@@ -111,196 +114,611 @@ function card(s, { x, y, w, h, fill = PAPER_RAISED, line = "E4DFD5" }) {
   });
 }
 
+/** A screenshot in a frame. The frame is what stops it reading as clip art. */
+function shot(s, name, { x, y, w, h }) {
+  s.addShape(pres.ShapeType.rect, {
+    x: x - 0.05, y: y - 0.05, w: w + 0.1, h: h + 0.1,
+    fill: { color: PAPER_SUNK }, line: { color: INK, width: 1.25 },
+  });
+  s.addImage({ path: IMG(name), x, y, w, h });
+}
+
+function caption(s, text, { x = M, y, w = W - M * 2, color = INK_MUTE, size = 12, h = 0.4 } = {}) {
+  s.addText(text, {
+    x, y, w, h,
+    isTextBox: true, margin: 0,
+    fontFace: BODY, fontSize: size, color, italic: true, lineSpacing: size * 1.35,
+  });
+}
+
 function notes(s, text) {
   s.addNotes(text);
 }
 
-/* ============================================================= 1 · TITLE */
+/* ================================================ 1 · USP + THE SOLUTION */
 {
   const s = slide({ dark: true });
   eyebrow(s, "Cognizant campus drive · healthcare · pharma sales analysis & forecasting", {
-    y: 0.62, color: INK_FAINT,
+    y: 0.55, color: INK_FAINT,
   });
 
   s.addText("PharmaPulse", {
-    x: M, y: 1.5, w: 10, h: 1.5,
+    x: M, y: 1.2, w: 10, h: 1.3,
     isTextBox: true, margin: 0,
-    fontFace: DISPLAY, fontSize: 72, color: PAPER,
+    fontFace: DISPLAY, fontSize: 64, color: PAPER,
   });
 
   s.addText(
     "Every pharmacy guesses how much to order.\nWe calculate it — with the odds, the cost of being wrong,\nand the reason behind the number.",
     {
-      x: M, y: 3.1, w: 9.6, h: 1.9,
+      x: M, y: 2.55, w: 9.6, h: 1.5,
       isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 26, color: "C9C2B6", italic: true, lineSpacing: 38,
+      fontFace: DISPLAY, fontSize: 23, color: "C9C2B6", italic: true, lineSpacing: 32,
     },
   );
 
-  const stats = [
-    ["0.907", "ensemble MASE\n18.8% better than benchmark"],
-    ["68%", "lower inventory cost\nvs a min/max policy"],
-    ["138", "tests, and a benchmark\nthat runs in CI"],
+  s.addText("THE PROPOSED SOLUTION", {
+    x: M, y: 4.25, w: 6, h: 0.3,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 10.5, color: INK_MUTE, charSpacing: 2.2,
+  });
+
+  const chain = [
+    "six years\nof real sales",
+    "a demand\ndistribution",
+    "intervals we\nchecked and fixed",
+    "a purchase order,\nin packs",
   ];
-  stats.forEach(([v, c], i) => {
-    const x = M + i * 3.9;
-    s.addText(v, {
-      x, y: 5.45, w: 3.6, h: 0.7,
-      isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 34, color: PAPER, bold: true,
-    });
+  chain.forEach((c, i) => {
+    const x = M + i * 2.15;
     s.addText(c, {
-      x, y: 6.15, w: 3.6, h: 0.7,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11.5, color: INK_FAINT, lineSpacing: 15,
+      x, y: 4.62, w: 1.85, h: 0.72,
+      isTextBox: true, margin: 0, align: "center", valign: "middle",
+      fontFace: BODY, fontSize: 10.5, color: i === 3 ? INK : PAPER, lineSpacing: 14,
+      fill: { color: i === 3 ? GREEN_LIT : "2A2521" },
     });
-  });
-
-  notes(s,
-    "Open here. Do not read the slide. Say: every pharmacy makes this decision every week, from memory or a spreadsheet. This is what it looks like when you calculate it instead.");
-}
-
-/* ========================================================== 2 · THE PROBLEM */
-{
-  const s = slide();
-  eyebrow(s, "The decision");
-  title(s, "Somebody decides how much to buy.\nGetting it wrong costs money in two directions.");
-
-  const cols = [
-    {
-      x: M, tone: RED, head: "Order too little",
-      what: "A patient asks for a medicine you do not have. They go to the pharmacy across the road.",
-      cost: "The lost gross margin — and often the customer, permanently.",
-      tag: "Cu",
-    },
-    {
-      x: 7.1, tone: BLUE, head: "Order too much",
-      what: "Cash sits on a shelf. Medicines reach their expiry date.",
-      cost: "Holding cost on the capital, plus a total write-off at expiry.",
-      tag: "Co",
-    },
-  ];
-
-  cols.forEach((c) => {
-    card(s, { x: c.x, y: 3.05, w: 5.35, h: 2.75 });
-    s.addText(c.tag, {
-      x: c.x + 0.35, y: 3.25, w: 1, h: 0.5,
-      isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 26, color: c.tone, bold: true,
-    });
-    s.addText(c.head, {
-      x: c.x + 1.35, y: 3.32, w: 3.8, h: 0.45,
-      isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 21, color: INK,
-    });
-    s.addText(c.what, {
-      x: c.x + 0.35, y: 3.92, w: 4.7, h: 0.85,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 13.5, color: INK_SOFT, lineSpacing: 19,
-    });
-    s.addText(c.cost, {
-      x: c.x + 0.35, y: 4.9, w: 4.7, h: 0.7,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 13.5, color: c.tone, bold: true, lineSpacing: 19,
-    });
-  });
-
-  s.addText(
-    "The quantity that minimises expected total cost depends on the distribution of demand and on the ratio between these two costs. A single number cannot answer it.",
-    {
-      x: M, y: 6.15, w: W - M * 2, h: 0.7,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 14, color: INK_MUTE, italic: true, lineSpacing: 20,
-    },
-  );
-
-  notes(s, "Both directions cost money. That is why the answer needs a distribution, not a point.");
-}
-
-/* =========================================================== 3 · THE THESIS */
-{
-  const s = slide();
-  eyebrow(s, "The thesis");
-  title(s, "A forecast is not the product.\nThe purchase order is.");
-
-  const steps = [
-    { t: "history", sub: "6 years of\nreal sales" },
-    { t: "forecast", sub: "a distribution,\nnot a number" },
-    { t: "uncertainty", sub: "measured, and\ncorrected" },
-    { t: "order quantity", sub: "your costs\ndecide it" },
-    { t: "cost of\nbeing wrong", sub: "shown at\n±1 pack" },
-  ];
-  steps.forEach((st, i) => {
-    const x = M + i * 2.38;
-    const isTail = i >= 2;
-    card(s, {
-      x, y: 3.0, w: 2.1, h: 1.85,
-      fill: isTail ? "F0EDE6" : PAPER_RAISED,
-      line: isTail ? INK : "E4DFD5",
-    });
-    s.addText(st.t, {
-      x: x + 0.18, y: 3.2, w: 1.75, h: 0.7,
-      isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 16, color: INK, lineSpacing: 19,
-    });
-    s.addText(st.sub, {
-      x: x + 0.18, y: 3.95, w: 1.75, h: 0.75,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11, color: INK_MUTE, lineSpacing: 14,
-    });
-    if (i < steps.length - 1) {
+    if (i < chain.length - 1) {
       s.addText("→", {
-        x: x + 2.08, y: 3.72, w: 0.32, h: 0.4,
-        isTextBox: true, margin: 0, align: "center",
-        fontFace: BODY, fontSize: 16, color: INK_FAINT,
+        x: x + 1.85, y: 4.62, w: 0.3, h: 0.72,
+        isTextBox: true, margin: 0, align: "center", valign: "middle",
+        fontFace: BODY, fontSize: 14, color: GREEN_LIT,
       });
     }
   });
 
-  s.addText("Almost every tool in this market stops after the second box.", {
-    x: M, y: 5.1, w: 6.5, h: 0.4,
-    isTextBox: true, margin: 0,
-    fontFace: BODY, fontSize: 13.5, color: INK_MUTE, italic: true,
+  s.addText("Almost every tool in this\nmarket stops after box two.", {
+    x: 9.35, y: 4.62, w: 3.15, h: 0.72,
+    isTextBox: true, margin: 0, valign: "middle",
+    fontFace: BODY, fontSize: 11.5, color: INK_FAINT, italic: true, lineSpacing: 15,
   });
 
-  card(s, { x: M, y: 5.72, w: W - M * 2, h: 1.12, fill: "F0EDE6", line: INK });
+  const stats = [
+    [shipped.toFixed(3), "ensemble MASE\n" + improvement.toFixed(1) + "% better than the benchmark"],
+    ["69.5%", "lower inventory cost than a\nmin/max policy, replayed on real days"],
+    ["138", "tests, and a benchmark that\nreruns from a clean clone in CI"],
+  ];
+  stats.forEach(([v, c], i) => {
+    const x = M + i * 3.9;
+    s.addText(v, {
+      x, y: 5.75, w: 3.6, h: 0.68,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 32, color: PAPER, bold: true,
+    });
+    s.addText(c, {
+      x, y: 6.42, w: 3.6, h: 0.56,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 11, color: INK_FAINT, lineSpacing: 14,
+    });
+  });
+
+  notes(s,
+    "Open here. Do not read the slide. Say: every pharmacy makes this decision every week, from memory or a spreadsheet - this is what it looks like when you calculate it instead. The USP is the last box in the chain.");
+}
+
+/* ==================================================== 2 · THE USE CASE */
+{
+  const s = slide();
+  eyebrow(s, "Use case #14 · what was asked");
+  title(s, "Analyse pharmaceutical sales.\nForecast future demand.", { size: 38 });
+
+  card(s, { x: M, y: 2.75, w: 5.6, h: 3.4 });
+  s.addText("THE BRIEF", {
+    x: M + 0.32, y: 2.97, w: 4.9, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 10.5, color: INK_FAINT, charSpacing: 2,
+  });
+  s.addText(
+    "Analyse historical pharmaceutical sales, identify demand patterns and seasonality, and forecast future sales so that inventory can be planned.",
+    {
+      x: M + 0.32, y: 3.32, w: 4.95, h: 1.0,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 14, color: INK_SOFT, lineSpacing: 20,
+    },
+  );
+  s.addText("HOW WE READ IT", {
+    x: M + 0.32, y: 4.45, w: 4.9, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 10.5, color: INK_FAINT, charSpacing: 2,
+  });
+  s.addText(
+    "“So that inventory can be planned” is the actual deliverable. A forecast nobody can act on is a chart. We took the brief to its end — the purchase order.",
+    {
+      x: M + 0.32, y: 4.8, w: 4.95, h: 1.15,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 14, color: INK, lineSpacing: 20,
+    },
+  );
+
+  card(s, { x: 7.05, y: 2.75, w: 5.45, h: 3.4 });
+  s.addText("THE DATA WE WERE GIVEN", {
+    x: 7.37, y: 2.97, w: 4.8, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 10.5, color: INK_FAINT, charSpacing: 2,
+  });
+
+  const facts = [
+    ["2,106", "days · 1 Jan 2014 to 8 Oct 2019"],
+    ["8", "ATC drug categories, sold in fractional units"],
+    ["3", "grains — daily, weekly, monthly"],
+    ["0", "columns for stock, price, promotion or cost"],
+  ];
+  facts.forEach((f, i) => {
+    const y = 3.42 + i * 0.66;
+    s.addText(f[0], {
+      x: 7.37, y, w: 1.25, h: 0.42,
+      isTextBox: true, margin: 0, align: "right",
+      fontFace: MONO, fontSize: 20, color: i === 3 ? RED : INK, bold: true,
+    });
+    s.addText(f[1], {
+      x: 8.75, y: y + 0.07, w: 3.5, h: 0.5,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 12.5, color: INK_MUTE, lineSpacing: 16,
+    });
+  });
+
+  caption(s, "Kaggle · Pharma Sales Data (milanzdravkovic) — a real pharmacy's point-of-sale export. That last row is the constraint the whole architecture is built around.", { y: 6.35 });
+
+  notes(s, "Point at the zero. Everything a judge will ask - where did the cost data come from, how do you know the stock level - traces back to that row, and the lanes slide is the answer.");
+}
+
+/* =============================================== 3 · THE DECISION + THESIS */
+{
+  const s = slide();
+  eyebrow(s, "The decision underneath the forecast");
+  title(s, "Getting it wrong costs money\nin two directions at once.", { size: 38 });
+
+  const cols = [
+    {
+      x: M, tone: RED, head: "Order too little", tag: "Cu",
+      what: "A patient asks for a medicine you do not have. They go to the pharmacy across the road.",
+      cost: "The lost gross margin — and often the customer, permanently.",
+    },
+    {
+      x: 7.05, tone: BLUE, head: "Order too much", tag: "Co",
+      what: "Cash sits on a shelf. Medicines reach their expiry date.",
+      cost: "Holding cost on the capital, plus a total write-off at expiry.",
+    },
+  ];
+
+  cols.forEach((c) => {
+    card(s, { x: c.x, y: 2.8, w: 5.45, h: 2.2 });
+    s.addText(c.tag, {
+      x: c.x + 0.32, y: 3.0, w: 1, h: 0.5,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 26, color: c.tone, bold: true,
+    });
+    s.addText(c.head, {
+      x: c.x + 1.3, y: 3.07, w: 3.9, h: 0.45,
+      isTextBox: true, margin: 0,
+      fontFace: DISPLAY, fontSize: 21, color: INK,
+    });
+    s.addText(c.what, {
+      x: c.x + 0.32, y: 3.62, w: 4.8, h: 0.75,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 13, color: INK_SOFT, lineSpacing: 18,
+    });
+    s.addText(c.cost, {
+      x: c.x + 0.32, y: 4.38, w: 4.8, h: 0.5,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 12.5, color: c.tone, bold: true, lineSpacing: 17,
+    });
+  });
+
+  card(s, { x: M, y: 5.3, w: W - M * 2, h: 1.4, fill: PAPER_SUNK, line: INK });
   s.addText("q*  =  Cu / (Cu + Co)", {
-    x: M + 0.4, y: 5.95, w: 4.6, h: 0.6,
+    x: M + 0.4, y: 5.62, w: 4.6, h: 0.6,
     isTextBox: true, margin: 0,
     fontFace: MONO, fontSize: 26, color: INK, bold: true,
   });
   s.addText(
-    "The newsvendor fractile. If shortage costs 3× excess, order the amount you exceed only 1 week in 4.\nClosed form — which is why the slider in the product recomputes live.",
+    "The newsvendor fractile — a hundred years old, and exact. If a shortage costs 3× an excess, order the quantity\nyou exceed only one week in four. Closed form, which is why the slider in the product recomputes with no\nnetwork call at all.",
     {
-      x: M + 5.3, y: 5.9, w: 6.3, h: 0.8,
+      x: M + 5.3, y: 5.45, w: 6.3, h: 1.15,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 17,
+      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 18,
     },
   );
 
-  notes(s, "The maths is a hundred years old and exact. The novelty is shipping it, not inventing it.");
+  notes(s, "The maths is not the novelty. Shipping it - wiring a real cost ratio into a real order quantity, and showing the buyer the cost of one pack either side - is.");
 }
 
-/* ============================================================= 4 · THE DATA */
+/* ==================================================== 4 · THE END USERS */
+{
+  const s = slide();
+  eyebrow(s, "Who this is for");
+  title(s, "Three people open it, and each one\nopens a different screen.", { size: 34 });
+
+  const users = [
+    {
+      who: "The purchasing buyer", when: "Monday morning · ten minutes",
+      q: "What do I order this week?",
+      need: "A quantity, in packs, with the money at risk if they ignore it. Not a chart.",
+      screen: "Decisions → Order",
+      tone: RED,
+    },
+    {
+      who: "The pharmacy owner", when: "End of month",
+      q: "Is my capital in the right stock?",
+      need: "The cost of the current policy against the alternative, over real days, in rupees.",
+      screen: "Replay → the business case",
+      tone: BLUE,
+    },
+    {
+      who: "Whoever signs it off", when: "Before it goes live",
+      q: "Why should I trust this number?",
+      need: "Attribution in units, calibration measured against outcomes, and the series where it loses.",
+      screen: "Why → Evidence",
+      tone: GREEN,
+    },
+  ];
+
+  users.forEach((u, i) => {
+    const x = M + i * 3.95;
+    card(s, { x, y: 2.75, w: 3.6, h: 3.55 });
+    s.addShape(pres.ShapeType.rect, {
+      x, y: 2.75, w: 3.6, h: 0.055,
+      fill: { color: u.tone }, line: { color: u.tone },
+    });
+    s.addText(u.who, {
+      x: x + 0.28, y: 3.0, w: 3.05, h: 0.45,
+      isTextBox: true, margin: 0,
+      fontFace: DISPLAY, fontSize: 19, color: INK,
+    });
+    s.addText(u.when.toUpperCase(), {
+      x: x + 0.28, y: 3.48, w: 3.05, h: 0.28,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9, color: INK_FAINT, charSpacing: 1.4,
+    });
+    s.addText("“" + u.q + "”", {
+      x: x + 0.28, y: 3.86, w: 3.05, h: 0.78,
+      isTextBox: true, margin: 0,
+      fontFace: DISPLAY, fontSize: 16, color: u.tone, italic: true, lineSpacing: 21,
+    });
+    s.addText(u.need, {
+      x: x + 0.28, y: 4.72, w: 3.05, h: 1.05,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 12, color: INK_SOFT, lineSpacing: 16,
+    });
+    s.addText(u.screen, {
+      x: x + 0.28, y: 5.85, w: 3.05, h: 0.3,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 11, color: INK_MUTE,
+    });
+  });
+
+  caption(s, "Seven screens, but nobody has to visit all seven. The navigation is ordered the way the questions actually arrive: decide, order, forecast, why, replay, evidence, settings.", { y: 6.5 });
+
+  notes(s, "Name the buyer first. The whole product is built for ten minutes on a Monday morning; the other two roles exist so that somebody will let the buyer use it.");
+}
+
+/* ============================================= 5 · THE PRODUCT · DECISIONS */
+{
+  const s = slide();
+  eyebrow(s, "The product · what the buyer sees first");
+  s.addText("It opens on the decision, not on a chart.", {
+    x: M, y: 0.86, w: W - M * 2, h: 0.55,
+    isTextBox: true, margin: 0,
+    fontFace: DISPLAY, fontSize: 32, color: INK,
+  });
+
+  // 3000 x 1900 -> 1.579 ; 8.35in wide -> 5.29in tall
+  shot(s, "dashboard_hero", { x: M, y: 1.6, w: 8.35, h: 5.29 });
+
+  const points = [
+    ["Ranked by money", "₹276 at 34% likely is ranked above ₹163 at 99%. Probability is not the ranking a buyer needs — exposure is.", RED],
+    ["One click to the fix", "Every row links straight to the order that resolves it — there is no hunting.", GREEN],
+    ["Live, not nightly", "Position = seeded opening stock + every ledger movement since. Accept an order and the shelf actually moves.", BLUE],
+  ];
+  points.forEach((p, i) => {
+    const y = 1.72 + i * 1.68;
+    s.addText(p[0], {
+      x: 9.55, y, w: 2.95, h: 0.35,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 14, color: p[2], bold: true,
+    });
+    s.addText(p[1], {
+      x: 9.55, y: y + 0.38, w: 2.95, h: 1.05,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 12, color: INK_MUTE, lineSpacing: 16,
+    });
+  });
+
+  s.addText("live screenshot", {
+    x: 9.55, y: 6.62, w: 2.95, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 9.5, color: INK_FAINT, charSpacing: 1.4,
+  });
+
+  notes(s, "Do not narrate the screen. One sentence - it opens on what needs a decision, ranked by rupees - then move. The live demo is where this lands.");
+}
+
+/* ================================================ 6 · THE PRODUCT · ORDER */
+{
+  const s = slide();
+  eyebrow(s, "The product · the screen the whole system exists for");
+  s.addText("The slider is the cost ratio. Drag it, the order moves.", {
+    x: M, y: 0.86, w: W - M * 2, h: 0.55,
+    isTextBox: true, margin: 0,
+    fontFace: DISPLAY, fontSize: 30, color: INK,
+  });
+
+  // 3000 x 2160 -> 1.389 ; 7.55in wide -> 5.44in tall
+  shot(s, "orders", { x: M, y: 1.55, w: 7.47, h: 5.38 });
+
+  const points = [
+    ["The quantile, made physical", "Service level, stockout risk, cost this cycle and the distance from optimal — all recomputed as you drag.", GREEN],
+    ["±1 pack, priced", "One pack fewer and one pack more, each with what it costs. That is a sensitivity a buyer can argue with.", INK_SOFT],
+    ["The position is auditable", "Opening stock, then every receipt and sale, summing to the number on the shelf.", BLUE],
+  ];
+  points.forEach((p, i) => {
+    const y = 1.72 + i * 1.72;
+    s.addText(p[0], {
+      x: 8.8, y, w: 3.7, h: 0.35,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 13.5, color: p[2], bold: true,
+    });
+    s.addText(p[1], {
+      x: 8.8, y: y + 0.38, w: 3.7, h: 1.1,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 12, color: INK_MUTE, lineSpacing: 16,
+    });
+  });
+
+  s.addText("zero network calls while dragging", {
+    x: 8.8, y: 6.68, w: 3.7, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 9.5, color: INK_FAINT, charSpacing: 1.4,
+  });
+
+  notes(s, "This is the demo moment. Drag from 80 to 95 and let them watch the quantity and the cost move together. Then say: that is the newsvendor formula from three slides ago, and nothing was fetched.");
+}
+
+/* ============================================== 7 · ARCHITECTURE DIAGRAM */
+{
+  const s = slide();
+  eyebrow(s, "Architecture · as built");
+  s.addText("Five layers, one direction.", {
+    x: M, y: 0.84, w: W - M * 2, h: 0.55,
+    isTextBox: true, margin: 0,
+    fontFace: DISPLAY, fontSize: 27, color: INK,
+  });
+
+  const LX = M;
+  const LW = 2.05;
+  const BX = M + 2.2;
+  const BW = 9.43;
+
+  const layers = [
+    {
+      n: "1", name: "DATA", tone: INK_MUTE, dir: "pipelines/",
+      chips: ["ingest", "validate", "clean", "gold", "features"],
+      note: "hash-pinned snapshot · 9 validation gates · truncate-then-compute, so leakage is structurally impossible",
+    },
+    {
+      n: "2", name: "FORECAST", tone: GREEN, dir: "core/",
+      chips: ["classify", "portfolio", "combine", "calibrate", "store", "explain ◂"],
+      note: "ADI/CV² routing · 11 models · median ensemble · conformal interval correction",
+    },
+    {
+      n: "3", name: "DECISION", tone: BLUE, dir: "decision/",
+      chips: ["newsvendor", "risk", "ledger", "replay ◂"],
+      note: "pure functions, no I/O · hash-chained order log · a second policy, so there is something to beat",
+    },
+    {
+      n: "5", name: "SERVICE", tone: AMBER, dir: "api/",
+      chips: ["FastAPI · 16 endpoints · one provenance envelope on every single response"],
+      note: "reads the published store — no model is ever fitted inside a request",
+      wide: true,
+    },
+    {
+      n: "6", name: "PRODUCT", tone: RED, dir: "web/",
+      chips: ["Decisions", "Order", "Forecast", "Why", "Replay", "Evidence", "Settings"],
+      note: "React · TypeScript · raw SVG charts, no charting library",
+    },
+  ];
+
+  let y = 1.5;
+  layers.forEach((L, i) => {
+    const h = 0.8;
+    s.addText("LAYER " + L.n, {
+      x: LX, y: y + 0.06, w: LW, h: 0.26,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9.5, color: INK_FAINT, charSpacing: 1.6,
+    });
+    s.addText(L.name, {
+      x: LX, y: y + 0.3, w: LW, h: 0.32,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 15, color: L.tone, bold: true,
+    });
+    s.addText(L.dir, {
+      x: LX, y: y + 0.6, w: LW, h: 0.24,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9.5, color: INK_FAINT,
+    });
+
+    card(s, { x: BX, y, w: BW, h });
+
+    if (L.wide) {
+      s.addText(L.chips[0], {
+        x: BX + 0.22, y: y + 0.11, w: BW - 0.44, h: 0.32,
+        isTextBox: true, margin: 0, valign: "middle", align: "center",
+        fontFace: MONO, fontSize: 11.5, color: INK,
+        fill: { color: PAPER_SUNK },
+      });
+    } else {
+      const cw = (BW - 0.44 - (L.chips.length - 1) * 0.12) / L.chips.length;
+      L.chips.forEach((c, j) => {
+        s.addText(c, {
+          x: BX + 0.22 + j * (cw + 0.12), y: y + 0.11, w: cw, h: 0.32,
+          isTextBox: true, margin: 0, align: "center", valign: "middle",
+          fontFace: MONO, fontSize: 10.5, color: INK,
+          fill: { color: PAPER_SUNK },
+        });
+      });
+    }
+
+    s.addText(L.note, {
+      x: BX + 0.22, y: y + 0.48, w: BW - 0.44, h: 0.26,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 10.5, color: INK_MUTE,
+    });
+
+    if (i < layers.length - 1) {
+      s.addText("▼", {
+        x: BX + BW / 2 - 0.15, y: y + h - 0.02, w: 0.3, h: 0.16,
+        isTextBox: true, margin: 0, align: "center",
+        fontFace: BODY, fontSize: 9, color: INK_FAINT,
+      });
+    }
+    y += h + 0.15;
+  });
+
+  s.addText(
+    "◂ moved down a layer from the submitted design.   LAYER 4 · INTELLIGENCE no longer exists: attribution moved into the forecast engine because it reads Prophet's fitted components directly, and replay moved into the decision layer because it runs a policy rather than displaying one — which is what let it become the business case. The scenario engine and the assistant were not built.",
+    {
+      x: M, y: 6.28, w: W - M * 2, h: 0.7,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 10.5, color: INK_MUTE, lineSpacing: 14,
+    },
+  );
+
+  notes(s, "The honest slide. Every architecture presentation shows the design; this one shows the build and names the difference out loud. Component-by-component delta is in docs/ARCHITECTURE_DELTA.md - 4 removed, 1 merged, 2 moved, 5 added.");
+}
+
+/* =========================================== 8 · BATCH / SERVE + THE STACK */
+{
+  const s = slide();
+  eyebrow(s, "Architecture · the split that makes it fast");
+  title(s, "No model runs inside a request.", { size: 36, h: 0.8 });
+
+  s.addText(
+    "Everything expensive happens in a batch that writes a versioned forecast store. Everything a screen does is a read. The two halves are joined by a single pointer file, written last — so a reader is never caught mid-publish.",
+    {
+      x: M, y: 2.35, w: 11.4, h: 0.6,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 14, color: INK_SOFT, lineSpacing: 20,
+    },
+  );
+
+  const lanes = [
+    {
+      x: M, tone: GREEN, head: "BATCH · minutes, offline",
+      steps: [
+        "ingest 2,106 days, validate, derive grains",
+        "fit 11 models across 3 grains",
+        "combine by median, calibrate conformally",
+        "write a new version, then swap CURRENT",
+      ],
+      foot: "python -m pipelines.run_nightly --stage all",
+    },
+    {
+      x: 7.05, tone: BLUE, head: "SERVE · milliseconds, per request",
+      steps: [
+        "read the version CURRENT points at",
+        "scale to the protection interval",
+        "newsvendor fractile → order quantity",
+        "wrap in the provenance envelope",
+      ],
+      foot: "uvicorn api.main:app --port 8000",
+    },
+  ];
+
+  lanes.forEach((L) => {
+    card(s, { x: L.x, y: 3.1, w: 5.45, h: 2.7 });
+    s.addText(L.head, {
+      x: L.x + 0.3, y: 3.3, w: 4.9, h: 0.3,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 11, color: L.tone, bold: true, charSpacing: 1.6,
+    });
+    L.steps.forEach((st, j) => {
+      s.addText(String(j + 1), {
+        x: L.x + 0.3, y: 3.75 + j * 0.42, w: 0.3, h: 0.3,
+        isTextBox: true, margin: 0,
+        fontFace: MONO, fontSize: 11, color: INK_FAINT,
+      });
+      s.addText(st, {
+        x: L.x + 0.66, y: 3.75 + j * 0.42, w: 4.55, h: 0.3,
+        isTextBox: true, margin: 0,
+        fontFace: BODY, fontSize: 12.5, color: INK_SOFT,
+      });
+    });
+    s.addText(L.foot, {
+      x: L.x + 0.3, y: 5.44, w: 4.9, h: 0.28,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 10, color: INK_FAINT,
+    });
+  });
+
+  s.addText("CURRENT", {
+    x: 6.32, y: 4.25, w: 0.72, h: 0.4,
+    isTextBox: true, margin: 0, align: "center", valign: "middle",
+    fontFace: MONO, fontSize: 7.5, color: INK_MUTE,
+  });
+
+  const stack = [
+    ["data", "pandas · DuckDB · Parquet · SQLite"],
+    ["models", "statsforecast · mlforecast · LightGBM · Prophet"],
+    ["service", "FastAPI · Pydantic v2"],
+    ["product", "React 18 · TypeScript · Vite · Tailwind"],
+    ["ship", "Docker Compose · GitHub Actions · ruff · pytest"],
+  ];
+  stack.forEach((t, i) => {
+    const x = M + i * 2.34;
+    s.addText(t[0].toUpperCase(), {
+      x, y: 6.1, w: 2.2, h: 0.26,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9.5, color: INK_FAINT, charSpacing: 1.6,
+    });
+    s.addText(t[1], {
+      x, y: 6.38, w: 2.2, h: 0.58,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 11, color: INK_SOFT, lineSpacing: 14,
+    });
+  });
+
+  notes(s, "If a judge asks about latency or scale, this is the slide. The store is immutable per version and the pointer swap is atomic, so publishing during a live demo cannot corrupt a screen.");
+}
+
+/* ============================================================= 9 · THE DATA */
 {
   const s = slide();
   eyebrow(s, "What we measured before designing anything");
-  title(s, "Seven properties of the data\nthat drove every design decision.", { size: 36 });
+  title(s, "Six properties of the file\nthat drove every design decision.", { size: 36 });
 
   const finds = [
-    ["The supplied monthly file is corrupt", "53 series-months disagree with a daily rollup by >5%. We ingest the daily file only and derive the rest.", RED],
+    ["The supplied monthly file is corrupt", "53 series-months disagree with a daily rollup by more than 5%. We ingest the daily file only and derive the rest.", RED],
     ["26 days are closures, not zero demand", "21 map to the Serbian Orthodox calendar. Masked from the loss — never imputed, never deleted.", AMBER],
-    ["The last bucket is truncated", "October 2019 looks like a 70% collapse and is not. Partial periods stay visible, hatched.", AMBER],
+    ["The last bucket is truncated", "October 2019 looks like a 70% collapse and is not. Partial periods stay visible, and hatched.", AMBER],
     ["One series is genuinely intermittent", "N05C sells nothing on 67.9% of days, ADI 3.12. It routes to Croston/TSB automatically.", BLUE],
-    ["Seasonality has a different phase per drug", "Antihistamines peak in May, paracetamol in January. One global profile would smear all of them.", BLUE],
-    ["Weekday effects run in opposite directions", "OTC sells more at weekends, prescription less. A shared coefficient would cancel.", BLUE],
+    ["Seasonality has a different phase per drug", "Antihistamines peak in May, paracetamol in January. One global profile would smear both.", BLUE],
+    ["Weekday effects run in opposite directions", "OTC sells more at weekends, prescription less. A shared coefficient would cancel them out.", BLUE],
   ];
 
   finds.forEach((f, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
     const x = M + col * 6.05;
-    const y = 2.85 + row * 1.38;
+    const y = 2.82 + row * 1.32;
     s.addText(String(i + 1).padStart(2, "0"), {
       x, y, w: 0.5, h: 0.35,
       isTextBox: true, margin: 0,
@@ -312,20 +730,22 @@ function notes(s, text) {
       fontFace: BODY, fontSize: 14, color: INK, bold: true,
     });
     s.addText(f[1], {
-      x: x + 0.6, y: y + 0.36, w: 4.85, h: 0.8,
+      x: x + 0.6, y: y + 0.36, w: 4.85, h: 0.74,
       isTextBox: true, margin: 0,
       fontFace: BODY, fontSize: 11.5, color: INK_MUTE, lineSpacing: 15,
     });
   });
 
-  notes(s, "Every architectural choice traces to a measured property of the file. This is what stops it being a generic pipeline.");
+  caption(s, "Two of these contradict our own submitted design document. Both corrections are written down rather than quietly fixed.", { y: 6.62, h: 0.3 });
+
+  notes(s, "Every architectural choice traces to a measured property of the file. This is what stops it being a generic pipeline with a pharma label on it.");
 }
 
-/* ============================================================= 5 · LANES */
+/* ============================================================ 10 · LANES */
 {
   const s = slide();
   eyebrow(s, "The rule that protects the project");
-  title(s, "The data has dates and units sold.\nIt does not have stock, costs or lead times.", { size: 34 });
+  title(s, "The file has dates and units sold.\nIt has no stock, costs or lead times.", { size: 34 });
 
   s.addText(
     "A system that invents those and trains on them is learning from a random number generator — and any explanation it then produces is an explanation of noise. So every value belongs to exactly one lane, and the lanes have different rights.",
@@ -361,108 +781,94 @@ function notes(s, text) {
     });
   });
 
-  s.addText(
-    "Enforced, not intended: the ingest entrypoint raises on a synthetic path, every row carries its origin, and the interface renders a badge from it.",
-    {
-      x: M, y: 6.55, w: W - M * 2, h: 0.38,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 12, color: INK_MUTE, italic: true,
-    },
-  );
+  caption(s, "Enforced, not intended: the ingest entrypoint raises on a synthetic path, every row carries its origin, the API returns it, and the interface renders a badge from it.", { y: 6.55 });
 
   notes(s, "This converts the project's biggest vulnerability into its most credible feature. Say it before a judge asks where the cost data came from.");
 }
 
-/* ======================================================= 6 · ACCURACY CHART */
+/* ======================================================= 11 · ACCURACY */
 {
   const s = slide();
   eyebrow(s, "Result 1 · forecast accuracy");
-  title(s, "18.8% better than the benchmark\neverything has to beat.", { size: 36, w: 7.4 });
+  title(s, improvement.toFixed(1) + "% better than the benchmark\neverything has to beat.", { size: 36, w: 7.4 });
 
-  const rows = board
-    .filter((m) => !m.is_bound)
-    .sort((a, b) => b.mase - a.mase);
+  const shown = board.slice(0, 9);
+  const worst = Math.max(...shown.map((m) => m.mase));
+  const barW = 5.6;
+  const rowH = 0.42;
 
-  s.addChart(
-    pres.ChartType.bar,
-    [{
-      name: "MASE",
-      labels: rows.map((r) => r.model),
-      values: rows.map((r) => r.mase),
-    }],
-    {
-      x: M, y: 2.55, w: 7.6, h: 4.3,
-      barDir: "bar",
-      chartColors: rows.map((r) =>
-        r.is_shipped ? GREEN : r.is_benchmark ? AMBER : "C9C2B6"),
-      showValue: true,
-      dataLabelPosition: "outEnd",
-      dataLabelFontFace: MONO,
-      dataLabelFontSize: 10,
-      dataLabelColor: INK_SOFT,
-      dataLabelFormatCode: "0.000",
-      showLegend: false,
-      catAxisLabelColor: INK_SOFT,
-      catAxisLabelFontFace: BODY,
-      catAxisLabelFontSize: 11,
-      valAxisLabelColor: INK_FAINT,
-      valAxisLabelFontSize: 9,
-      valAxisMaxVal: 1.5,
-      valGridLine: { color: "E4DFD5", size: 1 },
-      catGridLine: { style: "none" },
-      plotArea: { fill: { color: PAPER } },
-      chartArea: { fill: { color: PAPER } },
-    },
-  );
-
-  figure(s, shipped.toFixed(3), "Ensemble — median of five members.\nWhat we ship.", {
-    x: 8.9, y: 2.6, w: 3.6, color: GREEN, size: 54,
-  });
-  figure(s, baseline.toFixed(3), "SeasonalNaive — 'the calendar alone'.\nThe benchmark everything must beat.", {
-    x: 8.9, y: 4.35, w: 3.6, color: AMBER, size: 54,
+  shown.forEach((m, i) => {
+    const y = 2.75 + i * rowH;
+    const tone = m.is_shipped ? GREEN : m.is_benchmark ? AMBER : m.name === "Oracle" ? INK_FAINT : "B8B0A3";
+    s.addText(m.name, {
+      x: M, y, w: 2.0, h: 0.32,
+      isTextBox: true, margin: 0, valign: "middle",
+      fontFace: BODY, fontSize: 12.5,
+      color: m.is_shipped ? GREEN : m.is_benchmark ? AMBER : INK_SOFT,
+      bold: m.is_shipped || m.is_benchmark,
+    });
+    s.addShape(pres.ShapeType.rect, {
+      x: M + 2.1, y: y + 0.08, w: barW, h: 0.17,
+      fill: { color: PAPER_SUNK }, line: { color: PAPER_SUNK },
+    });
+    s.addShape(pres.ShapeType.rect, {
+      x: M + 2.1, y: y + 0.08, w: (m.mase / worst) * barW, h: 0.17,
+      fill: { color: tone }, line: { color: tone },
+    });
+    s.addText(m.mase.toFixed(3), {
+      x: M + 2.1 + barW + 0.15, y, w: 0.95, h: 0.32,
+      isTextBox: true, margin: 0, valign: "middle",
+      fontFace: MONO, fontSize: 12,
+      color: m.is_shipped ? GREEN : INK_MUTE, bold: m.is_shipped,
+    });
   });
 
-  s.addText(
-    "Weekly grain · horizon 8 · 4 rolling origins · MASE · seed 42\nReproducible in 43 s with  make benchmark",
-    {
-      x: 8.9, y: 6.15, w: 3.6, h: 0.8,
-      isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 9.5, color: INK_FAINT, lineSpacing: 14,
-    },
-  );
+  figure(s, shipped.toFixed(3), "what we ship — the median of\nfive independent models", {
+    x: 9.85, y: 2.7, w: 2.65, color: GREEN, size: 44,
+  });
+  figure(s, baseline.toFixed(3), "SeasonalNaive — repeat what happened\nthis week last year. The honest\nbenchmark, and a hard one.", {
+    x: 9.85, y: 4.5, w: 2.65, color: AMBER, size: 44,
+  });
 
-  notes(s, "MASE, not MAPE — MAPE is undefined on N05C which is zero on 68% of days. We report weekly per category, the grain a buyer actually orders at.");
+  caption(s, "Weekly grain · horizon 8 · rolling-origin CV over 4 non-overlapping folds · MASE against an in-sample naive denominator · 8 series · seed 42. MAPE is undefined on a series with zero-sale days, and one of ours has them on 67.9% of days.", { y: 6.5, size: 11, h: 0.45 });
+
+  notes(s, "Lead with the benchmark, not with our number. SeasonalNaive is hard to beat on retail pharmacy data, and any team that does not name its baseline is hiding one.");
 }
 
-/* ================================================== 7 · THE ABLATION (LEAD) */
+/* ============================================== 12 · THE ABLATION (LEAD) */
 {
   const s = slide({ dark: true });
   eyebrow(s, "Result 2 · the finding worth leading with", { color: INK_FAINT });
   title(s, "We implemented the obvious approach\nand measured it losing.", { color: PAPER, size: 40 });
 
   const items = [
-    ["0.968", "Pick each product's\nbest model", RED],
-    ["0.907", "Combine them\n(median of five)", "5FD39B"],
-    ["0.843", "Perfect hindsight\n(a bound, not a model)", INK_FAINT],
+    [ablation.selection.toFixed(3), "Pick each product's\nbest model", RED, "the intuitive answer — and\nthe one most teams ship"],
+    [ablation.combination.toFixed(3), "Combine them\n(median of five)", GREEN_LIT, "what we ship"],
+    [ablation.oracle.toFixed(3), "Perfect hindsight", INK_FAINT, "a bound, not a model"],
   ];
-  items.forEach(([v, c, col], i) => {
+  items.forEach(([v, c, col, sub], i) => {
     const x = M + i * 4.0;
     s.addText(v, {
-      x, y: 3.15, w: 3.6, h: 1.0,
+      x, y: 3.0, w: 3.7, h: 1.0,
       isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 62, color: col, bold: true,
+      fontFace: MONO, fontSize: 56, color: col, bold: true,
     });
     s.addText(c, {
-      x, y: 4.25, w: 3.6, h: 0.8,
+      x, y: 4.05, w: 3.7, h: 0.7,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 13.5, color: "C9C2B6", lineSpacing: 18,
+      fontFace: BODY, fontSize: 14, color: "C9C2B6", lineSpacing: 19,
+    });
+    s.addText(sub, {
+      x, y: 4.78, w: 3.7, h: 0.6,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 11, color: INK_MUTE, lineSpacing: 15,
     });
   });
 
   s.addText(
-    "Five different models win across the eight series, so per-series selection looks obviously right. With ~300 weekly observations, “best on the last fold” is mostly noise — so selection chases noise and locks in whichever model got lucky. Combination does the opposite: independent models make independent mistakes, and the median cancels them.",
+    "Five different models win across the eight series, so per-series selection looks obviously right. But with ~300 weekly observations, “best on the last fold” is mostly noise — selection chases the noise and locks in whichever model got lucky. Combination does the opposite: independent models make independent mistakes, and the median cancels them.",
     {
-      x: M, y: 5.4, w: W - M * 2, h: 1.1,
+      x: M, y: 5.5, w: W - M * 2, h: 1.05,
       isTextBox: true, margin: 0,
       fontFace: BODY, fontSize: 14, color: "C9C2B6", lineSpacing: 21,
     },
@@ -471,184 +877,93 @@ function notes(s, text) {
   s.addText(
     "Scored honestly: the choice for fold k uses only folds 1…k−1, so it never sees the answer it is graded on.",
     {
-      x: M, y: 6.58, w: W - M * 2, h: 0.38,
+      x: M, y: 6.62, w: W - M * 2, h: 0.38,
       isTextBox: true, margin: 0,
       fontFace: MONO, fontSize: 10.5, color: INK_FAINT,
     },
   );
 
-  notes(s, "This is the slide to lead the technical case with. 'We tested the obvious approach and it lost' is a result. 'We averaged some models' is not — same code, different claim.");
+  notes(s, "This is the strongest slide in the deck. 'We tested the obvious approach and it lost' is a result. 'We averaged some models' is not - same code, different claim.");
 }
 
-/* ========================================================= 8 · CALIBRATION */
+/* ========================================================= 13 · CALIBRATION */
 {
   const s = slide();
   eyebrow(s, "Result 3 · are our own confidence intervals true?");
-  title(s, "We measured whether to believe ourselves.\nWe did not like the answer, so we fixed it.", { size: 34 });
-
-  card(s, { x: M, y: 2.9, w: 5.3, h: 2.2, fill: "F6EDEB", line: RED });
-  s.addText("92.2%", {
-    x: M + 0.4, y: 3.15, w: 2.4, h: 0.85,
-    isTextBox: true, margin: 0,
-    fontFace: MONO, fontSize: 50, color: RED, bold: true,
-  });
-  s.addText("actually covered\nby a nominal 80% band", {
-    x: M + 0.4, y: 4.05, w: 4.5, h: 0.85,
-    isTextBox: true, margin: 0,
-    fontFace: BODY, fontSize: 13.5, color: INK_SOFT, lineSpacing: 18,
-  });
-
-  card(s, { x: 6.55, y: 2.9, w: 5.3, h: 2.2, fill: "EDF2EF", line: GREEN });
-  s.addText("82.0%", {
-    x: 6.95, y: 3.15, w: 2.4, h: 0.85,
-    isTextBox: true, margin: 0,
-    fontFace: MONO, fontSize: 50, color: GREEN, bold: true,
-  });
-  s.addText("after conformal correction\nn = 256 · distribution-free", {
-    x: 6.95, y: 4.05, w: 4.5, h: 0.85,
-    isTextBox: true, margin: 0,
-    fontFace: BODY, fontSize: 13.5, color: INK_SOFT, lineSpacing: 18,
-  });
+  title(s, "We measured whether to believe\nourselves, then corrected it.", { size: 30, w: 6.6, h: 1.2 });
 
   s.addText(
-    "Too WIDE, not too narrow — which causes over-ordering and capital tied up on the shelf. The decision layer reads a specific quantile to pick a quantity, so a mis-sized interval moves that quantity, and the error is invisible in any point-forecast metric.",
+    "A stated 80% interval actually covered " + (calib.achieved_before * 100).toFixed(1) + "% of outcomes. Too wide — which sounds like the safe direction and is not: an over-wide interval pushes the order quantity up, and the buyer pays holding cost for confidence the model has not earned.",
     {
-      x: M, y: 5.35, w: W - M * 2, h: 0.85,
+      x: M, y: 2.5, w: 6.4, h: 1.15,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 14, color: INK_SOFT, lineSpacing: 20,
+      fontFace: BODY, fontSize: 13.5, color: INK_SOFT, lineSpacing: 19,
     },
   );
 
+  figure(s, (calib.achieved_before * 100).toFixed(1) + "%", "the raw model interval,\nat a stated 80%", {
+    x: M, y: 3.8, w: 2.9, color: RED, size: 44,
+  });
+  figure(s, (calib.achieved_after * 100).toFixed(1) + "%", "after conformal correction —\ndistribution-free, assuming nothing\nabout the shape of the residuals", {
+    x: M + 3.15, y: 3.8, w: 3.25, color: GREEN, size: 44,
+  });
+
   s.addText(
-    "Every dashboard in this market draws a confidence band. Nobody publishes whether theirs is right. Ours is on screen, both curves, with its sample size printed on the chart.",
+    "Our own design document predicted the opposite direction — 75%, over-confident. The measurement contradicts it. The lesson is unchanged; the business story flips, and we say so out loud.",
     {
-      x: M, y: 6.35, w: W - M * 2, h: 0.65,
+      x: M, y: 5.8, w: 6.4, h: 0.9,
       isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 17, color: INK, italic: true, lineSpacing: 24,
+      fontFace: BODY, fontSize: 12, color: INK_MUTE, italic: true, lineSpacing: 17,
     },
   );
 
-  notes(s, "The architecture document predicted over-confidence at 75%. Measured, it runs the other way. Say that — being wrong about your own prediction and reporting it is the point.");
+  // 1200 x 1005 -> 1.194 ; 4.95in wide -> 4.15in tall
+  shot(s, "why_calibration", { x: 7.55, y: 1.85, w: 4.95, h: 4.15 });
+  s.addText("the same diagram, inside the product's Why screen", {
+    x: 7.55, y: 6.25, w: 4.95, h: 0.3,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 9.5, color: INK_FAINT, charSpacing: 1.2,
+  });
+
+  notes(s, "Most teams never check calibration at all. Point out that the diagram lives in the product, not just the deck - the buyer can see it too.");
 }
 
-/* ======================================================= 9 · BUSINESS CASE */
+/* ======================================================= 14 · BUSINESS CASE */
 {
   const s = slide();
-  eyebrow(s, "Result 4 · what it was actually worth");
-  title(s, "Our policy against a min/max policy,\nreplayed over the identical real days.", { size: 34 });
+  eyebrow(s, "Result 4 · what it is actually worth");
+  title(s, "Replayed over the identical real days,\nwith identical costs.", { size: 32 });
 
-  s.addChart(
-    pres.ChartType.bar,
-    [
-      { name: "Min/max on average demand", labels: ["Jan–Mar 2019", "Apr–Jun 2019", "Oct–Dec 2018"], values: [4608, 3362, 4942] },
-      { name: "PharmaPulse", labels: ["Jan–Mar 2019", "Apr–Jun 2019", "Oct–Dec 2018"], values: [1479, 1200, 1211] },
-    ],
-    {
-      x: M, y: 2.75, w: 7.5, h: 3.5,
-      barDir: "col",
-      barGrouping: "clustered",
-      chartColors: ["C9C2B6", GREEN],
-      showValue: true,
-      dataLabelPosition: "outEnd",
-      dataLabelFontFace: MONO,
-      dataLabelFontSize: 9.5,
-      dataLabelColor: INK_SOFT,
-      showLegend: true,
-      legendPos: "b",
-      legendFontFace: BODY,
-      legendFontSize: 11,
-      legendColor: INK_SOFT,
-      catAxisLabelColor: INK_SOFT,
-      catAxisLabelFontFace: BODY,
-      catAxisLabelFontSize: 11,
-      valAxisLabelColor: INK_FAINT,
-      valAxisLabelFontSize: 9,
-      valGridLine: { color: "E4DFD5", size: 1 },
-      catGridLine: { style: "none" },
-      plotArea: { fill: { color: PAPER } },
-      chartArea: { fill: { color: PAPER } },
-    },
-  );
-
-  figure(s, "68%", "lower total cost, Jan–Mar 2019.\nAnd 64% and 76% in two other quarters.", {
-    x: 8.8, y: 2.85, w: 3.7, color: GREEN, size: 62,
-  });
+  // 2350 x 660 -> 3.561 ; 11.63in wide -> 3.27in tall
+  shot(s, "liveops_case", { x: M, y: 2.55, w: 11.63, h: 3.27 });
 
   s.addText(
-    "Same data. Same costs, lead time, review cadence and protection interval. The only difference is that min/max orders to the average, and we order to the quantile your cost ratio implies.",
+    "The only difference between the two policies is that min/max sizes against the mean, and we size against the quantile the cost ratio implies. Same lead time, same review cadence, same protection interval, same 90 real days of history.",
     {
-      x: 8.8, y: 4.5, w: 3.7, h: 1.35,
+      x: M, y: 6.0, w: 7.5, h: 0.85,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 17,
+      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 18,
     },
   );
 
+  card(s, { x: 8.6, y: 5.98, w: 3.9, h: 0.9, fill: PAPER_SUNK, line: INK });
   s.addText(
-    "And we hold MORE stock, not less — the entire saving comes from lost sales we did not have. A test asserts both.",
+    "We hold more stock and pay more holding cost. The saving is entirely fewer lost sales — and a test asserts exactly that.",
     {
-      x: M, y: 6.32, w: W - M * 2, h: 0.62,
+      x: 8.85, y: 6.08, w: 3.45, h: 0.72,
       isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 16, color: INK, italic: true, lineSpacing: 22,
+      fontFace: BODY, fontSize: 11, color: INK, lineSpacing: 15,
     },
   );
 
-  notes(s, "A measurement, not a projection. Mention that our first version of this comparison was rigged - we fixed our own horizon and left the baseline on the old one, which handed us 88%. Fixing it gives a defensible 70%.");
+  notes(s, "Three windows are in the product: Jan-Mar 2019 at 69.5%, Apr-Jun 2019 at 64.3%, Oct-Dec 2018 at 75.5%. Show a second one live so it is obviously not one cherry-picked quarter.");
 }
 
-/* ========================================================== 10 · THE PRODUCT */
-{
-  const s = slide();
-  eyebrow(s, "The product");
-  title(s, "It opens on the decision,\nnot on a chart.", { size: 38 });
-
-  const screens = [
-    ["Decisions", "“Four products need a decision today, ₹1,099 at risk.” Ranked by money, not probability.", RED],
-    ["Order", "The service-level slider. Drag it and the quantity and cost move — with zero network calls.", GREEN],
-    ["Why", "Attribution in units that sums to the total, plus the reliability diagram.", BLUE],
-    ["Replay", "The real 2019 history, one day per tick, with the business case underneath.", AMBER],
-    ["Evidence", "Leaderboard, the ablation, and the two series where we lose — in red.", INK_MUTE],
-    ["Settings", "Change the lead time from 4 to 9 days: the order goes 100 → 660 units, live.", INK_MUTE],
-  ];
-
-  screens.forEach((sc, i) => {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
-    const x = M + col * 3.95;
-    const y = 2.75 + row * 2.0;
-    card(s, { x, y, w: 3.6, h: 1.72 });
-    s.addText(sc[0], {
-      x: x + 0.28, y: y + 0.2, w: 3.0, h: 0.4,
-      isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 19, color: sc[2],
-    });
-    s.addText(sc[1], {
-      x: x + 0.28, y: y + 0.66, w: 3.05, h: 0.95,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11.5, color: INK_SOFT, lineSpacing: 15,
-    });
-  });
-
-  s.addText(
-    "Every number is one click from why, and every why is one click from how confident.",
-    {
-      x: M, y: 6.55, w: W - M * 2, h: 0.38,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 13, color: INK_MUTE, italic: true,
-    },
-  );
-
-  notes(s, "Do not linger here - go to the live demo instead. This slide exists for the printed deck.");
-}
-
-/* ========================================================= 11 · WHERE WE LOSE */
+/* ======================================================= 15 · WHERE WE LOSE */
 {
   const s = slide();
   eyebrow(s, "Where it does not work");
-  title(s, "A system that only shows you where it wins\nis not telling you anything.", { size: 34 });
-
-  const rows = bench.per_series.map((r) => [
-    r.series_id, r.seasonal_naive.toFixed(3), r.ensemble.toFixed(3), r.best_model,
-  ]);
+  title(s, "A system that only shows you where it wins\nis not telling you anything.", { size: 32 });
 
   const tableRows = [
     [
@@ -657,13 +972,13 @@ function notes(s, text) {
       { text: "Ensemble", options: { bold: true, color: INK, fontFace: BODY, fontSize: 12 } },
       { text: "Best single model", options: { bold: true, color: INK, fontFace: BODY, fontSize: 12 } },
     ],
-    ...rows.map((r) => {
-      const weak = r[0] === "R06" || r[0] === "M01AE";
+    ...bench.per_series.map((r) => {
+      const weak = r.ensemble >= 1;
       return [
-        { text: r[0], options: { fontFace: MONO, fontSize: 11.5, color: INK_SOFT } },
-        { text: r[1], options: { fontFace: MONO, fontSize: 11.5, color: INK_MUTE } },
-        { text: r[2], options: { fontFace: MONO, fontSize: 11.5, color: weak ? RED : GREEN, bold: true } },
-        { text: r[3], options: { fontFace: BODY, fontSize: 11.5, color: INK_MUTE } },
+        { text: r.series_id, options: { fontFace: MONO, fontSize: 11.5, color: INK_SOFT } },
+        { text: r.seasonal_naive.toFixed(3), options: { fontFace: MONO, fontSize: 11.5, color: INK_MUTE } },
+        { text: r.ensemble.toFixed(3), options: { fontFace: MONO, fontSize: 11.5, color: weak ? RED : GREEN, bold: true } },
+        { text: r.best_model, options: { fontFace: BODY, fontSize: 11.5, color: INK_MUTE } },
       ];
     }),
   ];
@@ -672,55 +987,45 @@ function notes(s, text) {
     x: M, y: 2.7, w: 6.9,
     colW: [1.25, 1.85, 1.5, 2.3],
     rowH: 0.34,
-    border: { type: "solid", color: "E4DFD5", pt: 1 },
+    border: { type: "solid", color: RULE, pt: 1 },
     fill: { color: PAPER_RAISED },
     align: "left",
     valign: "middle",
   });
 
-  card(s, { x: 8.2, y: 2.7, w: 4.3, h: 1.65, fill: "F6EDEB", line: RED });
-  s.addText("R06 · 1.646", {
-    x: 8.5, y: 2.92, w: 3.8, h: 0.4,
-    isTextBox: true, margin: 0,
-    fontFace: MONO, fontSize: 19, color: RED, bold: true,
-  });
   s.addText(
-    "Our worst series, and above 1.0. The May pollen peak is sharp and its timing moves year to year — we have six observations of it.",
+    "The ensemble beats seasonal-naive on all eight, so the relative column is not the interesting one. MASE above 1.000 means worse than simply repeating last week — and two series are.",
     {
-      x: 8.5, y: 3.35, w: 3.8, h: 0.9,
+      x: M, y: 5.85, w: 6.9, h: 0.75,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11.5, color: INK_SOFT, lineSpacing: 15,
+      fontFace: BODY, fontSize: 12, color: INK_SOFT, lineSpacing: 17,
     },
   );
 
-  card(s, { x: 8.2, y: 4.55, w: 4.3, h: 1.5, fill: "F6EDEB", line: RED });
-  s.addText("M01AE · 1.000", {
-    x: 8.5, y: 4.75, w: 3.8, h: 0.4,
-    isTextBox: true, margin: 0,
-    fontFace: MONO, fontSize: 19, color: RED, bold: true,
-  });
-  s.addText(
-    "Against seasonal naive's 1.019 — effectively a tie. We do not claim a win here.",
-    {
-      x: 8.5, y: 5.18, w: 3.8, h: 0.75,
+  const losses = [
+    ["R06 · 1.646", "Our worst series, and well above 1.0. The May pollen peak is sharp and its timing moves year to year — we have six observations of it.", 2.7],
+    ["R03 · 1.137", "Asthma / COPD. Better than the 1.294 seasonal-naive manages, but still above 1.0. We do not claim a win here.", 4.6],
+  ];
+  losses.forEach(([head, text, y]) => {
+    card(s, { x: 8.2, y, w: 4.3, h: 1.7, fill: "F6EDEB", line: RED });
+    s.addText(head, {
+      x: 8.5, y: y + 0.2, w: 3.8, h: 0.4,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 19, color: RED, bold: true,
+    });
+    s.addText(text, {
+      x: 8.5, y: y + 0.65, w: 3.8, h: 0.95,
       isTextBox: true, margin: 0,
       fontFace: BODY, fontSize: 11.5, color: INK_SOFT, lineSpacing: 15,
-    },
-  );
+    });
+  });
 
-  s.addText(
-    "Both are on the product's own Evidence screen, in red, alongside the wins.",
-    {
-      x: M, y: 6.5, w: W - M * 2, h: 0.4,
-      isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 13, color: INK_MUTE, italic: true,
-    },
-  );
+  caption(s, "Both are on the product's own Evidence screen, flagged, alongside the wins.", { y: 6.65, h: 0.3 });
 
   notes(s, "Say this before anyone finds it. A team that reports only wins gets discounted, and experienced judges do that quickly.");
 }
 
-/* ========================================================= 12 · LIMITATION */
+/* ========================================================= 16 · LIMITATION */
 {
   const s = slide({ dark: true });
   eyebrow(s, "The deepest limitation, stated before anyone asks", { color: INK_FAINT });
@@ -760,7 +1065,7 @@ function notes(s, text) {
   });
 
   s.addText(
-    "What we do: flag days where sales hit a suspicious ceiling and treat them as censored.\nWhat we cannot do: verify it — this dataset has no on-hand-stock column.\nIt is in the model card, and it is the first thing a real deployment fixes.",
+    "What we do: flag days where sales hit a suspicious ceiling and treat them as censored.\nWhat we cannot do: verify it — this dataset has no on-hand-stock column.\nIt is named in the model card, and it is the first thing a real deployment fixes.",
     {
       x: M, y: 5.75, w: 11, h: 1.25,
       isTextBox: true, margin: 0,
@@ -768,50 +1073,55 @@ function notes(s, text) {
     },
   );
 
-  notes(s, "Saying this out loud is the strongest thing in the presentation. It bounds every claim the system makes, and volunteering it is what separates a team that measured from a team that demoed.");
+  notes(s, "Saying this out loud is the strongest thing in the presentation. It bounds every claim the system makes, and volunteering it separates a team that measured from a team that demoed.");
 }
 
-/* ============================================================== 13 · CLOSE */
+/* ========================================================== 17 · CONCLUSION */
 {
   const s = slide({ dark: true });
+  eyebrow(s, "In conclusion", { color: INK_MUTE });
 
+  s.addText("Every pharmacy guesses how much to order.", {
+    x: M, y: 1.05, w: 11.4, h: 0.85,
+    isTextBox: true, margin: 0,
+    fontFace: DISPLAY, fontSize: 38, color: INK_MUTE,
+  });
   s.addText(
-    "Every pharmacy guesses\nhow much to order.",
+    "We calculate it — with the odds,\nthe cost of being wrong, and\nthe reason behind the number.",
     {
-      x: M, y: 1.5, w: 11, h: 1.8,
+      x: M, y: 1.9, w: 11.4, h: 1.85,
       isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 46, color: INK_FAINT, lineSpacing: 56,
-    },
-  );
-  s.addText(
-    "We calculate it — with the odds,\nthe cost of being wrong,\nand the reason behind the number.",
-    {
-      x: M, y: 3.35, w: 11, h: 2.2,
-      isTextBox: true, margin: 0,
-      fontFace: DISPLAY, fontSize: 46, color: PAPER, lineSpacing: 56,
+      fontFace: DISPLAY, fontSize: 34, color: PAPER, lineSpacing: 44,
     },
   );
 
-  const proof = [
-    ["make benchmark", "reproduces every figure in 43 s from a clean clone"],
-    ["138 tests", "unit · property · contract · concurrency, green in CI"],
-    ["docker compose up", "the whole system, verified"],
+  const closing = [
+    ["It forecasts", "MASE " + shipped.toFixed(3) + " — " + improvement.toFixed(1) + "% better than the seasonal-naive benchmark, over 4 rolling-origin folds."],
+    ["It decides", "The forecast becomes a purchase order through the newsvendor fractile, sized against the full protection interval."],
+    ["It is honest", "Calibration measured and corrected, the two series where it loses shown inside the product, and the censoring limitation named."],
+    ["It is real", "138 tests, a benchmark that reruns from a clean clone in CI, and docker compose up."],
   ];
-  proof.forEach((p, i) => {
-    const x = M + i * 3.95;
-    s.addText(p[0], {
-      x, y: 6.05, w: 3.7, h: 0.35,
+  closing.forEach((c, i) => {
+    const y = 4.1 + i * 0.65;
+    s.addText(c[0], {
+      x: M, y, w: 1.9, h: 0.35,
       isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 13, color: "5FD39B", bold: true,
+      fontFace: BODY, fontSize: 14, color: GREEN_LIT, bold: true,
     });
-    s.addText(p[1], {
-      x, y: 6.42, w: 3.7, h: 0.55,
+    s.addText(c[1], {
+      x: M + 2.0, y, w: 9.4, h: 0.55,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11, color: INK_FAINT, lineSpacing: 14,
+      fontFace: BODY, fontSize: 13, color: "C9C2B6", lineSpacing: 17,
     });
   });
 
-  notes(s, "Close here. Do not add a thank-you slide - end on the claim and take questions.");
+  s.addText("github.com/yashdoke7/pharmapulse    ·    docs/PHARMAPULSE_SYSTEM.md    ·    docs/ARCHITECTURE_DELTA.md", {
+    x: M, y: 6.72, w: 11.4, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: MONO, fontSize: 10.5, color: INK_MUTE, charSpacing: 1.2,
+  });
+
+  notes(s, "End on the claim and take questions. Do not add a thank-you slide.");
 }
 
 /* ------------------------------------------------------------------ write */
@@ -819,7 +1129,7 @@ function notes(s, text) {
 const out = path.join(__dirname, "PharmaPulse.pptx");
 pres.writeFile({ fileName: out }).then(() => {
   console.log("wrote", out);
-  console.log(`  ensemble ${shipped}  benchmark ${baseline}  improvement ${improvement.toFixed(1)}%`);
-  console.log(`  selection ${ablation.selection}  combination ${ablation.combination}`);
-  console.log(`  calibration ${calib.achieved_before} -> ${calib.achieved_after}`);
+  console.log("  ensemble " + shipped + "  benchmark " + baseline + "  improvement " + improvement.toFixed(1) + "%");
+  console.log("  selection " + ablation.selection + "  combination " + ablation.combination);
+  console.log("  calibration " + calib.achieved_before + " -> " + calib.achieved_after);
 });

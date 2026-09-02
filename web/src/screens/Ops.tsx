@@ -127,7 +127,9 @@ export function Ops() {
           <div className="eyebrow">Per series — including where we lose</div>
           <p className="fine mt-1">
             A team that reports only its wins gets discounted, and experienced judges do
-            it quickly.
+            it quickly. The ensemble beats seasonal-naive on all eight — so the honest
+            column is the absolute one: <strong>MASE above 1.000 is worse than simply
+            repeating last week</strong>, and two series are.
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
@@ -155,8 +157,15 @@ export function Ops() {
                       {row.ensemble.toFixed(3)}
                     </td>
                     <td className="py-2 text-ink-mute">{row.best_model}</td>
+                    {/* Two different questions, and only the second one is hard.
+                        Beating SNaive is the relative claim; MASE >= 1 means the
+                        series is genuinely hard and we say so on the screen. */}
                     <td className="py-2">
-                      {row.ensemble_wins ? (
+                      {row.ensemble >= 1 ? (
+                        <span className="chip bg-signal-amber/[0.10] text-signal-amber">
+                          above naive
+                        </span>
+                      ) : row.ensemble_wins ? (
                         <span className="chip bg-signal-green/[0.08] text-signal-green">wins</span>
                       ) : (
                         <span className="chip bg-signal-red/[0.07] text-signal-red">loses</span>
