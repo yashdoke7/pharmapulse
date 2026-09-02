@@ -24,6 +24,8 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 | **[docs/PHARMAPULSE_SYSTEM.md](docs/PHARMAPULSE_SYSTEM.md)** | **Start here.** The whole project in one file: how the pieces connect, every decision and the alternative it beat, the results, and where the code is |
 | **[docs/ARCHITECTURE_DELTA.md](docs/ARCHITECTURE_DELTA.md)** | **What changed against the submitted design.** 4 components removed, 2 moved layer, 5 added — plus 3 design claims the data contradicts. Read it next to the design documents |
 | [docs/DEMONSTRATION.md](docs/DEMONSTRATION.md) | Run it, then present it — with the words |
+| [docs/GLOSSARY.md](docs/GLOSSARY.md) | **Every term, defined once.** MASE, ADI/CV², protection interval, critical fractile, conformal prediction, the lanes |
+| [docs/WEB_REFERENCE.md](docs/WEB_REFERENCE.md) | **Every screen, panel and term in the running app** — what each number means and which file produced it |
 | [docs/DEMO_RECORDING.txt](docs/DEMO_RECORDING.txt) | **Recording a demo video.** Seven segments, what each screen is actually showing, and the five questions that get asked |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | **Put it on the internet for free.** One container, one URL, and which hosts do not fall asleep |
 | [docs/SCREEN_GUIDE.txt](docs/SCREEN_GUIDE.txt) | **For whoever presents it without having built it.** Every panel on every screen, named and explained in plain language |

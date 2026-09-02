@@ -344,3 +344,209 @@ fixture skips with a clear reason if the store is genuinely absent.
   not account for. Named rather than rationalised.
 - **No incremental ingest.** The nightly job re-reads the whole file. Correct and idempotent, but it
   is O(all history) rather than O(new rows). Fine at this size, and stated.
+
+---
+
+## 8. Second pass — the platform learned to hold more than one dataset
+
+The data layer was correct and immovable. Four separate guards each said "no"
+in a way that made a second dataset impossible, and the warehouse itself was a
+hardcoded string. This section is that work, and the two provenance bugs it
+surfaced.
+
+### 8.1 The dead environment variable that explained everything
+
+`docker-compose.yml` set `PHARMAPULSE_DATA_ROOT`. **No Python code read it.**
+
+That was not a loose end, it was the reason a second dataset could not exist:
+every layer hardcoded `data/warehouse/...` in a *default argument*, which
+Python evaluates once at import. Running the batch on another file overwrote
+the demo warehouse in place, because there was only ever one path.
+
+`pipelines/paths.py` resolves the root per call:
+
+```python
+def data_root() -> Path:
+    """The warehouse root. Read fresh every call - never captured in a default."""
+    return Path(os.getenv("PHARMAPULSE_DATA_ROOT") or DEFAULT_ROOT)
+```
+
+Which turns "which dataset" into an environment variable:
+
+```bash
+PHARMAPULSE_DATA_ROOT=data/warehouse-synthetic \
+  python -m pipelines.run_nightly --stage all \
+    --raw data/synthetic/salesdaily_synthetic_2019_2026.csv --origin synthetic
+```
+
+The ledger keeps its own variable (`PHARMAPULSE_DB`) because it is
+*operational* state, not analytical: you may want a fresh shelf against the
+same forecasts, or the same shelf while you rebuild them.
+
+### 8.2 Four guards that had to be switched off to do any work
+
+Each was the right instinct implemented as a dead end. **A rule you switch off
+to get work done is not a rule** — so each became narrower and kept its teeth.
+
+| Guard | Was | Is | Why the new one is the real rule |
+|---|---|---|---|
+| `ingest` | refused any path containing `synthetic` | takes an explicit `origin=`; refuses a synthetic *path* loaded under any *other* lane | Loading lane 3 is allowed. Loading it **silently** is not. |
+| `validate` | required `origins == {"observed"}` | requires a single **coherent** lane | The failure worth preventing is a MIXTURE: a frame that is mostly real with some invented rows produces a number nobody can characterise. |
+| `read_gold` | filtered to `origin == "observed"`, so a lane-3 warehouse read back **empty** and models fitted on nothing | drops synthetic rows only when lanes are mixed | Same argument. A frame that is entirely one lane is coherent; what may be *claimed* about it is decided downstream from its origin. |
+| the warehouse | one hardcoded path | `PHARMAPULSE_DATA_ROOT` | §8.1 |
+
+```python
+# pipelines/ingest.py
+looks_synthetic = "synthetic" in str(raw_path).replace("\\", "/").lower()
+if looks_synthetic and origin != "synthetic":
+    raise ValueError(
+        f"refusing to ingest {raw_path} as origin={origin!r}: the path says "
+        "synthetic. Pass origin='synthetic' to load it knowingly ...")
+```
+
+Two tests hold the line: the original one (a synthetic path under the default
+lane still raises) plus a new one asserting that when it *is* loaded knowingly,
+every row reaches bronze carrying `origin == "synthetic"`.
+
+### 8.3 Running the system as of any past date
+
+`--as-of` truncates gold **before** anything is fitted, so the demand class, the
+routing, the models and the calibration are all recomputed on what was knowable
+that day:
+
+```python
+# core/pipeline.py::forecast_grain
+if as_of is not None:
+    gold = gold[gold["ds"] <= pd.Timestamp(as_of)]
+```
+
+Truncate-then-compute — the same guarantee `pipelines/features.py` makes, for
+the same reason: a cutoff applied *after* a calculation is a cutoff that has
+already leaked.
+
+The date goes **into the version slug**
+(`version=2026-09-02T1632Z_ens-v1_asof-2017-06-15`). Two stores built minutes
+apart from the same file at different cutoffs are different models, and a
+version string that cannot tell them apart is a provenance hole. Cost: about
+22 seconds for all three grains.
+
+### 8.4 Two provenance bugs, both found by running it rather than reasoning about it
+
+**The version pointer repointed the wrong warehouse.** `POINTER` was a module
+constant built from the old hardcoded root. After the root became configurable,
+`write_version` wrote the new version into the *new* warehouse and then
+repointed the *old* one at it — so the demo store ended up pointing at a
+version that did not exist inside it. That is exactly the failure the atomic
+pointer swap exists to prevent, reintroduced by leaving one path behind during
+the migration.
+
+Caught because the run printed `pointer -> None`. It is a function now, and
+`write_version` writes `root / "CURRENT"` where `root` is the one it just used.
+
+**The store stamped itself with the wrong file's hash.** It called
+`snapshot_id(RAW)` — re-hashing the hardcoded real file. Building from any
+other input produced a store claiming the *first* file's lineage, which is
+worse than carrying no hash at all. It now reads the snapshot back off the gold
+it actually fitted, and reports `mixed:N` rather than picking one if a
+warehouse ever contains more than one.
+
+```python
+def _snapshot_of_gold() -> str:
+    snaps = sorted(fitting_frame("day")["snapshot_id"].dropna().unique())
+    if len(snaps) == 1:
+        return str(snaps[0])
+    return f"mixed:{len(snaps)}" if snaps else "unknown"
+```
+
+### 8.5 The synthetic extension, and why the obvious version is useless
+
+We were handed a 2020–2026 extension. It broke four of the seven properties the
+architecture is built on:
+
+```
+N05C zero-days   67.9%  ->   0.0%     the intermittent series vanished
+N05C lag-1 acf    0.011 ->   0.930    a smooth AR process, not a pharmacy
+closures         26 days ->  0        nothing for the cleaner to find
+N05C spread      sd 1.09 ->  sd 0.12  9x compressed
+```
+
+With N05C smooth, the classifier routes it away from Croston and half the
+model-portfolio argument evaporates on screen. Its *seasonality* was excellent —
+all eight peak months preserved — which is the hard part, so
+`scripts/make_extension.py` keeps that approach and fixes the rest.
+
+It also does the thing that makes an extension worth anything: **five labelled
+regime changes**, each chosen because the system should visibly respond without
+being reconfigured. The headline one is N05C ceasing to be intermittent in 2022,
+which moves it `intermittent -> smooth`, ADI 3.23 -> 1.12, and changes its route
+from Croston/TSB to the smooth portfolio with nothing edited. M01AE runs the
+same transition in reverse so the first cannot be dismissed as a one-way trick.
+
+Four generator bugs, all found by measuring rather than assuming:
+
+| Bug | Effect |
+|---|---|
+| the closure calendar applied every date ever closed to every year | 98 closures/yr against a real 4.3 |
+| `exp()` of a zero-mean normal has mean `exp(sigma^2/2)` | levels and spread inflated ~2x |
+| drawing a magnitude at the *with-zeros* mean, then zeroing it 68% of the time | counted the zeros twice; N05C at a quarter of its real volume |
+| taking sigma from `std(log residual)` | double-counted seasonal misfit; **M01AE started life classified "erratic"**, so the smooth->intermittent transition had nowhere to start from |
+
+`scripts/verify_extension.py` checks all of it and exits non-zero on drift. It
+treats a series within 10% of a classifier cutoff as a **boundary case** rather
+than a failure — R03 sits at ADI 1.30 against a 1.32 cutoff and will flip either
+way run to run. Tuning the generator until it agreed would be fitting to the
+checker.
+
+### 8.6 The test suite was writing to the demo database
+
+`ledger.post(..., db_path=DB_PATH)` — a default argument, evaluated once at
+import, so nothing could redirect it afterwards. The contract tests POST
+`/api/orders` through the real application. **Every `pytest` run wrote a real
+receipt (+130 paracetamol, +25 sedatives) and a real hash-chained `order_log`
+row into `data/warehouse/ops.db`.** Forty rows had accumulated.
+
+That is why the Order screen kept drifting towards "recommended 0 units" between
+runs and looked broken for no visible reason — and it would have done it during
+a rehearsal.
+
+The path resolves per call from `PHARMAPULSE_DB`, a session fixture points the
+suite at a temp file, and a regression test asserts the real database is
+byte-identical after a redirected write. The test was checked to actually fail
+when the isolation is removed, rather than passing vacuously.
+
+### 8.7 Scripts could not import the project
+
+`python scripts/day1_benchmark.py` puts `scripts/` on `sys.path[0]`, **not** the
+repository root. So `from core import calibrate` searched site-packages and
+found an unrelated installed `core` distribution:
+
+```
+ImportError: cannot import name 'calibrate' from 'core'
+(...\site-packages\core\__init__.py)
+```
+
+It only surfaced on a machine that happened to have that package. `scripts/`
+*is* on `sys.path` when a script in it runs directly, so `scripts/_bootstrap.py`
+prepends the repo root before any repo import resolves.
+
+### 8.8 Deployment
+
+A root `Dockerfile` builds the interface with Node and serves both from one
+Python image — one URL, no CORS, no second free-tier service to keep awake. It
+lives at the repository root because Hugging Face Spaces and most one-click
+hosts build `./Dockerfile` and none of them let you point elsewhere.
+
+The nightly batch runs *during the build*, so a cold container serves real
+forecasts on its first request. If that fails — no network, a build timeout —
+the build still succeeds and the API serves fixtures with `meta.degraded` set.
+**A deployment that boots degraded and says so beats one that will not boot.**
+
+### 8.9 Honest gaps, updated
+
+- **The container filesystem is ephemeral and there is no reset endpoint.**
+  A cold start reseeds the board, which is what you want, but while the
+  instance is awake state accumulates and the only fix is a full redeploy.
+- **`data/warehouse-*` is gitignored and unversioned.** Two people can build
+  different stores from the same commit and neither can tell.
+- **No scheduler.** `run_nightly` is triggered by hand or by the new
+  `/api/datasets/rebuild` endpoint. The batch is triggered, not scheduled.

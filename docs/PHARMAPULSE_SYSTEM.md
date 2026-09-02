@@ -40,6 +40,7 @@ pytest -q                                     # 138 tests
 | **7** | How it is tested, and what each test protects |
 | **8** | Operations: containers, CI, degradation |
 | **9** | Complete file index |
+| **10** | ★ **Second pass** — what changed, and the four claims it corrected |
 
 ---
 
@@ -992,6 +993,330 @@ model layer dies on stage. It is kept working and tested all the way through.
 | `make_fixtures.py` | captures fixtures from the live API |
 | `dump_openapi.py` | regenerates `contracts/openapi.json` |
 | `reset_demo.py` | resets the board between rehearsals |
+
+---
+---
+
+# 10. Second pass — what changed, and the four things it corrected
+
+Sections 1–9 describe the system as first built. A review pass changed enough
+that this section exists rather than editing history: **three of the four
+changes below are corrections to claims the system was making**, and the
+correction is more instructive than the claim.
+
+| | Change | Why it is here |
+|---|---|---|
+| **10.1** | The system can hold more than one dataset, and run as of any past date | A frozen system could not answer "does it work on my data?" |
+| **10.2** | The business case was measuring forecast vintage, not decision rule | **The headline number was inflated.** It moved from 69.5% to a set of smaller, defensible figures |
+| **10.3** | Three claims the code could not defend | A hardcoded season label, a mislabelled tie, a panel that did not vary |
+| **10.4** | Two bugs that were silently corrupting state | The test suite wrote to the demo database; a pointer swap repointed the wrong warehouse |
+
+---
+
+## 10.1 One system, many datasets, any date
+
+### The dead environment variable
+
+`docker-compose.yml` set `PHARMAPULSE_DATA_ROOT`. **No Python code read it.**
+
+That was not a loose end — it was the reason a second dataset could not exist.
+Every layer hardcoded `data/warehouse/...` in a *default argument*, which Python
+evaluates once at import, so nothing could redirect it afterwards. Running the
+batch on a second file overwrote the demo warehouse in place.
+
+`pipelines/paths.py` resolves per call, and "which dataset" becomes an
+environment variable:
+
+```bash
+PHARMAPULSE_DATA_ROOT=data/warehouse-synthetic \
+  python -m pipelines.run_nightly --stage all \
+    --raw data/synthetic/salesdaily_synthetic_2019_2026.csv --origin synthetic
+```
+
+### Four guards that had to be switched off to do any work
+
+Each was the right instinct built as a dead end. **A rule you switch off to get
+work done is not a rule.**
+
+| Guard | Was | Is now |
+|---|---|---|
+| `ingest` | refused any path containing `synthetic` | takes an explicit `origin=`; refuses a synthetic *path* under any *other* lane |
+| `validate` | required `origins == {"observed"}` | requires a single **coherent** lane |
+| `read_gold` | filtered to `observed`, so a lane-3 warehouse read back **empty** | drops synthetic rows only when lanes are **mixed** |
+| the warehouse | one hardcoded path | `PHARMAPULSE_DATA_ROOT` |
+
+The rule worth enforcing was never "lane 3 may not be loaded". It is **"lane 3
+may not be loaded silently, and may never be mixed with lane 1"**. A frame that
+is mostly real with some invented rows produces a number nobody can
+characterise; a frame that is entirely one lane is coherent, and what may be
+*claimed* about it is decided downstream from its `origin` — which now travels
+to the browser and switches the accuracy figures off.
+
+### Running as of a past date
+
+```python
+# core/pipeline.py::forecast_grain
+gold = fitting_frame(grain)
+if as_of is not None:
+    gold = gold[gold["ds"] <= pd.Timestamp(as_of)]
+```
+
+Placement is the entire point, and it is the same guarantee stage ⑤ makes:
+**truncate first, compute second.** Everything below that line — `classify`, the
+route, the fits, the conformal scale — sees a frame that cannot contain the
+future. Filtering a finished forecast instead would leak through the demand
+class alone, because ADI is computed from the zero rate and a zero rate that
+includes future days is future information.
+
+The as-of date goes **into the version slug**
+(`version=2026-09-02T1632Z_ens-v1_asof-2017-06-15`), because two stores built
+minutes apart from the same file at different cutoffs are different models.
+Cost: ~22 s for all three grains.
+
+### The synthetic extension, and why the obvious version proves nothing
+
+An extension that continues the same series with the same statistics shows
+nothing. Worse, the one we were handed broke four of the seven properties from
+§1:
+
+```
+N05C zero-days   67.9%  ->   0.0%     the intermittent series vanished
+N05C lag-1 acf    0.011 ->   0.930    a smooth AR process, not a pharmacy
+closures         26 days ->  0        nothing for the cleaner to find
+N05C spread      sd 1.09 ->  sd 0.12  9x compressed
+```
+
+`scripts/make_extension.py` preserves those and injects **five labelled regime
+changes**, each chosen because the system should visibly respond *without being
+reconfigured*:
+
+```
+N05C  2019-2022  intermittent  ADI 3.23  -> Croston, SeasonalNaive, LightGBM
+      2025-2026  smooth        ADI 1.12  -> Prophet, ARIMA, MSTL, SNaive, LGBM
+M01AE 2019-2022  smooth                  -> the same transition, in reverse
+```
+
+That is the demonstration: a computed rule re-routed a product because the
+product changed. `scripts/verify_extension.py` checks every preserved property
+and exits non-zero on drift, treating a series within 10% of a cutoff as a
+**boundary case** rather than a failure — R03 sits at ADI 1.30 against a 1.32
+cutoff and flips either way run to run. Tuning the generator until it agreed
+would be fitting to the checker.
+
+---
+
+## 10.2 ★ The business case was measuring the wrong thing
+
+**This is the most important correction in the project.**
+
+### The flaw
+
+Every policy in the replay read the **published forecast store**, anchored at one
+cutoff — the day after the last observation. The replay windows are months
+*earlier*, so one static forecast was applied to every simulated day regardless
+of season:
+
+```
+R03  Oct-Dec 2018   forecast(11d) = 41.0   actual = 118.6   ratio 0.35
+```
+
+Min/max shared the same handicap. So "69.5% cheaper" really meant *safety stock
+on a stale forecast beats no safety stock on the same stale forecast.*
+
+### Where the old advantage came from, exactly
+
+```
+              STALE STORE (old)            TRAILING ACTUALS (new)
+         p50/11d p95/11d minmax-S     p50/11d p95/11d minmax-S
+R03           41     118       67          92     153      151
+N02BE        399     546      654         371     443      607
+M01AB         57      91       94          54      69       88
+```
+
+R03 is the whole story. The stale forecast said 41; December sold 119. Min/max
+sized off that same wrong number and targeted 67 — it starved. We targeted the
+p95 of that distribution, 118, which landed near the real 119 **by accident**:
+our interval was wide enough to compensate for a point forecast that was badly
+wrong. Ratio **1.76×**.
+
+With real trailing data R03 goes to p95 = 153 against min/max S = 151 — ratio
+**1.02×**. The gap collapses because the artefact disappears.
+
+### The fix, and the harder baselines
+
+Every policy now sizes off rolling sums of the trailing 180 days, strictly
+before the simulated day. And min/max alone is too soft to lead with — every ERP
+carries safety stock — so two harder rungs were added:
+
+| Policy | Sizes at | Gets our forecast? | Tests |
+|---|---|---|---|
+| `minmax` | `mean · (L + R)` | no | the "no system" floor |
+| `safety_stock` | `μ·L + z·σ·√L` from trailing stats | no | what an ERP does |
+| `normal_approx` | `median + z·σ` from **our** distribution | **yes** | **normal vs empirical, forecast quality held constant** |
+
+`normal_approx` is the rung that carries the claim. `σ` is recovered from the
+interval rather than assumed — for a normal, `p90 − p50 = 1.2816σ`, which is
+what a practitioner does with a published interval and does not require the
+distribution to actually *be* normal.
+
+### The honest result
+
+```
+                   Jan-Mar 19   Apr-Jun 19   Oct-Dec 18
+minmax                  +6.0%       +48.8%       +61.1%
+safety_stock            -2.9%       +23.1%        -1.8%
+normal_approx          +17.9%        +8.1%        +0.4%
+```
+
+**We beat the normal approximation on every window** — the empirical quantile
+earns its place. **We are level with a real ERP policy**, winning one and losing
+two by a couple of percent, and those cells ship in amber rather than being
+cropped out. What separates us there is not cost: `z` comes from the pharmacy's
+own margins instead of a consultant, the interval behind it is calibrated, and
+the number explains itself.
+
+### The limit, stated
+
+Because every policy sizes off a trailing window, **none can anticipate a
+seasonal turn** — on 1 January the last 180 days are autumn. Anticipating it is
+exactly what the forecast layer is *for*, and the replay does not exercise it:
+that needs a forecast produced at each **review point** rather than one vintage.
+`--as-of` makes it buildable. It is the single most valuable next experiment.
+
+---
+
+## 10.3 Three claims the code could not defend
+
+### A season label that was typed, not measured
+
+```python
+SEASON_HINTS = {"R06": "pollen season", "N02BE": "flu wave", ...}   # deleted
+```
+
+The **magnitude** was always real — Prophet's fitted `yearly` component. The
+**noun** was a lookup table, and it was the only thing on any screen the code had
+not derived. It would have been silently wrong on anyone else's data.
+
+Derived from the measured peak month now, with the shape drawn beside it:
+
+```
+R06    peak May       1.74x its own average
+N02BE  peak January   1.49x
+R03    peak December  1.46x
+```
+
+The old labels were roughly right, which is exactly what made them dangerous.
+
+### A tie counted as a loss
+
+The per-series chips treated `MASE >= 1` as a failure, so **M01AE at exactly
+1.000 was flagged "above naive"** — the Evidence screen said *3 of 8* while the
+deck said two. A tie is not a loss. Both surfaces now say **2 losses, 1 tie**.
+
+### A panel that did not vary with its subject
+
+The right-hand panel on *Why* was the reliability diagram — a **global** result,
+byte-identical on all eight products. It moved to *Evidence*, where a global
+result belongs, and *Why* now shows that medicine's own seasonal profile.
+
+---
+
+## 10.4 Two bugs that were silently corrupting state
+
+### `pytest` was writing to the demo database
+
+`ledger.post(..., db_path=DB_PATH)` — a default argument, evaluated once at
+import. The contract tests POST `/api/orders` through the real application, so
+**every test run wrote a real receipt (+130 paracetamol, +25 sedatives) and a
+real hash-chained `order_log` row into `data/warehouse/ops.db`.** Forty rows had
+accumulated.
+
+That is why the Order screen kept drifting towards "recommended 0 units" between
+runs, for no visible reason — and it would have done it during a rehearsal. The
+path resolves per call from `PHARMAPULSE_DB` now, a session fixture points the
+suite at a temp file, and a regression test asserts the real database is
+byte-identical afterwards. The test was checked to actually *fail* when the
+isolation is removed.
+
+### The atomic pointer swap repointed the wrong warehouse
+
+`POINTER` was a module constant built from the old hardcoded root. Once the root
+became configurable, `write_version` wrote the new version into the *new*
+warehouse and then repointed the *old* one at it — so the demo store pointed at
+a version that did not exist inside it.
+
+That is precisely the failure the pointer swap exists to prevent (§stage ⑩),
+reintroduced by leaving one path behind during a migration. Caught because the
+run printed `pointer -> None`.
+
+### And one more, in the same family
+
+The store stamped itself with `snapshot_id(RAW)` — re-hashing the hardcoded
+input file. Building from any other file produced a store **claiming the first
+file's lineage**, which is worse than carrying no hash at all. It now reads the
+snapshot back off the gold it actually fitted.
+
+---
+
+## 10.5 Serving, deployment, and what does not cache
+
+**One container, one origin.** `api/main.py` mounts `web/dist` when it exists,
+with a catch-all returning `index.html` so a refresh on `/orders` does not 404.
+`docker-compose` still runs two services because that is right for development —
+Vite gives hot reload, a static bundle cannot.
+
+That catch-all had a bug worth recording: it **swallowed unmatched `/api` paths
+and returned HTML with a 200**, so a caller got a page where it expected JSON.
+It 404s properly now.
+
+**The batch runs during the image build**, so a cold container serves real
+forecasts on its first request. If it fails, the build still succeeds and the
+API serves fixtures with `meta.degraded` set — a deployment that boots degraded
+and says so beats one that will not boot.
+
+**What caches and what does not**, now stated on the Evidence screen:
+
+| | Cached? |
+|---|---|
+| Serving a screen | **yes** — in-process LRU keyed on `model_version`; no model runs inside a request |
+| The nightly batch | **no** — refits from scratch every run. No warm start, no incremental update |
+
+Affordable at 8 products; the first thing that breaks at 8,000. The original
+design had update modes and they were never built.
+
+One cache bug found on the way: the LRU key is `model_version`, so publishing a
+*new* version self-invalidates — but **activating an OLD one brings a stale key
+back into scope with stale data behind it.** `deps.clear_caches()` now runs on
+every pointer swap.
+
+---
+
+## 10.6 The eighth screen
+
+`web/src/screens/Data.tsx` — the live dataset with its lane badge, an as-of
+date control, a CSV upload, and every version built with an *Activate* button.
+
+A rebuild costs ~20 s: too long to hold a request open, far too short to justify
+a queue. `POST /api/datasets/rebuild` runs it on a thread and the screen polls.
+Only one runs at a time — they write to the same warehouse — and a second
+request gets a 409 rather than a corrupted store.
+
+Full screen-by-screen reference: [WEB_REFERENCE.md](WEB_REFERENCE.md).
+
+---
+
+## 10.7 Honest gaps, as of this pass
+
+- **`api/routers/datasets.py` has zero tests** — ~250 lines, the newest surface
+  in the project, entirely uncovered.
+- **No reset endpoint.** `scripts/reset_demo.py` needs a shell, which a free
+  hosting tier does not provide. A live instance that has been clicked around
+  cannot be reset without a redeploy.
+- **The replay cannot yet show the forecast layer's value** (§10.2).
+- **No warm start in the batch** (§10.5).
+- **Nothing below `lg:` in the interface has been looked at**, and no
+  accessibility pass has been done.
+- **Jobs die with the process.** In-memory, no persistence.
 
 ---
 

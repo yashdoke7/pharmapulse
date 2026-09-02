@@ -4,7 +4,7 @@
 > Original brief: `../04_POD_D_PRODUCT_FRONTEND.md`
 
 **Owns:** `web/`
-**Delivers:** seven screens, two bespoke charts, and the design system.
+**Delivers:** eight screens, four bespoke charts, and the design system.
 
 ---
 
@@ -12,9 +12,12 @@
 
 | Deliverable | Status | Evidence |
 |---|---|---|
-| Seven screens on live data | **done** | all verified rendering, no console errors |
-| Fan chart, raw SVG | **done** | 3 bands, cutoff rule, hatched partial buckets |
-| Reliability diagram, raw SVG | **done** | before/after curves + identity line |
+| Eight screens on live data | **done** | all verified rendering, no console errors |
+| Fan chart, raw SVG | **done** | 3 bands, cutoff rule; partial bucket drawn but not load-bearing (§11.1) |
+| Reliability diagram, raw SVG | **done** | before/after curves + identity line — **moved to Evidence**, §11.3 |
+| Seasonal profile, raw SVG | **done** | per-medicine monthly index; replaced the diagram on *Why*, §11.4 |
+| Cover-runway chart, raw SVG | **done** | days of cover against the protection interval, §11.2 |
+| Dataset screen | **done** | as-of rebuild, CSV upload, version activation, §11.6 |
 | Service-level slider | **done** | **zero** network calls on drag, verified |
 | Provenance badges | **done** | measured vs your-setting on every input |
 | Staleness / degradation badges | **done** | wired to `meta.stale` / `meta.degraded` |
@@ -275,3 +278,187 @@ That is the argument made **interactive** rather than asserted.
 - **Replay state is client-polled**, not websocket. Deliberate — polling cannot break on stage.
 - **The fan chart is fixed-viewBox**, scaled by CSS. It reads correctly from mobile to desktop, but
   it is not a true responsive redraw.
+
+---
+
+## 11. Second pass — what changed after the first review
+
+Everything above was true when it was written. A review pass found four screens
+that were misreading, misreadable or empty, and the product grew an eighth
+screen. This section is the delta, and it is where the interesting bugs are.
+
+### 11.1 The fan chart was anchored to a lie
+
+**Symptom.** At weekly and monthly grain the actual line dived just before the
+forecast and the fan jumped back up. It read as the model ignoring its own last
+observation, and that is exactly what a reviewer said.
+
+**Cause.** The last bucket is TRUNCATED. The file ends 8 October 2019, so the
+week beginning 7 October holds two days of sales and October holds eight:
+
+```
+2019-09-30   249.45   completeness 1.00
+2019-10-07    95.10   completeness 0.29   <- two days, not seven
+```
+
+The fan and the median both anchored at `history[history.length - 1]`, so they
+started from 95.1 and climbed to the real weekly level of ~250. The
+`completeness` field had been on the API response the whole time. Nothing read
+it.
+
+```tsx
+// web/src/components/FanChart.tsx
+let anchorIndex = history.length - 1;
+while (anchorIndex > 0 && history[anchorIndex].completeness < 1) anchorIndex--;
+```
+
+The partial tail is still drawn — hiding it would be worse — but as a dashed
+stub with a hollow marker and a "part period" label, so it is visible and not
+load-bearing.
+
+**Why it matters beyond cosmetics.** Three separate documents claimed "partial
+periods stay visible as hatched bars". They were describing an intent the chart
+did not implement.
+
+### 11.2 The Decisions screen had no chart, and the right one is not a trend line
+
+The brief said "opens on exceptions, never on a chart", and that rule is still
+right. But the screen was three text rows and a table, and it read as empty.
+
+The chart that belongs there is not a time series — **a buyer cannot act on a
+trend line**. It is every product's *runway*: days of cover as a horizontal bar,
+with the protection interval drawn through every track as a dashed rule. Who
+falls short, and by how much, in one glance.
+
+```tsx
+// The marker lives INSIDE each track, not absolutely positioned over the row.
+// The first version used left: calc(9.5rem + pct% * 0.72) against the whole
+// row, which is a fudge factor pretending to be a layout, and it put the
+// 11-day line in a different place on every bar.
+<div className="absolute inset-y-0 border-l border-dashed border-ink/45"
+     style={{ left: markerPct + "%" }} />
+```
+
+It also states the thing that looks like a bug and is not: a slow mover can
+clear the 11-day line and still say *order now*, because its reorder point
+carries safety stock for how erratic it is. Sedatives sit at 23.7 days of cover
+and still need ordering.
+
+### 11.3 A panel that does not change when you change the subject is not about the subject
+
+The right-hand panel on *Why* was the reliability diagram. It is a **global**
+calibration result, so it was byte-identical on all eight products. A reviewer
+noticed before a judge did.
+
+It moved to *Evidence*, where a global result belongs, and *Why* now shows that
+medicine's own **month-by-month demand index** — which was needed anyway,
+because of the next item.
+
+### 11.4 The one claim on any screen the code could not defend
+
+The attribution sentence read *"coming off the pollen season"*. The
+**magnitude** was always measured — Prophet's fitted yearly component. The
+**noun** was a lookup table somebody typed:
+
+```python
+SEASON_HINTS = {"R06": "pollen season", "N02BE": "flu wave", ...}   # deleted
+```
+
+It would have been silently wrong on anyone else's data, and it was the only
+thing on any screen asserted rather than computed. The label is now derived
+from the measured peak month, and the panel beside it draws the shape it was
+read from:
+
+```
+R06    peaks May        1.74x its own average
+N02BE  peaks January    1.49x
+R03    peaks December   1.46x
+```
+
+The old labels were roughly right. They are now *checkable*, and they survive a
+different dataset — on the synthetic extension R06's peak walks to March and
+the sentence follows it.
+
+### 11.5 Three screens that were unreadable, and why each was
+
+| Screen | What was wrong | What it needed |
+|---|---|---|
+| **Order** | The quantity sat in the top-right corner and the slider in the middle, with nothing joining them. You could drag and watch a number change *somewhere else* and never connect the two — and that connection is the entire product. | A live sentence under the track: *"Accept a 4.8% chance of running out and you order 240 units (24 packs) at Rs 38.61."* Off the recommendation it names the recommendation and what the difference costs per cycle. |
+| **Replay** | Ticked every **320 ms**. A quarter went past in half a minute; nobody could see a delivery land. | 1.5 s/day default, a speed picker, and a *Step 1 day* button. |
+| **Replay** | Used four inventory terms with no definition anywhere on screen — *min/max*, *lost margin*, *holding*, *units unsupplied*. A business case nobody can read is not a business case. | Six definitions under the cards, including why the saving is credible. |
+| **Evidence** | Opened on four MASE figures and a leaderboard. If you had not built it there was no way in, and it read as a developer console that had wandered into a product. | The answer first, in words, then a line saying everything below is the working. |
+
+The Evidence pass also caught a real inconsistency: the chips treated
+`MASE >= 1` as a loss, so **M01AE at exactly 1.000 was flagged "above naive"**
+and counted among the failures. The screen said *3 of 8* while the deck said
+two. A tie is not a loss — ties now read `ties naive` in neutral grey and both
+surfaces agree.
+
+### 11.6 The eighth screen: Data
+
+Two questions kept being asked of a product frozen against one file at one
+cutoff, and neither had an answer on a screen:
+
+- *"What would this have said in June 2017?"*
+- *"Does it work on my data?"*
+
+They are the same feature. `web/src/screens/Data.tsx` carries the live dataset
+with its lane badge, an **as-of** date control, a CSV upload, and every version
+ever built with an *Activate* button.
+
+Two front-end details worth keeping:
+
+**Polling, not a spinner.** A rebuild takes about twenty seconds — too long to
+hold a request open, far too short to justify a queue. The server runs it on a
+thread; the screen polls `/api/datasets/jobs/{id}` every 1.2 s and invalidates
+every query when it finishes.
+
+**Multipart cannot go through the shared client.** `request()` sets a JSON
+`Content-Type`, and setting one by hand on a `FormData` body strips the boundary
+the server needs to parse it. `uploadDataset` therefore calls `fetch` directly —
+the only place in the client that does, with a comment saying why.
+
+The lane badge is deliberately loud and turns amber when the live dataset is not
+`observed`. A synthetic dataset may demonstrate the pipeline and may never back
+an accuracy claim; the moment that is not obvious on screen, the guarantee is
+worth nothing.
+
+### 11.7 One clock, and it belongs to the data
+
+The Dashboard printed `new Date()` — the *viewer's* wall-clock date — above
+forecasts anchored to the last day in the file. It read "Today · 2 September"
+over numbers computed for October 2019.
+
+A buyer decides for the next period, not for whenever the page happened to be
+opened. `meta.as_of` now rides on every response and the label reads
+**"Deciding for · 9 October 2019"**. It moves on its own when a different
+dataset is published — 2026-10-01 on the synthetic extension, nothing
+configured.
+
+### 11.8 Deployment: the API serves the built interface
+
+`docker-compose` runs two services because that is right for development — Vite
+gives hot reload, a static bundle cannot. A deployment wants the opposite: one
+URL, no CORS, no second free-tier service to keep awake. `api/main.py` mounts
+`web/dist` when it exists, with a catch-all returning `index.html` so a refresh
+on `/orders` does not 404.
+
+That catch-all had a bug worth recording: it **swallowed unmatched `/api` paths
+and returned HTML with a 200**, so a caller got a page where it expected JSON.
+It 404s properly now.
+
+```python
+if full_path.startswith(("api/", "docs", "openapi.json", "redoc")):
+    raise HTTPException(status_code=404, ...)
+```
+
+### 11.9 Honest gaps, updated
+
+- **No tests on the Data screen or its router.** `api/routers/datasets.py` is
+  ~250 lines with zero coverage. It is the largest untested surface in the
+  project and it is the newest.
+- **Nothing below `lg:` has been looked at.** The Decisions table and the
+  runway chart both overflow on a phone, and a judge will open it on a phone.
+- **No accessibility pass.** Icon-only buttons have no `aria-label`, the slider
+  has no accessible name, and the status chips carry meaning in colour alone.
+- **No error boundary.** One bad API response white-screens the whole app.

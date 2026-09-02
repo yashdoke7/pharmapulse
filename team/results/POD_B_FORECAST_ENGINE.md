@@ -367,3 +367,163 @@ question with a seasonal index plus a linear trend, and `method` says so.
   depends on their coherence. First thing we would add.
 - **The stress-test harness not built.** Specified with a ten-scenario catalogue; reuses
   `backtest.py`; roughly half a day.
+
+---
+
+## 11. Second pass — the engine says where its numbers came from
+
+The portfolio, the routing and the combination were correct and are unchanged.
+What changed is that the engine now records *what it was fitted on*, can be
+asked to run as of any past date, and no longer asserts a single thing it did
+not compute.
+
+### 11.1 The one claim in the engine that was typed, not measured
+
+`core/explain.py` produced sentences like *"coming off the pollen season"*. The
+**magnitude** was always real — Prophet's fitted `yearly` component, read
+directly, in units. The **noun** was a lookup table:
+
+```python
+SEASON_HINTS = {"R06": "pollen season", "N02BE": "flu wave",
+                "R03": "cold-air exacerbation", "N05C": "winter"}   # deleted
+```
+
+Two problems. It was the only thing any screen displayed that the code had not
+derived, and it would have been **silently wrong on anyone else's data** — a
+different pharmacy's R06 has no reason to peak in May.
+
+Replaced by `seasonal_profile()`, which computes a month-by-month index from
+observed rows only, and `_season_detail()`, which names the season from the
+measured peak:
+
+```python
+def _season_detail(profile, season_delta) -> str:
+    peak = max(profile, key=lambda m: m["index"])
+    if peak["index"] < 1.08:
+        return "a flat annual cycle"
+    peak_name = MONTHS[peak["month"] - 1]
+    return (f"moving towards its {peak_name} peak" if season_delta >= 0
+            else f"coming off its {peak_name} peak")
+```
+
+Measured, on the real file:
+
+```
+R06    peak May       1.74x its own average    low Dec 0.47x
+N02BE  peak January   1.49x                    low Jul 0.67x
+R03    peak December  1.46x                    low Jul 0.54x
+M01AB  peak August    1.10x                    low Feb 0.92x
+```
+
+The hardcoded labels were roughly right — which is exactly why this was
+dangerous. It looked correct until the data changed. On the synthetic extension
+R06's peak walks to March and the sentence follows it.
+
+The profile also excludes incomplete trailing periods, so a part-month cannot
+drag its own index down.
+
+### 11.2 Running as of a past date
+
+`forecast_grain` takes `as_of` and truncates gold before anything is computed:
+
+```python
+gold = fitting_frame(grain)
+if as_of is not None:
+    gold = gold[gold["ds"] <= pd.Timestamp(as_of)]
+```
+
+Placement is the whole point. Everything below that line — `classify`, the
+route, the fits, the conformal scale — sees a frame that cannot contain the
+future. Filtering a finished forecast instead would have leaked through the
+demand class alone: N05C's ADI is computed from the zero rate, and a zero rate
+that includes future days is future information.
+
+The as-of date is recorded in the store metadata **and** in the version slug,
+so two runs from the same file at different cutoffs are distinguishable
+artefacts rather than a silent overwrite.
+
+### 11.3 The store now records its own lineage
+
+Three fields were added to the version metadata, and each fixes a specific way
+the old store could mislead:
+
+| Field | Fixes |
+|---|---|
+| `origin` | The API defaulted `meta.origin` to `"observed"` per route — a *hope*, stated as a fact. The store now records the lane it was fitted on and the API reads it back, so a synthetic run cannot serve under an observed badge. |
+| `as_of` | Nothing distinguished a full-history store from a truncated one. |
+| `snapshot_id`, corrected | It re-hashed the hardcoded input file, so a store built from any other file claimed the first file's lineage. It now reads the snapshot off the gold it actually fitted. |
+
+`_origin_of_gold()` reports the **weakest** lane present, never the most common
+one: a store that is 99% observed and 1% synthetic cannot back an accuracy
+claim, and averaging the label away is precisely the failure the lanes exist to
+prevent.
+
+### 11.4 What the portfolio costs, measured
+
+"Why five models?" is a fair question and the honest answer needs a price on it.
+`scripts/day1_benchmark.py` now accumulates wall clock per model family and
+writes a `compute` block:
+
+```json
+{ "by_family_seconds": { "statistical": 24.28, "Prophet": 4.32, "LightGBM": 1.10 },
+  "total_fit_seconds": 29.69, "model_fits": 292, "seconds_per_fit": 0.1017 }
+```
+
+292 model-fold fits in 29.7 s — about 102 ms each. The statistical family
+dominates because it fits **per series**; LightGBM is one global model across
+all eight, which is why it is the cheapest thing in the portfolio and also why
+it generalises across them.
+
+The trade is worth making because per-series *selection* scored 0.968 against
+combination's 0.907. Five models cost roughly five times one, and none of it
+happens while anyone is waiting.
+
+### 11.5 What is NOT cached, said out loud
+
+Serving is cached: an in-process LRU keyed on `model_version`, so publishing a
+new version self-invalidates. **The batch is not.** It refits everything from
+scratch every run — no warm start, no incremental update, yesterday's work
+discarded.
+
+That is affordable at 8 products and it is the first thing that breaks at
+8,000. It is now stated in amber on the Evidence screen rather than left to be
+discovered. The original design had it (`Update Modes: test update minutes no
+refit / full refit nightly`) and it was never built.
+
+One cache bug found while building the dataset switcher: the LRU key is
+`model_version`, so publishing a *new* version invalidates itself, but
+**activating an OLD one brings a stale key back into scope with stale data
+behind it**. `deps.clear_caches()` now runs on every pointer swap.
+
+### 11.6 A documentation error worth recording
+
+`docs/PHARMAPULSE_ARCHITECTURE.md` §5.2 lists the smooth route as
+`Prophet · MSTL · AutoARIMA · Theta · global LightGBM`. **Theta is not in the
+shipped ensemble.** It also quotes Prophet at 0.950 against a measured 0.935,
+because it was written before anything was benchmarked.
+
+Both are now flagged by a banner at the top of that file rather than silently
+corrected, and the file is retitled *"as submitted, not as built"*. The shipped
+five, from `core/combine.py`, are:
+
+```
+Prophet · AutoARIMA · MSTL · SeasonalNaive · LightGBM
+```
+
+This mattered in practice: the Evidence screen's per-series table has a
+"Best model" column showing `Naive`, `WindowAverage` and `CrostonOptimized` —
+none of which we ship. It means *the best single model out of all eleven for
+that product*, which is the comparison behind the ablation, and the header said
+none of that. It now reads "Best single model, of all 11" with a line
+underneath naming the five we actually ship.
+
+### 11.7 Honest gaps, updated
+
+- **No warm start.** §11.5.
+- **The conformal scale is still a single global factor**, and it is now
+  recomputed on whatever dataset is live — including a synthetic one, where it
+  is meaningless and must not be quoted.
+- **`as_of` is not exercised by the replay.** The business case sizes every
+  policy off trailing actuals rather than a forecast produced at each review
+  point, so the forecast layer's seasonal foresight is not being measured
+  there. That is the single most valuable next experiment.

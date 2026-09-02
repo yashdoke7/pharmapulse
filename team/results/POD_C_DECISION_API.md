@@ -447,3 +447,209 @@ first version wrongly asserted stock simply falls (false on a day a delivery lan
   dependency mid-pitch, which is a risk we chose not to take.
 - **The receipt lands immediately**, not after the lead time. The honest simplification for a
   single-machine demo, noted in the code.
+
+---
+
+## 11. Second pass — the business case was measuring the wrong thing
+
+The newsvendor, the protection interval and the risk rules are unchanged and
+still correct. What changed is the **comparison**, and the change is large
+enough that the headline number moved from 69.5% to a set of figures that are
+smaller and defensible.
+
+### 11.1 The flaw: the replay compared forecast vintages, not decision rules
+
+Every policy read the **published forecast store**, which is anchored at one
+cutoff — the day after the last observation, 2019-10-09. The replay windows are
+months *earlier*. So one static forecast was applied to every simulated day
+regardless of the season it fell in:
+
+```
+R03  Oct-Dec 2018   forecast(11d) = 41.0   actual = 118.6   ratio 0.35
+```
+
+We ordered a third of what winter asthma demand needed, all winter, and could
+not adapt because there was nothing to adapt with. **Min/max shared the exact
+same handicap**, so the headline number really said:
+
+> safety stock on a stale forecast beats no safety stock on the same stale
+> forecast.
+
+True. Not a claim worth making.
+
+**Where the old 69.5% actually came from**, per series, at the 11-day interval:
+
+```
+              STALE STORE (old)            TRAILING ACTUALS (new)
+         p50/11d p95/11d minmax-S     p50/11d p95/11d minmax-S
+R03           41     118       67          92     153      151
+N02BE        399     546      654         371     443      607
+M01AB         57      91       94          54      69       88
+```
+
+R03 is the whole story. The stale forecast said 41; December actually sold 119.
+Min/max sized off that same wrong number and targeted 67 — it starved and bled
+lost margin. We targeted the p95 of that distribution, 118, which landed near
+the real 119 **by accident**: our interval was wide enough to compensate for a
+point forecast that was badly wrong. Ratio 1.76x.
+
+Give both policies real trailing data and R03 goes to p95 = 153 against
+min/max S = 151. **Ratio 1.02x.** The gap collapses because the artefact
+disappears — it was never a decision-rule advantage.
+
+### 11.2 The fix: one information set for everybody
+
+`ReplaySession._trailing_dist` builds the empirical distribution of
+protection-interval demand from rolling sums of the trailing 180 days, strictly
+before today:
+
+```python
+past = h[(h["series_id"] == sid) & (h["ds"] < today)].tail(180)
+sums = np.convolve(y, np.ones(horizon), mode="valid")
+return {f"{q:.2f}": float(np.quantile(sums, q)) for q in qs}
+```
+
+Every policy now sizes off the same information a real buyer has on the day, so
+the comparison isolates the **decision rule** — which is the only thing the
+replay was ever supposed to measure.
+
+### 11.3 Min/max alone is too soft a baseline to lead with
+
+Anyone who works in inventory discounts it instantly, because every ERP on the
+market carries safety stock. Two harder rungs were added:
+
+| Policy | Sizes at | Gets our forecast? | What it tests |
+|---|---|---|---|
+| `minmax` | `mean * (L + R)` | no | the "no system at all" floor |
+| `safety_stock` | `mu*L + z*sigma*sqrt(L)` from its own trailing statistics | no | what commercial inventory software actually does |
+| `normal_approx` | `median + z*sigma` from **our** distribution | **yes** | normal approximation vs empirical quantile, forecast quality held constant |
+| `pharmapulse` | empirical quantile at `q*` | yes | — |
+
+`normal_approx` is the rung that carries the claim. It gets our forecast, our
+protection interval and our service level, and differs in exactly one thing —
+so whatever separates it from us is attributable to the **distribution** and
+nothing else.
+
+`sigma` is recovered from the interval rather than assumed: for a normal,
+`p90 - p50` is `1.2816 sigma`. Inverting that is what a practitioner does with a
+published interval, and it does not require the distribution to actually *be*
+normal to be computed — which is the point, because ours is not.
+
+`z` comes from `statistics.NormalDist().inv_cdf(p)`. scipy would also do it and
+is not a direct dependency; adding one for a single inverse CDF is not a trade
+worth making.
+
+All baselines are given **our** service level rather than an arbitrary 95%.
+Handing them a different target would make the comparison about the target
+instead of about the method.
+
+### 11.4 The honest result
+
+Positive means PharmaPulse is cheaper:
+
+```
+                   Jan-Mar 19   Apr-Jun 19   Oct-Dec 18
+minmax                  +6.0%       +48.8%       +61.1%
+safety_stock            -2.9%       +23.1%        -1.8%
+normal_approx          +17.9%        +8.1%        +0.4%
+```
+
+**We beat the normal approximation on every window.** That is the claim, and it
+is the one the tests gate on.
+
+**We are level with a real ERP policy** — one win, two losses of a couple of
+percent. That is on the screen in amber rather than omitted. What separates us
+there is not cost: `z` comes from the pharmacy's own margins instead of a
+consultant, the interval behind it is calibrated, and the number explains
+itself.
+
+### 11.5 The limit of this experiment, stated
+
+Because every policy sizes off a trailing window, **none of them can anticipate
+a seasonal turn** — on 1 January the last 180 days are autumn, and paracetamol's
+January peak has not happened yet. A policy that simply holds more (min/max
+orders up to 18 days of mean cover) survives that turn by accident.
+
+Anticipating the turn is exactly what the forecast layer is *for*, and the
+replay does not exercise it: that needs a forecast produced at each **review
+point** rather than one vintage. `--as-of` now makes that buildable — it is the
+single most valuable next experiment and it is written into the tests, not left
+as a footnote.
+
+### 11.6 Tests rewritten around what is true
+
+Two tests asserted we beat min/max in their window. With a fair information set
+we do not, in that window. They were rewritten rather than re-tuned:
+
+- `test_the_empirical_quantile_beats_a_normal_approximation` — the claim, with
+  everything else held constant.
+- `test_the_ladder_is_reported_in_full_including_where_we_lose` — asserts every
+  rung ships and that `we_win` matches the costs. **A ladder edited down to the
+  flattering rungs is worth nothing.**
+- `test_the_saving_where_it_exists_comes_from_fewer_lost_sales` — whenever we
+  are cheaper, we must also have run out *less*. The direction is the whole
+  business argument and it is the thing that could quietly invert.
+
+Choosing a window where the old assertion still passed would have been fitting
+the test to the answer.
+
+### 11.7 Per-product settings
+
+Lead time genuinely varies by line: a controlled drug from one licensed
+distributor does not arrive on the same clock as generic paracetamol from a
+wholesaler who calls twice a week. Products may now override
+`lead_time_days`, `holding_cost_rate` and `expiry_risk_rate`.
+
+Absent means **follow the shop**, not zero — so an untouched product keeps
+tracking a change to the global value, and the Settings cell shows a
+placeholder rather than a number to make that visible.
+
+```python
+def either(key, default):
+    v = per.get(key)
+    return default if v is None else v
+```
+
+Verified end to end: R03 at a 14-day lead time goes 60 -> 160 units, and no
+other product moves.
+
+### 11.8 The datasets router
+
+`api/routers/datasets.py` — rebuild at any as-of date, upload a CSV, list every
+version, activate any of them, delete a dead one.
+
+A rebuild costs about twenty seconds: too long to hold a request open, far too
+short to justify a queue. Jobs run on a thread and the caller polls. Only one
+runs at a time — they write to the same warehouse — and a second request gets a
+409 rather than a corrupted store.
+
+Activation is instant because publication was always a pointer swap and the
+version directories are immutable. Switching back after a demo refits nothing.
+
+Upload validation happens **in the request that sent the file**, not inside the
+worker, so a wrong file fails while the person who chose it is still looking at
+it.
+
+### 11.9 The bug that was moving the demo shelf
+
+`ledger.post(..., db_path=DB_PATH)` — a default argument, evaluated once at
+import, so nothing could redirect it. The contract tests POST `/api/orders`
+through the real app, so **every `pytest` run wrote a real receipt and a real
+hash-chained `order_log` row into the demo database.** Forty rows had built up,
+and it is why the Order screen kept drifting to "recommended 0 units".
+
+Now resolved per call from `PHARMAPULSE_DB`, with a session fixture pointing the
+suite at a temp file and a regression test that asserts the real database is
+byte-identical afterwards — checked to actually fail when the isolation is
+removed.
+
+### 11.10 Honest gaps, updated
+
+- **`api/routers/datasets.py` has zero tests.** ~250 lines, the newest surface
+  in the project, entirely uncovered.
+- **No reset endpoint.** `scripts/reset_demo.py` needs a shell, which a free
+  hosting tier does not give you. A live instance that has been clicked around
+  cannot be reset without a redeploy.
+- **Jobs die with the process.** In-memory, no persistence, no queue. Honest
+  for a single-tenant demo, wrong for anything else.
+- **The replay still cannot show the forecast layer's value.** §11.5.
