@@ -47,3 +47,7 @@ docs/PharmaPulse_Deck (1).pptx
 # Extended dataset drop (11MB, and 2020-2026 is self-labelled synthetic).
 # Not committed until we decide how it is allowed to be used - see lane 3.
 data/pharma_sales_dataset/
+
+# The generated extension is reproducible from scripts/make_extension.py with
+# a fixed seed - the generator is the artefact, not the CSV.
+data/synthetic/*.csv

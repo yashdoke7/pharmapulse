@@ -1,0 +1,60 @@
+{
+  "generated_from": "data\\observed\\salesdaily.csv",
+  "seed": 42,
+  "span": {
+    "from": "2019-10-09",
+    "to": "2026-09-30",
+    "days": 2549
+  },
+  "lane": 3,
+  "lane_rule": "Synthetic. May demonstrate that the pipeline accepts new data and that the clock moves. May NOT train a model that backs an accuracy claim - pipelines/ingest.py raises on a synthetic path and a test asserts it.",
+  "preserved": [
+    "per-series zero rate and its lag-1 autocorrelation",
+    "per-series monthly seasonal index and its amplitude",
+    "weekday effects, including that they run in opposite directions (paracetamol +12% at weekends, sedatives -44%)",
+    "the 26-day closure calendar",
+    "the right-skewed magnitude distribution and the ~60% fractional-unit rate"
+  ],
+  "events": [
+    {
+      "id": "pandemic",
+      "from": "2020-03-15",
+      "to": "2020-08-31",
+      "what": "A demand shock. Analgesics and respiratory spike, antihistamines fall (fewer people outdoors), anxiolytics rise and stay risen.",
+      "why_it_is_here": "A sharp level break the models did not see coming. It is where you look at the forecast interval widening rather than the point moving.",
+      "expect": "Interval width on N02BE roughly doubles across the break, and the Why screen attributes the move to trend, not to seasonality."
+    },
+    {
+      "id": "growth",
+      "from": "2021-01-01",
+      "to": "2026-09-30",
+      "what": "The pharmacy grows: +7% per year compounding across every product, on top of everything else.",
+      "why_it_is_here": "The 'what if the shop takes off' case. A level trend the system has to track rather than average away.",
+      "expect": "Order quantities rise year on year with no setting changed. Prophet's trend component on the Why screen turns positive and stays there."
+    },
+    {
+      "id": "n05c_becomes_staple",
+      "from": "2022-06-01",
+      "to": "2022-12-31",
+      "what": "Sedatives (N05C) stop being intermittent. Zero-days fall from ~68% to ~8% over seven months as the line becomes a regular stock item.",
+      "why_it_is_here": "THE headline demonstration. Demand class is a computed rule, not configuration - so the routing has to change on its own.",
+      "expect": "N05C reclassifies intermittent -> smooth, and its model route changes from Croston/TSB to the smooth portfolio. Nobody edits a config file. Visible on Forecast > Series profile (ADI falls below 1.32) and in the demand_classes block of benchmarks.json."
+    },
+    {
+      "id": "m01ae_delisted",
+      "from": "2023-09-01",
+      "to": "2024-06-30",
+      "what": "Ibuprofen (M01AE) is being delisted. Level decays to ~35% and zero-days climb from ~2% to ~45%.",
+      "why_it_is_here": "The same transition in reverse, so the first one cannot be dismissed as a one-way trick.",
+      "expect": "M01AE reclassifies smooth -> intermittent and routes INTO Croston/TSB. Its reorder point drops and it stops appearing on the Decisions board."
+    },
+    {
+      "id": "r06_season_drift",
+      "from": "2024-01-01",
+      "to": "2026-09-30",
+      "what": "Antihistamine seasonality intensifies and shifts earlier - the peak walks from May to March and sharpens as it goes.",
+      "why_it_is_here": "Seasonality is measured per product per grain, not configured. If the peak moves, the explanation has to move with it.",
+      "expect": "The Why screen's seasonal profile peaks in March by 2026, and the sentence beside it moves with it - because that label is derived from the measured peak month, not read from a lookup table. The old hardcoded version would still have said 'pollen season'."
+    }
+  ]
+}
