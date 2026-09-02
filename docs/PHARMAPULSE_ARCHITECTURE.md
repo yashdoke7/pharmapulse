@@ -1,4 +1,20 @@
-# PHARMAPULSE — Architecture (final)
+# PHARMAPULSE — Architecture (as submitted, not as built)
+
+> **⚠ THIS IS THE DESIGN PROPOSAL. Where it disagrees with the code, the code wins.**
+>
+> It was written before anything was measured, and parts of it are now wrong. The
+> known differences are catalogued in [ARCHITECTURE_DELTA.md](ARCHITECTURE_DELTA.md);
+> the system as built is [PHARMAPULSE_SYSTEM.md](PHARMAPULSE_SYSTEM.md).
+>
+> Two things in here that people quote by mistake:
+>
+> - **The shipped ensemble is `Prophet · AutoARIMA · MSTL · SeasonalNaive · LightGBM`**
+>   — five models, the same five for every product. §5.2 below lists Theta in the
+>   smooth route; that was the plan, and it is not what runs. `core/combine.py`
+>   is the authority.
+> - **Model scores in here predate the benchmark.** Prophet is 0.935, not 0.950.
+>   `artifacts/benchmarks.json` is the authority, and it is written by a script.
+
 
 > **PharmaPulse turns six years of pharmacy sales history into one number a buyer can act on:
 > how many boxes of each medicine to order this week.**

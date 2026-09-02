@@ -62,14 +62,33 @@ export function ReliabilityDiagram({
           perfectly calibrated
         </text>
 
+        {/* The diagonal alone does not tell a reader what being off it means.
+            Naming both halves is the difference between a chart you can read
+            and a chart you nod at. */}
+        <text x={x(0.06)} y={y(0.88)} fontSize="8.5" className="fill-ink-faint">
+          above = range too WIDE
+        </text>
+        <text x={x(0.06)} y={y(0.79)} fontSize="8.5" className="fill-ink-faint">
+          (over-orders, ties up cash)
+        </text>
+        <text x={x(0.52)} y={y(0.14)} fontSize="8.5" className="fill-ink-faint">
+          below = too NARROW
+        </text>
+        <text x={x(0.52)} y={y(0.05)} fontSize="8.5" className="fill-ink-faint">
+          (over-confident, runs out)
+        </text>
+
         <path d={line(before)} fill="none" stroke="#A32E22" strokeWidth="2.5" />
         {before.map((p) => (
           <circle key={`b${p.nominal}`} cx={x(p.nominal)} cy={y(p.achieved)} r="3.5" fill="#A32E22" />
         ))}
 
-        <path d={line(after)} fill="none" stroke="#14110D" strokeWidth="2.5" />
+        {/* Drawn in signal-green because the legend below has always said green.
+            It was ink-black, so the swatch and the line disagreed and the chart
+            appeared to have a line nobody had labelled. */}
+        <path d={line(after)} fill="none" stroke="#1F5D42" strokeWidth="2.5" />
         {after.map((p) => (
-          <circle key={`a${p.nominal}`} cx={x(p.nominal)} cy={y(p.achieved)} r="3.5" fill="#14110D" />
+          <circle key={`a${p.nominal}`} cx={x(p.nominal)} cy={y(p.achieved)} r="3.5" fill="#1F5D42" />
         ))}
 
         <text x={S / 2} y={S - 6} textAnchor="middle" fontSize="10" className="fill-ink-mute">

@@ -207,11 +207,21 @@ export function Ops() {
             repeating last week</strong>. {losses} {losses === 1 ? "series is" : "series are"}
             {ties ? `, and ${ties} exactly ties it` : ""}.
           </p>
+          <p className="fine mt-2 text-xs">
+            The last column is <strong>not what we ship</strong>. It names the single best
+            performer out of all eleven models for that product, which is the comparison
+            behind the ablation above — and it is why five different names appear there.
+            What we actually ship is the same five-model ensemble for every product:{" "}
+            <span className="font-mono">
+              {(b.ensemble_members ?? []).join(" · ")}
+            </span>
+            .
+          </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left">
-                  {["Series", "SNaive", "Ensemble", "Best model", ""].map((h) => (
+                  {["Series", "SNaive", "Ensemble", "Best single model, of all 11", ""].map((h) => (
                     <th key={h} className="py-2 font-medium text-ink-mute">
                       {h}
                     </th>
