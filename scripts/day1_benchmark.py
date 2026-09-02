@@ -84,21 +84,34 @@ def run(folds_n: int, horizon: int, fast: bool, verbose: bool = True) -> dict:
     members_used: set[str] = set()
     n_fits = 0
 
+    # Wall clock per model family. "Why five models?" is a fair question and the
+    # honest answer needs the price on it, not just the accuracy.
+    fit_seconds: dict[str, float] = {}
+
     for fold in folds:
         t0 = time.perf_counter()
+        t = time.perf_counter()
         preds = [statistical.fit_predict(fold.train, h=horizon, grain="week",
                                          models=stat_models)]
+        fit_seconds["statistical"] = fit_seconds.get("statistical", 0.0) + (
+            time.perf_counter() - t)
         n_fits += len(stat_models) * fold.train["series_id"].nunique()
 
         if use_prophet:
+            t = time.perf_counter()
             p = prophet_model.fit_predict(fold.train, h=horizon, grain="week")
+            fit_seconds["Prophet"] = fit_seconds.get("Prophet", 0.0) + (
+                time.perf_counter() - t)
             if not p.empty:
                 preds.append(p)
                 n_fits += fold.train["series_id"].nunique()
 
         if use_lgbm:
+            t = time.perf_counter()
             g = lgbm_global.fit_predict(fold.train, h=horizon, grain="week",
                                         quantiles=[0.5])
+            fit_seconds["LightGBM"] = fit_seconds.get("LightGBM", 0.0) + (
+                time.perf_counter() - t)
             if not g.empty:
                 preds.append(g[["series_id", "ds", "model", "value"]])
                 n_fits += 1
@@ -178,6 +191,7 @@ def run(folds_n: int, horizon: int, fast: bool, verbose: bool = True) -> dict:
             "curve_before": calib_report["before"],
             "curve_after": calib_report["after"],
         },
+        "compute": _compute_payload(fit_seconds, elapsed, n_fits, len(folds)),
         "runtime": {
             "total_seconds": round(elapsed, 2),
             "series_model_folds": int(n_fits),
@@ -193,6 +207,32 @@ def _at(curve: list[dict], nominal: float) -> float:
         if abs(row["nominal"] - nominal) < 1e-9:
             return row["achieved"]
     return float("nan")
+
+
+def _compute_payload(fit_seconds: dict, elapsed: float, n_fits: int,
+                     n_folds: int) -> dict:
+    """What the portfolio costs, so "why five models" has a price attached.
+
+    Everything here is wall clock measured during this run, not an estimate.
+    The comparison that matters is not 5 models vs 1 - it is the whole batch
+    against the alternative of fitting anything at request time, which is what
+    the batch/serve split exists to avoid.
+    """
+    total_fit = sum(fit_seconds.values()) or 1e-9
+    return {
+        "by_family_seconds": {k: round(v, 2) for k, v in
+                              sorted(fit_seconds.items(), key=lambda kv: -kv[1])},
+        "total_fit_seconds": round(total_fit, 2),
+        "total_benchmark_seconds": round(elapsed, 2),
+        "model_fits": n_fits,
+        "folds": n_folds,
+        "seconds_per_fit": round(total_fit / max(n_fits, 1), 4),
+        "note": (
+            "Wall clock on this machine, this run. The ensemble costs the sum "
+            "of its members because they are fitted independently - which is "
+            "also why the median cancels their errors."
+        ),
+    }
 
 
 def _leaderboard_payload(board: pd.DataFrame, ens: float, oracle: float) -> list[dict]:

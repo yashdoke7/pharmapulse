@@ -200,6 +200,15 @@ export interface Benchmarks {
       verdict: string;
     };
   };
+  compute?: {
+    by_family_seconds: Record<string, number>;
+    total_fit_seconds: number;
+    total_benchmark_seconds: number;
+    model_fits: number;
+    folds: number;
+    seconds_per_fit: number;
+    note: string;
+  };
   calibration: {
     nominal: number;
     achieved_before: number;

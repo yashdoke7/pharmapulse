@@ -16,6 +16,12 @@ export function Ops() {
   const ablation = b.ablations?.selection_vs_combination;
   const worst = Math.max(...board.map((m) => m.mase));
 
+  // A MASE of exactly 1.000 is a TIE with the naive baseline, not a loss, and
+  // conflating the two made this screen say "3 of 8" while the deck said two.
+  const rows = b.per_series ?? [];
+  const losses = rows.filter((r) => r.ensemble > 1.0005).length;
+  const ties = rows.filter((r) => Math.abs(r.ensemble - 1) <= 0.0005).length;
+
   const improvement =
     shipped && benchmark
       ? ((benchmark.mase - shipped.mase) / benchmark.mase) * 100
@@ -27,6 +33,43 @@ export function Ops() {
         title="The evidence"
         subtitle="Every number here was written by the benchmark script from a clean clone. None of it is typed by a human."
       />
+
+      {/* This screen was unreadable to anyone who had not built it - a wall of
+          MASE figures with no statement of what they meant. The answer goes
+          first, in words; the numbers that support it come after. */}
+      <div className="panel pad border-l-2 border-l-ink">
+        <div className="eyebrow">In plain terms</div>
+        <p className="mt-2 max-w-4xl text-[15px] leading-relaxed text-ink-soft">
+          The question this screen answers is{" "}
+          <strong className="text-ink">
+            “should anyone act on the numbers the other screens produce?”
+          </strong>{" "}
+          Our forecasts are{" "}
+          <strong className="text-signal-green">{improvement.toFixed(0)}% more accurate</strong>{" "}
+          than the standard benchmark — repeating what happened this week last year, which
+          is what a pharmacy without a system effectively does. When we say we are 80% sure
+          of a range, the truth lands inside it{" "}
+          <strong className="text-ink">
+            {((b.calibration?.achieved_after ?? 0) * 100).toFixed(0)}%
+          </strong>{" "}
+          of the time, so the confidence is close to honest. And on{" "}
+          <strong className="text-ink">
+            {losses} of {rows.length}
+          </strong>{" "}
+          products we are still worse than repeating last week
+          {ties ? (
+            <>
+              {" "}
+              (and on {ties} more we exactly tie it)
+            </>
+          ) : null}{" "}
+          — those are named below rather than hidden.
+        </p>
+        <p className="fine mt-3 max-w-4xl text-xs">
+          Everything under this line is the working. It is here so the claim can be
+          checked, not because a buyer has to read it.
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Readout
@@ -49,9 +92,11 @@ export function Ops() {
           tone="green"
         />
         <Readout
-          label="Cache hit rate"
-          value={`${(((runtime?.cache_hit_rate as number) ?? 0) * 100).toFixed(0)}%`}
-          hint={`${runtime?.requests ?? 0} requests · no model runs per request`}
+          label="Fitting cost"
+          value={`${(b.compute?.total_fit_seconds ?? 0).toFixed(0)}s`}
+          hint={`${b.compute?.model_fits ?? 0} model fits · ${(
+            (b.compute?.seconds_per_fit ?? 0) * 1000
+          ).toFixed(0)}ms each`}
         />
       </div>
 
@@ -159,7 +204,8 @@ export function Ops() {
             A team that reports only its wins gets discounted, and experienced judges do
             it quickly. The ensemble beats seasonal-naive on all eight — so the honest
             column is the absolute one: <strong>MASE above 1.000 is worse than simply
-            repeating last week</strong>, and two series are.
+            repeating last week</strong>. {losses} {losses === 1 ? "series is" : "series are"}
+            {ties ? `, and ${ties} exactly ties it` : ""}.
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
@@ -181,7 +227,11 @@ export function Ops() {
                     </td>
                     <td
                       className={`py-2 font-mono ${
-                        row.ensemble_wins ? "text-signal-green" : "text-signal-red"
+                        row.ensemble > 1.0005
+                          ? "text-signal-red"
+                          : Math.abs(row.ensemble - 1) <= 0.0005
+                            ? "text-ink-mute"
+                            : "text-signal-green"
                       }`}
                     >
                       {row.ensemble.toFixed(3)}
@@ -191,10 +241,12 @@ export function Ops() {
                         Beating SNaive is the relative claim; MASE >= 1 means the
                         series is genuinely hard and we say so on the screen. */}
                     <td className="py-2">
-                      {row.ensemble >= 1 ? (
+                      {row.ensemble > 1.0005 ? (
                         <span className="chip bg-signal-amber/[0.10] text-signal-amber">
                           above naive
                         </span>
+                      ) : Math.abs(row.ensemble - 1) <= 0.0005 ? (
+                        <span className="chip bg-wash-strong text-ink-mute">ties naive</span>
                       ) : row.ensemble_wins ? (
                         <span className="chip bg-signal-green/[0.08] text-signal-green">wins</span>
                       ) : (
@@ -208,6 +260,68 @@ export function Ops() {
           </div>
         </div>
       </div>
+
+      {/* "Why five models" is a fair question and the honest answer needs the
+          price on it. All wall clock, measured during the benchmark run that
+          wrote the file this screen reads. */}
+      {b.compute ? (
+        <div className="panel pad">
+          <div className="eyebrow">What the portfolio costs, and what caches</div>
+          <p className="fine mt-1 max-w-4xl">
+            Five models cost roughly five times one. That is the trade, and it is worth
+            making here because the alternative &mdash; picking the best single model per
+            product &mdash; scored {ablation?.selection.toFixed(3)} against{" "}
+            {ablation?.combination.toFixed(3)}. It is affordable because none of it happens
+            while anyone is waiting.
+          </p>
+
+          <div className="mt-4 grid gap-6 lg:grid-cols-2">
+            <div>
+              <div className="eyebrow mb-2">Fitting time, by model family</div>
+              {Object.entries(b.compute.by_family_seconds).map(([fam, secs]) => {
+                const pctOf = (secs / (b.compute?.total_fit_seconds || 1)) * 100;
+                return (
+                  <div key={fam} className="mb-1.5 flex items-center gap-3">
+                    <div className="w-24 shrink-0 text-xs text-ink-soft">{fam}</div>
+                    <div className="h-3 flex-1 bg-wash">
+                      <div className="h-full bg-ink/60" style={{ width: `${pctOf}%` }} />
+                    </div>
+                    <div className="w-20 shrink-0 text-right font-mono text-xs text-ink-mute">
+                      {secs.toFixed(1)}s
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="fine mt-3 text-xs">
+                {b.compute.model_fits} model-fold fits in{" "}
+                {b.compute.total_fit_seconds.toFixed(1)}s &mdash;{" "}
+                {(b.compute.seconds_per_fit * 1000).toFixed(0)}ms each. The statistical
+                family dominates because it fits per series; LightGBM is one global model
+                across all eight, which is why it is the cheapest thing in the portfolio.
+              </p>
+            </div>
+
+            <div>
+              <div className="eyebrow mb-2">Where the time is, and is not</div>
+              <dl className="space-y-2.5 text-xs">
+                {[
+                  ["Nightly batch", "Fits everything and writes a versioned forecast store. Minutes, offline, nobody waiting."],
+                  ["Serving a screen", "A read of that store. No model is fitted inside a request — that is the batch/serve split, and it is what makes the slider instant."],
+                  ["Cached in process", "Quantile reads are memoised on (series, grain, horizon, model_version). Publishing a new version invalidates them by key rather than by clearing."],
+                  ["NOT cached, and it should be", "The batch refits from scratch every run. There is no warm start and no incremental update, so yesterday’s work is thrown away. It is affordable at 8 products; it is the first thing that breaks at 8,000."],
+                ].map(([term, body], i) => (
+                  <div key={term} className={i === 3 ? "border-l-2 border-signal-amber pl-2.5" : ""}>
+                    <dt className={`font-medium ${i === 3 ? "text-signal-amber" : "text-ink"}`}>
+                      {term}
+                    </dt>
+                    <dd className="mt-0.5 text-ink-mute">{body}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="panel pad">
         <div className="eyebrow">Provenance</div>

@@ -1,8 +1,19 @@
 {
   "data": {
-    "total_exposure": 592.88,
+    "total_exposure": 1235.85,
     "currency": "INR",
     "items": [
+      {
+        "series_id": "N02BE",
+        "type": "stockout",
+        "severity": "high",
+        "probability": 0.8471,
+        "exposure": 797.05,
+        "headline": "Paracetamol runs below its reorder point",
+        "detail": "10.4 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 240
+      },
       {
         "series_id": "R03",
         "type": "stockout",
@@ -21,28 +32,6 @@
         "probability": 0.99,
         "exposure": 162.56,
         "headline": "Antihistamines has 110 days of cover",
-        "detail": "Capital tied up against a 7-day review period.",
-        "recommended_action": "slow_mover",
-        "recommended_quantity": 0
-      },
-      {
-        "series_id": "N02BE",
-        "type": "stockout",
-        "severity": "medium",
-        "probability": 0.3251,
-        "exposure": 136.85,
-        "headline": "Paracetamol runs below its reorder point",
-        "detail": "14.7 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
-        "recommended_action": "order_now",
-        "recommended_quantity": 110
-      },
-      {
-        "series_id": "N05C",
-        "type": "overstock",
-        "severity": "medium",
-        "probability": 0.99,
-        "exposure": 17.23,
-        "headline": "Sedatives has 66 days of cover",
         "detail": "Capital tied up against a 7-day review period.",
         "recommended_action": "slow_mover",
         "recommended_quantity": 0

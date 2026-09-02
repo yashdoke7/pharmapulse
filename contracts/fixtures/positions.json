@@ -40,13 +40,13 @@
       {
         "series_id": "N02BE",
         "name": "Paracetamol",
-        "stock_on_hand": 440.0,
-        "days_of_cover": 14.7,
+        "stock_on_hand": 310.0,
+        "days_of_cover": 10.4,
         "status": "order_now",
-        "order_quantity": 110,
+        "order_quantity": 240,
         "p_stockout": 0.0474,
         "reorder_point": 545.2,
-        "projected_stockout_date": "2019-10-21",
+        "projected_stockout_date": "2019-10-17",
         "daily_mean": 29.92
       },
       {
@@ -64,11 +64,11 @@
       {
         "series_id": "N05C",
         "name": "Sedatives",
-        "stock_on_hand": 39.0,
-        "days_of_cover": 66.1,
-        "status": "overstocked",
-        "order_quantity": 0,
-        "p_stockout": 0.0,
+        "stock_on_hand": 14.0,
+        "days_of_cover": 23.7,
+        "status": "order_now",
+        "order_quantity": 5,
+        "p_stockout": 0.0343,
         "reorder_point": 16.8,
         "projected_stockout_date": null,
         "daily_mean": 0.59

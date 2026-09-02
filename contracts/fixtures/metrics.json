@@ -1,7 +1,7 @@
 {
   "data": {
     "benchmarks": {
-      "generated_at": "2026-09-01T16:47:08Z",
+      "generated_at": "2026-09-02T14:26:21Z",
       "snapshot_id": "sha256:49e4f1c5c3da",
       "protocol": {
         "grain": "week",
@@ -250,8 +250,21 @@
           }
         ]
       },
+      "compute": {
+        "by_family_seconds": {
+          "statistical": 24.28,
+          "Prophet": 4.32,
+          "LightGBM": 1.1
+        },
+        "total_fit_seconds": 29.69,
+        "total_benchmark_seconds": 29.79,
+        "model_fits": 292,
+        "folds": 4,
+        "seconds_per_fit": 0.1017,
+        "note": "Wall clock on this machine, this run. The ensemble costs the sum of its members because they are fitted independently - which is also why the median cancels their errors."
+      },
       "runtime": {
-        "total_seconds": 57.88,
+        "total_seconds": 29.79,
         "series_model_folds": 292,
         "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
         "python": "3.11.9"
@@ -260,8 +273,8 @@
     "runtime": {
       "cache_hit_rate": 0.0,
       "requests": 1,
-      "rss_mb": 191.6,
-      "uptime_s": 1.4,
+      "rss_mb": 189.9,
+      "uptime_s": 1.1,
       "ladder_rung": 1,
       "model_version": "2026-09-02T0803Z_ens-v1",
       "audit_chain_valid": true
