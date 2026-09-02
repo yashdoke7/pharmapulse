@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api } from "./api/client";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { StaleBadge } from "./components/ui";
 import { Dashboard } from "./screens/Dashboard";
 import { Explain } from "./screens/Explain";
@@ -23,6 +24,7 @@ const NAV = [
 ];
 
 export default function App() {
+  const location = useLocation();
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => api.health(),
@@ -76,17 +78,19 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-[1180px] px-6 py-8">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/forecast" element={<Forecast />} />
-          <Route path="/explain" element={<Explain />} />
-          <Route path="/live" element={<LiveOps />} />
-          <Route path="/ops" element={<Ops />} />
-          <Route path="/data" element={<Data />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <ErrorBoundary key={location.pathname}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/forecast" element={<Forecast />} />
+            <Route path="/explain" element={<Explain />} />
+            <Route path="/live" element={<LiveOps />} />
+            <Route path="/ops" element={<Ops />} />
+            <Route path="/data" element={<Data />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       <footer className="mx-auto max-w-[1180px] px-6 pb-12">

@@ -201,3 +201,5 @@ export function Bar({ value, max, tone = "ink" }: { value: number; max: number; 
     </span>
   );
 }
+
+export { ErrorBoundary } from "./ErrorBoundary";
