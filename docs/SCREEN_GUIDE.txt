@@ -368,31 +368,58 @@ THE PARTS ON IT
     Let it run 15 seconds, then stop it. Do not let it run the whole
     quarter on camera.
 
-(c) WHAT IT WAS WORTH - three cards. This is the business case.
+(c) WHAT IT WAS WORTH - four cards. This is the business case.
 
-    Card 1, red border - MIN/MAX ON AVERAGE DEMAND
-        Rs 4,619 total, broken into lost margin, holding cost, and units
-        it failed to supply. This is the standard textbook policy - what a
-        real pharmacy would be doing today.
+    Card 1 - PHARMAPULSE. Our total cost for the window.
 
-    Card 2, green border - PHARMAPULSE
-        Rs 1,409, broken down the same way.
+    Cards 2-4 - the three baselines, each with a chip saying whether we are
+    cheaper or they are. Green means we win, amber means they do. THE AMBER
+    ONES ARE ON THE SCREEN ON PURPOSE.
 
-    Card 3 - LOWER TOTAL COST
-        69.5%.
+      Min/max on the mean          the "no system at all" case - a spreadsheet.
+                                   We beat it in all three windows (+6%, +49%,
+                                   +61%). Do NOT lead with this: anyone who
+                                   works in inventory discounts it instantly,
+                                   because every ERP carries safety stock.
 
-    NOW THE LINE THAT MATTERS. Do not skip it.
-    Look at the two breakdowns. Our HOLDING cost is HIGHER - Rs 501
-    against Rs 389. We deliberately keep more stock and pay more to keep
-    it. The whole saving comes from lost margin dropping from Rs 4,230 to
-    Rs 908 - that is, from not running out.
-    Say: "We are not saving money by holding less stock. We hold more. The
-    saving is entirely fewer lost sales, and there is a test that asserts
-    that, so we cannot accidentally start claiming a saving that comes
-    from somewhere else."
+      (s, S) safety stock          what real inventory software actually does.
+                                   We are LEVEL with it - we win one window
+                                   (+23%) and lose two by a couple of percent
+                                   (-2.9%, -1.8%).
 
-    Then switch to a second window tab. 64%. And a third. 75%.
-    Say: "Different quarter, same direction. It is not one lucky quarter."
+      Our forecast, normal sizing  THE ONE TO LEAD WITH. It gets our forecast,
+                                   our protection interval and our service
+                                   level. It differs in exactly one thing: it
+                                   sizes with a normal approximation instead of
+                                   reading the quantile off the calibrated
+                                   distribution. So forecast quality is held
+                                   constant and the gap is the distribution and
+                                   nothing else. We win all three (+17.9%,
+                                   +8.1%, +0.4%).
+
+    Every policy sizes off the SAME trailing window of real sales, so the
+    comparison is about the decision rule and nothing else.
+
+    WHAT TO SAY
+    "Beating a spreadsheet is easy, so we built the two baselines that are
+    hard. The one on the right gets our forecast and our service level and
+    differs in exactly one thing - how it turns that into a number. We beat it
+    on every window, so the distribution is earning its place. Against a real
+    ERP policy we are level, and that is on the screen in amber rather than
+    left out."
+
+    IF ASKED WHY WE DO NOT BEAT THE ERP
+    "Every policy here sizes off a trailing window, so none of them can see a
+    seasonal turn coming - on the first of January the last 180 days are
+    autumn. Anticipating it is exactly what our forecast layer is for, and the
+    replay does not exercise it yet: that needs a forecast produced at each
+    review point rather than one vintage. It is written down as the next piece
+    of work."
+
+    AND SAY THIS PART TOO
+    Where we ARE cheaper, look at the breakdown: our holding cost is HIGHER.
+    The saving is entirely fewer lost sales, and there is a test asserting that
+    relationship so the claim cannot quietly invert.
 
 (d) The paragraph under the cards
     States that both policies were given the identical days, identical

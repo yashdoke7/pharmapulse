@@ -265,7 +265,7 @@ Point at the headline.
 | Against | The line | The evidence to point at |
 |---|---|---|
 | **A forecasting dashboard** | "They stop at the chart. The buyer still has to decide what 187 units means at a 4-day lead time with 40 in stock." | `/orders` — the slider, the ±1 pack cost |
-| **A wholesaler's min/max tool** | "They order to the average. Average demand is met half the time." | `/live` — 67.9% lower cost on identical real days |
+| **A wholesaler's min/max tool** | "They order to the average. Average demand is met half the time." | `/live` — and we go further: we also beat an ERP-style safety-stock policy in one window, and say where we do not |
 | **A better single model** | "Picking the best model is the obvious move. We implemented it and it lost." | `/ops` — 0.968 vs 0.907, oracle at 0.843 |
 | **Any of them** | "Ours tells you when it is wrong." | `/explain` — the reliability diagram |
 
@@ -336,7 +336,7 @@ Keep this visible while presenting.
 | Ensemble MASE | **0.907** vs SeasonalNaive **1.117** — 18.8% better |
 | Selection vs combination | 0.968 vs **0.907**, oracle bound 0.843 |
 | Calibration | 80% nominal → **92.2%** raw → **82.0%** corrected, n=256 |
-| Business case | **67.9% / 64.3% / 75.5%** lower cost across three quarters |
+| Business case | **+17.9% / +8.1% / +0.4%** cheaper than sizing the same forecast with a normal approximation — and level with an ERP safety-stock policy, which we say out loud |
 | Worst series | **R06 at 1.646** (benchmark 1.880) |
 | Weakest win | **M01AE 1.000** vs 1.019 — effectively a tie |
 | Protection interval | lead time 4 + review 7 = **11 days** |

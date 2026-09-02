@@ -142,18 +142,36 @@ does not certify a per-series level — stated rather than glossed over.
 
 ### Business case
 
-Our policy against a min/max policy, replayed over the identical real days with identical costs,
-lead time, review cadence and protection interval. The only difference is that min/max sizes against
-the **mean** while we size against the quantile the cost ratio implies.
+Four policies, replayed over the identical real days with identical costs, lead time, review
+cadence and protection interval. Every one of them sizes off the **same trailing window of real
+sales**, so the only thing being compared is how the quantity is chosen.
 
-| Window | Min/max | PharmaPulse | Lower by |
-|---|---|---|---|
-| Jan–Mar 2019 | ₹4,608 | ₹1,479 | 67.9% |
-| Apr–Jun 2019 | ₹3,362 | ₹1,200 | 64.3% |
-| Oct–Dec 2018 | ₹4,942 | ₹1,211 | 75.5% |
+| Baseline | What it is | Jan–Mar 19 | Apr–Jun 19 | Oct–Dec 18 |
+|---|---|---|---|---|
+| Min/max on the mean | a spreadsheet — no system at all | **+6.0%** | **+48.8%** | **+61.1%** |
+| (s, S) safety stock | `μ·L + z·σ·√L` — what an ERP does | −2.9% | **+23.1%** | −1.8% |
+| **Our forecast, sized the textbook way** | **the rung that carries the claim** | **+17.9%** | **+8.1%** | **+0.4%** |
 
-Measured, not assumed. The saving comes from fewer lost sales — we deliberately hold *more* stock
-and pay *more* holding cost, and a test asserts that.
+Positive means we are cheaper.
+
+**Read the third row.** It gets our forecast, our protection interval and our service level, and
+differs in exactly one thing — it sizes with a normal approximation instead of reading the quantile
+off the calibrated distribution. Forecast quality is held constant, so the gap is attributable to
+the distribution and to nothing else. We win all three.
+
+**Against a real ERP policy we are level**, winning one window and losing two by a couple of
+percent. That is in the product, in amber, rather than left out. What separates us there is not
+cost: `z` comes from the pharmacy's own margins instead of a consultant, the interval behind it is
+calibrated, and the number explains itself.
+
+Where the saving exists it comes from fewer lost sales — we deliberately hold *more* stock and pay
+*more* holding cost, and a test asserts that.
+
+> **What this does not yet measure.** Because every policy sizes off a trailing window, none of them
+> can anticipate a *seasonal turn* — on 1 January the last 180 days are autumn. Anticipating it is
+> exactly what the forecast layer is for, and exercising it here needs a forecast produced at each
+> review point rather than one vintage. An earlier version of this table read 69.5% because the
+> replay served one forecast, anchored months *after* the window it was replaying, to every policy.
 
 ---
 

@@ -128,9 +128,19 @@ protection interval. The only difference is mean versus cost-derived quantile.
 
 | Window | Min/max | PharmaPulse | Lower by |
 |---|---|---|---|
-| Jan–Mar 2019 | ₹4,608 | ₹1,479 | 67.9% |
-| Apr–Jun 2019 | ₹3,362 | ₹1,200 | 64.3% |
-| Oct–Dec 2018 | ₹4,942 | ₹1,211 | 75.5% |
+| Min/max on the mean | +6.0% | +48.8% | +61.1% |
+| (s, S) safety stock — what an ERP does | −2.9% | +23.1% | −1.8% |
+| Our forecast, sized with a normal approximation | +17.9% | +8.1% | +0.4% |
+
+Columns are Jan–Mar 2019, Apr–Jun 2019, Oct–Dec 2018; positive means PharmaPulse is cheaper.
+Every policy sizes off the same trailing window of real sales, so the comparison isolates the
+decision rule. The third row holds forecast quality constant and is therefore the only row that
+attributes a difference to the calibrated distribution.
+
+**We do not dominate.** Against an ERP-style safety-stock policy we win one window and lose two by
+a couple of percent. **Known limitation:** because every policy sizes off a trailing window, none
+can anticipate a seasonal turn — on 1 January the last 180 days are autumn. Exercising the forecast
+layer here requires a forecast produced at each review point rather than one vintage.
 
 ---
 

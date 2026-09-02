@@ -358,6 +358,27 @@ against the quantile the cost ratio implies.
 | Apr–Jun 2019 | ₹3,362 | **₹1,200** | **64.3%** | 325 → **76** |
 | Oct–Dec 2018 | ₹4,942 | **₹1,211** | **75.5%** | 343 → **48** |
 
+> **⚠ SUPERSEDED — the table above is the old measurement.** The replay served
+> ONE forecast, anchored months *after* the window it was replaying, to every
+> policy. On R03 that predicted 41 units per protection interval against 119
+> actually sold in December: every policy under-ordered all winter, and the
+> headline saving really meant "safety stock on a stale forecast beats no
+> safety stock on the same stale forecast".
+>
+> Every policy now sizes off the same trailing window of real sales, and two
+> harder baselines were added. Current figures (positive = we are cheaper):
+>
+> | Baseline | Jan–Mar 19 | Apr–Jun 19 | Oct–Dec 18 |
+> |---|---|---|---|
+> | Min/max on the mean | +6.0% | +48.8% | +61.1% |
+> | (s, S) safety stock — what an ERP does | −2.9% | +23.1% | −1.8% |
+> | **Our forecast, sized with a normal approximation** | **+17.9%** | **+8.1%** | **+0.4%** |
+>
+> The third row is the one that carries the claim: same forecast, same service
+> level, differing only in normal-approximation versus the empirical quantile.
+> We win all three. Against a real ERP policy we are level. See README.md.
+
+
 **The saving comes from lost sales, not from holding less.** We deliberately hold *more* stock
 and pay *more* holding cost — a test asserts both. That is the cost ratio working as designed.
 
@@ -569,7 +590,7 @@ Then:
 | Against | Our line | The evidence |
 |---|---|---|
 | **A forecasting dashboard** | *"They stop at the chart. The buyer still has to decide what 187 units means at a 4-day lead time with 40 in stock."* | The order screen, the slider, the cost at ±1 pack |
-| **A wholesaler's min/max reorder tool** | *"They order to the average. Average demand is met half the time."* | 67.9% lower total cost on identical real days |
+| **A wholesaler's min/max reorder tool** | *"They order to the average. Average demand is met half the time."* | `/live` — measured against four policies on identical real days, including the two that are hard to beat |
 | **A better single model** | *"Picking the best model is the obvious move. We implemented it and it lost."* | 0.968 vs 0.907, with the oracle bound at 0.843 |
 
 ## 6.2 If something breaks

@@ -1175,31 +1175,86 @@ function notes(s, text) {
 {
   const s = slide();
   eyebrow(s, "Result 4 · what it is actually worth");
-  title(s, "Replayed over the identical real days,\nwith identical costs.", { size: 32 });
-
-  // 2350 x 660 -> 3.561 ; 11.63in wide -> 3.27in tall
-  shot(s, "liveops_case", { x: M, y: 2.55, w: 11.63, h: 3.27 });
+  title(s, "Against four policies, including the two\nthat are hard to beat.", { size: 30, h: 1.25 });
 
   s.addText(
-    "The only difference between the two policies is that min/max sizes against the mean, and we size against the quantile the cost ratio implies. Same lead time, same review cadence, same protection interval, same 90 real days of history.",
+    "Every policy sizes off the same trailing window of real sales, so the only thing being compared is how the quantity is chosen. The rung that carries the claim is the third one: it gets our forecast and our service level, and differs in exactly one thing — it sizes with a normal approximation instead of reading the quantile off the calibrated distribution.",
     {
-      x: M, y: 6.0, w: 7.5, h: 0.85,
+      x: M, y: 2.28, w: W - M * 2, h: 0.7,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 18,
+      fontFace: BODY, fontSize: 12.5, color: INK_SOFT, lineSpacing: 17,
     },
   );
 
-  card(s, { x: 8.6, y: 5.98, w: 3.9, h: 0.9, fill: PAPER_SUNK, line: INK });
-  s.addText(
-    "We hold more stock and pay more holding cost. The saving is entirely fewer lost sales — and a test asserts exactly that.",
-    {
-      x: 8.85, y: 6.08, w: 3.45, h: 0.72,
+  // Straight from decision/replay.py::compare_policies. Losing rungs included:
+  // a ladder edited down to the flattering rungs is worth nothing.
+  const LADDER = [
+    ["Min/max on the mean", "no system at all", [6.0, 48.8, 61.1]],
+    ["(s, S) safety stock", "what an ERP does", [-2.9, 23.1, -1.8]],
+    ["Our forecast, normal sizing", "the claim", [17.9, 8.1, 0.4]],
+  ];
+  const WINDOWS = ["Jan–Mar 19", "Apr–Jun 19", "Oct–Dec 18"];
+
+  const cw = (W - M * 2 - 2 * 0.3) / 3;
+  LADDER.forEach(([name, sub, pcts], i) => {
+    const x = M + i * (cw + 0.3);
+    const carries = i === 2;
+    card(s, {
+      x, y: 3.15, w: cw, h: 2.5,
+      fill: carries ? PAPER_SUNK : PAPER_RAISED,
+      line: carries ? INK : RULE,
+    });
+    s.addText(name, {
+      x: x + 0.25, y: 3.32, w: cw - 0.5, h: 0.32,
       isTextBox: true, margin: 0,
-      fontFace: BODY, fontSize: 11, color: INK, lineSpacing: 15,
+      fontFace: BODY, fontSize: 13.5, color: INK, bold: true,
+    });
+    s.addText(sub, {
+      x: x + 0.25, y: 3.63, w: cw - 0.5, h: 0.26,
+      isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9.5, color: carries ? GREEN : INK_FAINT,
+    });
+    pcts.forEach((pct, j) => {
+      const y = 4.0 + j * 0.5;
+      const win = pct > 0;
+      s.addText(WINDOWS[j], {
+        x: x + 0.25, y, w: 1.7, h: 0.3,
+        isTextBox: true, margin: 0, valign: "middle",
+        fontFace: BODY, fontSize: 11, color: INK_MUTE,
+      });
+      s.addText(`${win ? "+" : ""}${pct.toFixed(1)}%`, {
+        x: x + 1.95, y, w: 1.3, h: 0.3,
+        isTextBox: true, margin: 0, align: "right", valign: "middle",
+        fontFace: MONO, fontSize: 13, color: win ? GREEN : AMBER, bold: true,
+      });
+    });
+    s.addText(
+      pcts.every((p) => p > 0) ? "we win all three" : "we lose two of three",
+      {
+        x: x + 0.25, y: 5.28, w: cw - 0.5, h: 0.26,
+        isTextBox: true, margin: 0,
+        fontFace: BODY, fontSize: 10.5,
+        color: pcts.every((p) => p > 0) ? GREEN : AMBER, italic: true,
+      },
+    );
+  });
+
+  card(s, { x: M, y: 5.85, w: W - M * 2, h: 1.1, fill: PAPER_SUNK, line: INK });
+  s.addText("What this says, and what it does not", {
+    x: M + 0.3, y: 5.98, w: 4.2, h: 0.28,
+    isTextBox: true, margin: 0,
+    fontFace: BODY, fontSize: 12, color: INK, bold: true,
+  });
+  s.addText(
+    "We beat the normal approximation on every window with forecast quality held constant — so the distribution is earning its place. Against a well-tuned ERP policy we are level, winning one and losing two by a couple of percent, and we say so. What separates us there is not cost: it is that z comes from the pharmacy's own margins instead of a consultant, the interval behind it is calibrated, and the number explains itself.",
+    {
+      x: M + 4.55, y: 5.95, w: 6.85, h: 0.9,
+      isTextBox: true, margin: 0,
+      fontFace: BODY, fontSize: 10.5, color: INK_SOFT, lineSpacing: 13.5,
     },
   );
 
-  notes(s, "Three windows are in the product: Jan-Mar 2019 at 69.5%, Apr-Jun 2019 at 64.3%, Oct-Dec 2018 at 75.5%. Show a second one live so it is obviously not one cherry-picked quarter.");
+  notes(s, "Do not lead on min/max - anyone who works in inventory discounts it instantly, because every ERP carries safety stock. Lead on the third card. If asked why we do not dominate the ERP column: every policy here sizes off a trailing window, so none of them can anticipate a seasonal turn - on 1 January the last 180 days are autumn. Anticipating it is what the forecast layer is for, and exercising it needs a forecast produced at each review point rather than one vintage. That is the next piece of work and it is written down.");
 }
 
 /* ======================================================= 15 · WHERE WE LOSE */
