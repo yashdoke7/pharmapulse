@@ -24,6 +24,7 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 | **[docs/PHARMAPULSE_SYSTEM.md](docs/PHARMAPULSE_SYSTEM.md)** | **Start here.** The whole project in one file: how the pieces connect, every decision and the alternative it beat, the results, and where the code is |
 | **[docs/ARCHITECTURE_DELTA.md](docs/ARCHITECTURE_DELTA.md)** | **What changed against the submitted design.** 4 components removed, 2 moved layer, 5 added — plus 3 design claims the data contradicts. Read it next to the design documents |
 | [docs/DEMONSTRATION.md](docs/DEMONSTRATION.md) | Run it, then present it — with the words |
+| [docs/DEMO_RECORDING.txt](docs/DEMO_RECORDING.txt) | **Recording a demo video.** Seven segments, what each screen is actually showing, and the five questions that get asked |
 | [docs/PHARMAPULSE_RESULTS.md](docs/PHARMAPULSE_RESULTS.md) | Condensed results and the demo script |
 | [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Intended use, evaluation, seven named limitations |
 | [team/results/](team/results/) | Per-workstream deep dives with code walkthroughs |
@@ -82,7 +83,8 @@ python scripts/reset_demo.py       # put the board back before a rehearsal
 > puts its CLI on the **machine** PATH at install time, and a PowerShell window opened *before* that
 > never picks it up. Open a new terminal. To confirm without one:
 > ```powershell
-> & "C:\Program Files\Docker\Dockeresourcesin\docker.exe" version
+> & "C:\Program Files\Docker\Docker
+esourcesin\docker.exe" version
 > ```
 > Stop anything already holding **:5173** or **:8000** first — a local `npm run dev` will make the web
 > container fail to bind. Find the owner with `netstat -ano | Select-String ":5173"`, and check the

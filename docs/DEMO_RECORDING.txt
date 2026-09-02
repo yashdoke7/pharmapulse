@@ -1,0 +1,580 @@
+PHARMAPULSE - HOW TO RECORD THE DEMO VIDEO
+==========================================
+
+Everything below is plain text so it can be pasted into WhatsApp or a mail.
+Read it once end to end before recording. Target length: 8 to 10 minutes.
+
+
+-------------------------------------------------------------------------
+PART 0 - BEFORE YOU HIT RECORD
+-------------------------------------------------------------------------
+
+Open a NEW PowerShell window (a new one - see the Docker note at the end)
+and run these, each in its own terminal.
+
+  Terminal 1 - the API
+      cd C:\Users\ASUS\Desktop\CS\Projects\pharmapulse
+      uvicorn api.main:app --port 8000
+
+  Terminal 2 - the interface
+      cd C:\Users\ASUS\Desktop\CS\Projects\pharmapulse\web
+      npm run dev
+
+  Terminal 3 - reset the demo board, THEN restart Terminal 1
+      cd C:\Users\ASUS\Desktop\CS\Projects\pharmapulse
+      python scripts/reset_demo.py
+
+The reset matters. If you have clicked "Accept order" while practising, the
+shelf already holds the stock and the Order screen will recommend 0 units,
+which makes the best slide in the demo look broken. Reset, then Ctrl+C and
+restart the API so it re-reads the seeded position.
+
+Then open Chrome at  http://localhost:5173
+
+Housekeeping before recording:
+  - Close every other tab. The tab bar is in the frame.
+  - Hide bookmarks:  Ctrl+Shift+B
+  - Zoom the browser to 100%:  Ctrl+0
+  - Turn on Do Not Disturb so notifications do not pop into the video.
+  - Put the window on a single screen at 1920x1080 if you can.
+
+Do one silent dry run of the whole path first. It takes two minutes and it
+is the difference between a smooth recording and eleven takes.
+
+
+-------------------------------------------------------------------------
+PART 1 - HOW TO ACTUALLY RECORD IT ON WINDOWS 11
+-------------------------------------------------------------------------
+
+Option A - Xbox Game Bar. Built in, records your voice, easiest.
+
+  1. Press  Win + G
+  2. Click the microphone icon so it is ON (unmuted). Check the settings
+     gear -> Capturing -> "Record what happened" is not needed; you want
+     live recording.
+  3. Press  Win + Alt + R  to start. A small timer appears in the corner.
+  4. Press  Win + Alt + R  again to stop.
+  5. The file lands in  C:\Users\ASUS\Videos\Captures  as an .mp4
+
+  Note: Game Bar records ONE window - whichever was focused when you
+  started. That is fine here, because everything happens in Chrome. But it
+  means you cannot Alt-Tab to the terminal mid-recording and have it show.
+  If you want the terminal in the video, record the terminal part as a
+  separate clip.
+
+Option B - Snipping Tool. Use this if you want a chosen region or the
+whole desktop including terminals.
+
+  1. Press  Win + Shift + S,  or open Snipping Tool from Start.
+  2. Switch to the video (camera) icon.
+  3. Drag a box around the area, or select the full screen.
+  4. Click Start. Click Stop when done, then Save.
+  5. Confirm the microphone toggle is on if you are narrating.
+
+Option C - if the audio is fighting you, record silently and narrate over
+it, or just add subtitles. A clean silent screen recording with a written
+description sent alongside is better than a video with broken audio.
+
+Recommendation: Option A, narrating live. It is one take and it sounds
+natural.
+
+
+-------------------------------------------------------------------------
+PART 2 - THE RECORDING ORDER
+-------------------------------------------------------------------------
+
+Seven segments. Time budget in brackets. Do not skip segment 7.
+
+  1. Decisions      - the opening screen                        (60 s)
+  2. Order          - the slider                                (110 s)
+  3. Settings       - change a setting, watch the order move    (60 s)
+  4. Forecast       - the fan chart and the model members       (75 s)
+  5. Why            - attribution and the calibration diagram   (90 s)
+  6. Replay         - the business case                         (75 s)
+  7. Evidence       - the leaderboard and where we lose         (90 s)
+
+Then a 30 second close.
+
+The order is deliberate. It walks a real decision forward: what needs
+deciding, what do I order, what if my costs change, do I believe the
+forecast, why is it that number, was it worth anything, and can you prove
+it. Do not present it in the order the code was written.
+
+
+-------------------------------------------------------------------------
+PART 3 - SEGMENT BY SEGMENT: WHAT TO DO, AND WHAT IT IS ACTUALLY SHOWING
+-------------------------------------------------------------------------
+
+Each segment below has three parts. WHAT YOU DO on screen. WHAT TO SAY,
+roughly - do not read it word for word. AND WHAT IT ACTUALLY IS, which is
+the part your friends need in order to answer a question about it.
+
+
+=== SEGMENT 1 - DECISIONS  (the landing screen, http://localhost:5173) ===
+
+WHAT YOU DO
+  Start here with nothing clicked. Let the screen sit for three seconds so
+  the headline is readable. Move the cursor down the three exception rows.
+  Do not click anything yet.
+
+WHAT TO SAY
+  "This is what a pharmacy buyer opens on a Monday morning. It does not
+  open on a chart. It opens on a sentence: four products need a decision
+  today, and there are about twelve hundred rupees at risk if nobody acts.
+  Everything is ranked by money, not by probability."
+
+  Then point at the third row: "This one is ninety-nine percent certain and
+  it is ranked LAST, because it is only worth a hundred and sixty rupees.
+  The row above it is only thirty-four percent likely and it is ranked
+  higher, because it is worth two hundred and seventy-six. That inversion
+  is the whole point. A buyer has ten minutes. Probability is not what
+  should decide the order of their attention - exposure is."
+
+AND WHAT IT ACTUALLY IS
+  - The three numbers at the top right (ORDER NOW / CAPITAL STUCK /
+    HEALTHY) are a live count over all eight products.
+  - "STOCKOUT" and "OVERSTOCK" badges come from decision/risk.py. There are
+    four rules. The stockout rule is evaluated at the CURRENT shelf
+    position, before any order is placed - an earlier version evaluated it
+    after ordering, so it never fired.
+  - "85% likely" is a real probability read off the calibrated forecast
+    distribution, not a hand-set threshold.
+  - The rupee figure is the money exposure: for a shortage it is the lost
+    gross margin on the units expected to be missing; for overstock it is
+    the holding cost on the capital sitting idle.
+  - "10.4 days of cover. The order has to survive 11 days - a 4-day lead
+    time plus a 7-day gap until the next review." That 11 days is the
+    PROTECTION INTERVAL, and it is one of the most important corrections in
+    the project. See segment 3.
+
+
+=== SEGMENT 2 - ORDER  (click "ORDER NOW - 240 UNITS" on the first row) ===
+
+This is the most important segment in the video. Give it the most time.
+
+WHAT YOU DO
+  Click the ORDER NOW link on the Paracetamol row. It lands on the Order
+  screen with Paracetamol already selected.
+
+  Then, slowly, DRAG THE SLIDER. Left to about 60%, pause. Right to about
+  98%, pause. Back to the recommended point. Drag slowly - the whole point
+  is that the viewer watches four numbers move together.
+
+WHAT TO SAY
+  "This is the screen the entire system exists for. The question at the top
+  is 'How often are you willing to run out?' - and that is the only input a
+  buyer actually has an opinion about."
+
+  While dragging: "Watch the service level, the stockout risk, the cost per
+  cycle, and the order quantity in the top right. They all move together,
+  and there is no loading spinner, because nothing is being fetched. The
+  entire cost curve was sent once with the recommendation and the browser
+  is interpolating it."
+
+  "The curve underneath is the expected cost per order cycle at every
+  service level. It is U-shaped. Order too little and you lose sales.
+  Order too much and you pay to hold it. The marked point is the bottom of
+  that curve - the quantity that minimises the total cost of being wrong."
+
+  Then scroll to the bottom panel: "And this is what makes it usable. One
+  pack fewer costs thirty-nine rupees and two paise. One pack more costs
+  thirty-nine and seven. The recommendation is thirty-eight fifty-eight.
+  So the buyer can see that being one pack off either way costs them about
+  fifty paise - they can argue with the number instead of just trusting it."
+
+AND WHAT IT ACTUALLY IS
+  - The formula is the NEWSVENDOR CRITICAL FRACTILE:
+
+        q*  =  Cu / (Cu + Co)
+
+    Cu is the cost of ordering one unit too few (lost margin). Co is the
+    cost of one unit too many (holding plus expiry risk). The formula gives
+    a probability, and that probability is read off the forecast
+    distribution as a quantile. It is a hundred-year-old result from
+    operations research, and it is exact - it is not an approximation and
+    it is not a heuristic.
+  - Because it is closed form, the browser can recompute it. That is why
+    dragging causes zero network calls. This is a genuine engineering
+    point, not a gimmick.
+  - The right-hand POSITION panel: "on hand 310". That is not a stored
+    number. It is the seeded opening stock PLUS the sum of every ledger
+    movement since - receipts, sales, wastage, adjustments. Look at "WHAT
+    THE POSITION IS MADE OF" underneath it; that is the movement trail.
+  - The order is rounded UP to a whole pack when a shortage costs more than
+    an excess. Medicines come in packs; you cannot order 23.4 units.
+  - LEAD-TIME DEMAND at the bottom right (p5 / p25 / p50 / p75 / p95) is
+    the demand distribution over the whole protection interval, not over a
+    single day. The centre scales linearly with the number of days and the
+    spread scales with the square root, which is the standard result for
+    summing independent periods.
+  - WHERE EACH INPUT CAME FROM, right at the bottom, is the provenance
+    panel. Every value on the screen is tagged as MEASURED or as YOUR
+    SETTING. See segment 3.
+
+
+=== SEGMENT 3 - SETTINGS  (top nav -> SETTINGS) ===
+
+WHAT YOU DO
+  Change the LEAD TIME from 4 days to 9 days. Save. Then go straight back
+  to ORDER and show that the recommended quantity has jumped.
+
+  Change it back to 4 afterwards.
+
+WHAT TO SAY
+  "The dataset we were given has dates and units sold. It does NOT have
+  stock levels, prices, costs or lead times - those columns simply do not
+  exist in the file. So the system does not invent them. It asks for them,
+  here, and it labels them as your setting everywhere they appear."
+
+  "Watch what happens when the supplier gets slower. Lead time four days to
+  nine days. Go back to the order screen - the recommended quantity jumps,
+  because the order now has to cover a much longer window."
+
+AND WHAT IT ACTUALLY IS
+  - This is the THREE LANES rule, and it is the single most defensible idea
+    in the project. Every value belongs to exactly one lane:
+
+      Lane 1, OBSERVED   - the sales file and calendar features from it.
+                           May train a model. May explain. May back an
+                           accuracy claim.
+      Lane 2, USER SETTING - lead time, holding cost, margin, stock on
+                           hand, pack size. May explain, as a named input.
+                           NEVER trains a model. NEVER backs a claim.
+      Lane 3, SYNTHETIC  - any generated demo data. None of the three.
+                           The ingest function RAISES an exception on a
+                           synthetic path. There is a test for it.
+
+  - Why it matters: if you fabricate a price column and train on it, the
+    model learns from a random number generator, and then the "why this
+    number" screen presents that noise to a pharmacist as a commercial
+    driver. That is worse than having no explanation at all. So price and
+    promotion are excluded by name.
+  - The lead time change is also the PROTECTION INTERVAL point. The order
+    has to survive the lead time PLUS the gap until the next review, not
+    the lead time alone. Sizing against the lead time alone was a real bug
+    in an earlier build and it caused persistent stockouts - the replay
+    simulation is what surfaced it. Fixing it took the shortfall in the
+    simulation from 2,207 units down to 121.
+
+
+=== SEGMENT 4 - FORECAST  (top nav -> FORECAST) ===
+
+WHAT YOU DO
+  Show the fan chart. Then switch the grain: Daily, Weekly, Monthly. Then
+  scroll down to the table of model members and the series profile.
+
+WHAT TO SAY
+  "This is the forecast underneath the order. The blue line is what
+  actually sold. The black line is our median forecast. The three grey
+  bands are the fifty, eighty and ninety percent intervals - so the buyer
+  sees a range, not a single false-precision number."
+
+  "Three grains, and each answers a different question. Daily: will I run
+  out before the next delivery. Weekly: what do I order on Tuesday.
+  Monthly: how much cash do I need and when."
+
+  Scrolling down: "And this is what is behind the black line. Five
+  different models, each with a different assumption about how demand
+  works. We do not pick one. We take the median. Segment seven explains why
+  that is the interesting result."
+
+AND WHAT IT ACTUALLY IS
+  - The five ensemble members are AutoARIMA, LightGBM, MSTL, Prophet and
+    SeasonalNaive. They are genuinely different families - a statistical
+    time-series model, a gradient-boosted machine learning model, a
+    seasonal decomposition, a Bayesian additive model, and the naive
+    baseline.
+  - SERIES PROFILE on the right shows ADI and CV-squared. Those two numbers
+    classify a product's demand pattern (the Syntetos-Boylan scheme):
+    smooth, erratic, intermittent or lumpy. The class decides which models
+    the product is routed to. It is recomputed every night from the data,
+    per grain - it is not configured by hand. One of the eight products,
+    the sedatives, sells nothing on 67.9% of days, so it routes to Croston
+    and TSB, which are built for intermittent demand.
+  - The intervals are CONFORMALLY CALIBRATED. That is segment 5.
+  - Weekly grain, horizon 8 means we forecast eight weeks ahead.
+
+
+=== SEGMENT 5 - WHY  (top nav -> WHY) ===
+
+WHAT YOU DO
+  Land on the Why screen. Pick Antihistamines from the product tabs if it
+  is not already selected. Show the left panel first, then the right.
+
+WHAT TO SAY
+  Left panel: "A feature-importance chart explains the MODEL. A buyer needs
+  an explanation of the QUANTITY. So the answer is in units. Antihistamines
+  are down about twenty units next month. Seasonality accounts for minus
+  twenty-three point seven - we are coming off the pollen season. The
+  underlying trend is plus four. And the parts add up to the whole; there
+  is a test that asserts it, because an explanation that does not add up to
+  the number it explains is worse than no explanation."
+
+  Right panel: "And this is the slide most teams never build. We measured
+  whether our own confidence intervals are honest. We took every interval
+  we ever stated and checked how often the real outcome actually landed
+  inside it. A stated eighty percent interval covered ninety-two point two
+  percent of outcomes."
+
+  "That is too WIDE, not too narrow. Which sounds like the safe direction
+  and is not - an over-wide interval pushes the order quantity up, and the
+  buyer pays holding cost for confidence the model has not earned.
+  Conformal correction pulls it to eighty-two percent."
+
+AND WHAT IT ACTUALLY IS
+  - The attribution is read from Prophet's fitted components - the actual
+    trend, seasonality and holiday terms the model fitted - and then forced
+    to reconcile so the parts sum to the total.
+  - The diagonal dashed line on the diagram is perfect calibration. The red
+    line is the raw model. The black line is after correction. Closer to
+    the diagonal is better.
+  - CONFORMAL PREDICTION is distribution-free. It does not assume the
+    errors are normally distributed or any other shape. It takes the actual
+    historical residuals, finds the empirical quantile, and rescales the
+    interval by the ratio. The scale factor is clamped between 0.25 and 5
+    so one bad series cannot destroy the intervals.
+  - n = 256 is stated on the screen on purpose. That is enough points to
+    establish a consistent DIRECTION of miscalibration. It is not enough to
+    certify a per-series level. Saying so is deliberate.
+  - Worth mentioning out loud: our own design document predicted the
+    opposite - that intervals would be over-confident at 75%. The
+    measurement contradicted the document. We corrected the document rather
+    than the measurement.
+
+
+=== SEGMENT 6 - REPLAY  (top nav -> REPLAY) ===
+
+WHAT YOU DO
+  Click START REPLAY and let it tick for about fifteen seconds so the date
+  visibly advances and the shelf moves. Then STOP it and scroll down to
+  "What it was worth". Switch between the three windows (Jan-Mar 2019,
+  Apr-Jun 2019, Oct-Dec 2018) so it is obviously not one lucky quarter.
+
+WHAT TO SAY
+  "This replays the real 2019 history one day per tick. Real sales, real
+  dates. Nothing is simulated except the shelf and the ordering policy."
+
+  "And this is the business case. Our policy against a standard min/max
+  policy, over the identical real days, with identical costs, the identical
+  lead time, the identical review cadence and the identical protection
+  interval. The only difference is that min/max sizes against the AVERAGE
+  demand, and we size against the quantile the cost ratio implies."
+
+  "Min/max costs four thousand six hundred and nineteen rupees over that
+  quarter. Ours costs one thousand four hundred and nine. Sixty-nine and a
+  half percent lower."
+
+  Then, and this line matters: "And look at WHERE the saving comes from.
+  Our holding cost is HIGHER - five hundred and one against three hundred
+  and eighty-nine. We deliberately hold more stock and pay more to hold it.
+  The entire saving is fewer lost sales - lost margin drops from four
+  thousand two hundred and thirty to nine hundred and eight. There is a
+  test that asserts that relationship, so we cannot accidentally start
+  claiming a saving that comes from the wrong place."
+
+  Switch the windows: "Different quarter, same direction. Sixty-four
+  percent. Seventy-five percent."
+
+AND WHAT IT ACTUALLY IS
+  - min/max is the standard textbook inventory policy and it is what a real
+    pharmacy would actually be doing. It is a fair baseline, and it was
+    given every advantage - the same protection interval as us. An earlier
+    version of this comparison was accidentally rigged (we had fixed our
+    interval but left the baseline on the old one) and produced an 88%
+    saving. That was corrected down to a defensible ~70%.
+  - Replay is not a screen feature. It is decision/replay.py, a policy
+    simulator in the decision layer, and the screen is a thin client over
+    it. That is what lets it also run headlessly as the closest thing the
+    project has to an end-to-end integration test.
+  - Each replay session holds a lock. Concurrent ticks used to corrupt a
+    run - the shortfall went from 121 units to 547 - so the session
+    serialises them and the client pauses its poller while a tick is in
+    flight.
+
+
+=== SEGMENT 7 - EVIDENCE  (top nav -> EVIDENCE) ===
+
+Do not skip this. This is the segment that makes a faculty member believe
+the rest of the video.
+
+WHAT YOU DO
+  Show the four figures at the top. Then the highlighted box. Then the
+  leaderboard. Then scroll to the per-series table and the provenance
+  footer.
+
+WHAT TO SAY
+  "Every number on this screen was written by a benchmark script running
+  from a clean clone. None of it is typed by a human. The script writes a
+  JSON file and the interface only reads it."
+
+  "Our ensemble scores 0.907 MASE. The benchmark to beat is SeasonalNaive
+  at 1.117 - that is 'repeat what happened this week last year', and on
+  retail pharmacy data it is genuinely hard to beat. We are 18.8 percent
+  better than it."
+
+  Then the highlighted box: "And this is the result worth leading with. We
+  implemented the obvious approach - pick each product's best model - and
+  we measured it LOSING. Selection scores 0.968. Combining them by taking
+  the median scores 0.907. Perfect hindsight, which is a bound and not a
+  model, is 0.843."
+
+  "The reason is that with about three hundred weekly observations, 'best
+  on the last fold' is mostly noise. So selection chases noise and locks in
+  whichever model got lucky. Independent models make independent mistakes,
+  and the median cancels them. We only know that because we built both and
+  measured."
+
+  Per-series table: "And here is where it does not work. The ensemble beats
+  seasonal-naive on all eight products, so that column is not the
+  interesting one. The honest column is the absolute one - a MASE above one
+  point zero means worse than simply repeating last week, and two of our
+  eight are. Antihistamines at 1.646 is our worst. The May pollen peak is
+  sharp and its timing moves year to year, and we have six observations of
+  it. We are not going to pretend otherwise."
+
+  Provenance footer: "Snapshot hash of the exact data file. Model version.
+  Generation timestamp. Audit chain valid. Every response the API sends
+  carries this."
+
+AND WHAT IT ACTUALLY IS
+  - MASE = Mean Absolute Scaled Error. Below 1 is better than the naive
+    baseline; above 1 is worse. We use MASE and not MAPE because MAPE is
+    undefined when the actual value is zero, and one of our products sells
+    nothing on 67.9% of days.
+  - The protocol, stated on the screen: weekly grain, horizon 8,
+    rolling-origin cross-validation with 4 non-overlapping folds, 8 series,
+    seed 42. Rolling-origin means the model only ever sees data from before
+    the point it is forecasting.
+  - The selection experiment is scored honestly: the choice for fold k uses
+    only folds 1 through k-1, so it never sees the fold it is graded on.
+    Without that, selection would look artificially good.
+  - "Cache hit rate 0%, 1 request, no model runs per request" - that is the
+    batch/serve split. Models are fitted in an offline batch that writes a
+    versioned forecast store. Serving a screen is a read. Nothing is fitted
+    inside a web request.
+  - The snapshot hash is a SHA-256 of the input CSV. If the data changes,
+    the hash changes, and every claim on the screen is tied to it.
+
+
+=== CLOSE  (30 seconds, back on the Decisions screen) ===
+
+WHAT TO SAY
+  "So: it forecasts, at 0.907 MASE, 18.8 percent better than the benchmark.
+  It decides - the forecast becomes an actual purchase order in packs. It
+  is honest about its own uncertainty, and it shows the two products where
+  it loses inside the product itself, not just in a report. And it is real
+  - a hundred and thirty-eight tests, a benchmark that reruns from a clean
+  clone in CI, and it runs in Docker."
+
+  "The one limitation we state before anyone asks: we forecast SALES, not
+  DEMAND. A stockout records zero sales, which is indistinguishable from
+  zero demand, so our observations are right-censored - and the censoring
+  is worst on exactly the products that matter most. We flag suspicious
+  ceilings but we cannot verify the correction, because this dataset has no
+  on-hand-stock column. It is named in the model card and it is the first
+  thing a real deployment would fix, by joining the pharmacy's own
+  inventory ledger."
+
+
+-------------------------------------------------------------------------
+PART 4 - IF SOMETHING GOES WRONG MID-RECORDING
+-------------------------------------------------------------------------
+
+The screen says "degraded" or a badge looks wrong
+  The forecast store is missing and the API is serving fixtures. Stop, run
+      python -m pipelines.run_nightly --stage all
+  It takes about four minutes and prints progress per model. It is working,
+  not hung - AutoARIMA at daily grain is the slow part. Then restart the
+  API.
+
+The Order screen recommends 0 units
+  You already accepted orders. Run  python scripts/reset_demo.py  and then
+  restart the API so it re-reads the seeded position.
+
+Errno 10048, only one usage of each socket address
+  Port 8000 is already taken by an earlier server.
+      netstat -ano | Select-String ":8000" | Select-String LISTENING
+      taskkill /F /PID <the-pid>
+  Check the PID is actually your python process before killing it.
+
+The replay numbers look wrong after clicking around
+  Stop the replay, switch windows, and start again. Do not run two replays
+  at once.
+
+Do not edit numbers to make them look better. Every figure in the interface
+is traceable to artifacts/benchmarks.json or to the replay simulator, and a
+figure that does not match is worse than a figure that is not impressive.
+
+
+-------------------------------------------------------------------------
+PART 5 - WHAT TO SEND WITH THE VIDEO
+-------------------------------------------------------------------------
+
+  - The video.
+  - deck/PharmaPulse.pptx - 17 slides, with speaker notes on every slide.
+  - The repo link: github.com/yashdoke7/pharmapulse
+    NOTE: the repository is currently PRIVATE. If faculty are expected to
+    open it, either make it public or add them as collaborators first.
+
+If they want to read rather than watch:
+  docs/PHARMAPULSE_SYSTEM.md    the whole project, one file
+  docs/ARCHITECTURE_DELTA.md    what changed against the submitted design
+  docs/DEMONSTRATION.md         the longer presenting guide
+  docs/MODEL_CARD.md            intended use, evaluation, seven limitations
+
+
+-------------------------------------------------------------------------
+PART 6 - THE FIVE QUESTIONS THEY WILL ASK, AND THE ANSWERS
+-------------------------------------------------------------------------
+
+Q. Where did the cost and stock data come from? You are making it up.
+A. Correct, and that is why it is quarantined. Those are lane-2 values -
+   user settings. They are entered in Settings, labelled as settings
+   everywhere they appear, they never train a model and they never back an
+   accuracy claim. Every accuracy number in this project comes from the
+   sales file alone. A real deployment reads them from the pharmacy's ERP.
+
+Q. Is 18.8 percent better than a naive baseline actually impressive?
+A. SeasonalNaive is not a weak baseline on retail pharmacy data - it is the
+   standard one and it is hard to beat, because pharmacy demand really is
+   strongly seasonal. The more interesting result is not the 18.8 percent;
+   it is that per-series model selection LOST to combination, which is a
+   negative result about our own first instinct.
+
+Q. Why not deep learning / a transformer?
+A. Eight series and about three hundred weekly observations each. That is
+   nowhere near the data volume where a deep model earns its variance. We
+   measured a global gradient-boosted model (LightGBM) and it is in the
+   ensemble - it scores 0.961, better than every classical model except
+   Prophet, and the median of five still beats it.
+
+Q. How do I know these numbers are real and not typed in?
+A. Run  python scripts/day1_benchmark.py  from a clean clone. It takes
+   about 45 seconds and it writes artifacts/benchmarks.json. The interface
+   only reads that file. The same script runs in CI on every push.
+
+Q. What would you do next?
+A. Three things, in order. One: join a real inventory ledger so we can
+   correct the censoring and forecast demand instead of sales. Two:
+   temporal reconciliation, so the daily, weekly and monthly forecasts are
+   guaranteed to sum - right now they are produced independently. Three: a
+   promotion gate, so a new model has to beat SeasonalNaive on every series
+   before it is allowed to publish.
+
+
+-------------------------------------------------------------------------
+DOCKER NOTE
+-------------------------------------------------------------------------
+
+If PowerShell says  "The term 'docker' is not recognized"  that does NOT
+mean Docker is missing. Docker Desktop adds its CLI to the machine PATH at
+install time, and any terminal opened before that never picks it up. Open a
+brand new PowerShell window.
+
+Docker Desktop must also be RUNNING - start it from the Start menu and wait
+for the whale icon to stop animating.
+
+Then:  docker compose up --build      (api on :8000, web on :5173)
+
+Stop any local  npm run dev  or  uvicorn  first, or the containers cannot
+bind those ports.
