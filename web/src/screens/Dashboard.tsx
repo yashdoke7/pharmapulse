@@ -47,31 +47,44 @@ function CoverRunway({ positions, protection }: { positions: Position[]; protect
                   ? "bg-amber-500"
                   : "bg-emerald-500";
           return (
-            <div key={p.series_id} className="group flex items-center gap-3 py-1">
-              <div
-                className="w-40 shrink-0 truncate text-xs font-semibold text-ink group-hover:text-medical-teal-deep transition-colors"
-                title={p.name}
-              >
-                {p.name}
+            <div key={p.series_id} className="group py-1.5 sm:py-1">
+              {/* Name + days sit above the bar on a phone - a fixed-width
+                  label and a fixed-width day count either side of the bar
+                  left no room for the bar itself below ~380px. */}
+              <div className="mb-1 flex items-center justify-between gap-2 sm:hidden">
+                <span className="truncate text-xs font-semibold text-ink" title={p.name}>
+                  {p.name}
+                </span>
+                <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-slate-600">
+                  {p.days_of_cover >= 999 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
+                </span>
               </div>
-              <div className="relative h-6 flex-1 rounded-full bg-slate-100/90 overflow-hidden">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`h-full ${tone} rounded-full transition-[width] duration-500 shadow-xs`}
-                  style={{ width: `${pct}%` }}
-                />
-                {/* Protection interval line */}
-                <div
-                  className="pointer-events-none absolute inset-y-0 border-l-2 border-dashed border-slate-700/60 z-10"
-                  style={{ left: `${markerPct}%` }}
-                />
-                {over ? (
-                  <div className="absolute inset-y-0 right-2 flex items-center text-[11px] font-bold text-slate-500">
-                    ›
-                  </div>
-                ) : null}
-              </div>
-              <div className="w-16 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-slate-600">
-                {p.days_of_cover >= 999 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
+                  className="hidden w-40 shrink-0 truncate text-xs font-semibold text-ink group-hover:text-medical-teal-deep transition-colors sm:block"
+                  title={p.name}
+                >
+                  {p.name}
+                </div>
+                <div className="relative h-6 flex-1 rounded-full bg-slate-100/90 overflow-hidden">
+                  <div
+                    className={`h-full ${tone} rounded-full transition-[width] duration-500 shadow-xs`}
+                    style={{ width: `${pct}%` }}
+                  />
+                  {/* Protection interval line */}
+                  <div
+                    className="pointer-events-none absolute inset-y-0 border-l-2 border-dashed border-slate-700/60 z-10"
+                    style={{ left: `${markerPct}%` }}
+                  />
+                  {over ? (
+                    <div className="absolute inset-y-0 right-2 flex items-center text-[11px] font-bold text-slate-500">
+                      ›
+                    </div>
+                  ) : null}
+                </div>
+                <div className="hidden w-16 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-slate-600 sm:block">
+                  {p.days_of_cover >= 999 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
+                </div>
               </div>
             </div>
           );
@@ -240,7 +253,10 @@ export function Dashboard() {
           <PanelHead right={<span className="fine text-xs">cover against an 11-day protection interval</span>}>
             Shelf position & Inventory Status
           </PanelHead>
-          <div className="overflow-x-auto">
+          {/* Table for tablet+; a seven-column table has no honest way to
+              fit a phone screen, so phones get a stacked card per product
+              instead of a sideways scroll. */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50 text-left">
@@ -268,6 +284,15 @@ export function Dashboard() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="sm:hidden space-y-3 p-3">
+            {pos.map((p) => (
+              <PositionCard
+                key={p.series_id}
+                p={p}
+                onOpen={() => nav(`/orders?series=${p.series_id}`)}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -392,5 +417,69 @@ function PositionRow({ p, onOpen }: { p: Position; onOpen: () => void }) {
         <StatusChip status={p.status} />
       </td>
     </tr>
+  );
+}
+
+/** The phone equivalent of a PositionRow - same fields, stacked instead of
+ * columned, because there is no honest way to fit seven columns under
+ * ~380px without either scrolling sideways or shrinking numbers unreadable. */
+function PositionCard({ p, onOpen }: { p: Position; onOpen: () => void }) {
+  const coverTone =
+    p.status === "order_now"
+      ? "text-rose-600"
+      : p.status === "overstocked"
+        ? "text-blue-600"
+        : "text-slate-700";
+
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-card active:bg-slate-50 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold text-ink truncate">{p.name}</div>
+          <div className="figure text-[10.5px] font-mono text-slate-400">{p.series_id}</div>
+        </div>
+        <span className="shrink-0">
+          <StatusChip status={p.status} />
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+        <Stat label="On hand" value={units(p.stock_on_hand)} />
+        <Stat
+          label="Cover"
+          value={p.days_of_cover > 900 ? "—" : `${p.days_of_cover.toFixed(1)}d`}
+          valueClass={coverTone}
+        />
+        <Stat label="Reorder at" value={units(p.reorder_point)} />
+        <Stat label="Runs out" value={p.projected_stockout_date?.slice(5) ?? "—"} />
+      </div>
+
+      {p.order_quantity > 0 ? (
+        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
+          <span className="fine text-slate-500">Suggested order</span>
+          <span className="figure font-bold text-ink">{p.order_quantity} units</span>
+        </div>
+      ) : null}
+    </button>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  valueClass = "text-slate-700",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
+      <div className={`figure font-semibold ${valueClass}`}>{value}</div>
+    </div>
   );
 }
