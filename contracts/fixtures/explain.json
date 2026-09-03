@@ -200,9 +200,10 @@
   },
   "meta": {
     "origin": "observed",
-    "model_version": "2026-09-02T0803Z/ens-v1",
+    "as_of": "2019-10-09",
+    "model_version": "2026-09-03T0543Z/ens-v1",
     "snapshot_id": "sha256:49e4f1c5c3da",
-    "generated_at": "2026-09-02T08:03:43Z",
+    "generated_at": "2026-09-03T05:43:54Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"

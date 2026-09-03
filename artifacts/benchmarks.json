@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-02T14:26:21Z",
+  "generated_at": "2026-09-03T05:45:04Z",
   "snapshot_id": "sha256:49e4f1c5c3da",
   "protocol": {
     "grain": "week",
@@ -80,7 +80,20 @@
       "ensemble": 0.651,
       "best_model": "AutoARIMA",
       "best_mase": 0.6047,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 0.6047,
+        "AutoETS": 0.6053,
+        "CrostonOptimized": 0.6053,
+        "DynamicOptimizedTheta": 0.6053,
+        "Ensemble": 0.651,
+        "LightGBM": 0.7584,
+        "MSTL": 0.6486,
+        "Naive": 0.8732,
+        "Prophet": 0.6687,
+        "SeasonalNaive": 0.9712,
+        "WindowAverage": 0.6748
+      }
     },
     {
       "series_id": "M01AE",
@@ -88,7 +101,20 @@
       "ensemble": 1.0,
       "best_model": "Naive",
       "best_mase": 0.8899,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 1.0229,
+        "AutoETS": 1.2639,
+        "CrostonOptimized": 1.2534,
+        "DynamicOptimizedTheta": 1.289,
+        "Ensemble": 1.0,
+        "LightGBM": 1.0398,
+        "MSTL": 1.2915,
+        "Naive": 0.8899,
+        "Prophet": 0.9209,
+        "SeasonalNaive": 1.0191,
+        "WindowAverage": 1.2848
+      }
     },
     {
       "series_id": "N02BA",
@@ -96,7 +122,20 @@
       "ensemble": 0.6177,
       "best_model": "SeasonalNaive",
       "best_mase": 0.671,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 0.6765,
+        "AutoETS": 0.6819,
+        "CrostonOptimized": 0.6765,
+        "DynamicOptimizedTheta": 0.7352,
+        "Ensemble": 0.6177,
+        "LightGBM": 0.6783,
+        "MSTL": 0.7648,
+        "Naive": 0.8577,
+        "Prophet": 0.7624,
+        "SeasonalNaive": 0.671,
+        "WindowAverage": 0.7788
+      }
     },
     {
       "series_id": "N02BE",
@@ -104,7 +143,20 @@
       "ensemble": 0.7992,
       "best_model": "Prophet",
       "best_mase": 0.7708,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 1.3949,
+        "AutoETS": 1.3961,
+        "CrostonOptimized": 1.4304,
+        "DynamicOptimizedTheta": 0.9324,
+        "Ensemble": 0.7992,
+        "LightGBM": 0.8537,
+        "MSTL": 0.873,
+        "Naive": 1.4586,
+        "Prophet": 0.7708,
+        "SeasonalNaive": 0.9925,
+        "WindowAverage": 1.8451
+      }
     },
     {
       "series_id": "N05B",
@@ -112,7 +164,20 @@
       "ensemble": 0.6207,
       "best_model": "WindowAverage",
       "best_mase": 0.5562,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 0.5796,
+        "AutoETS": 0.5707,
+        "CrostonOptimized": 0.5796,
+        "DynamicOptimizedTheta": 0.5791,
+        "Ensemble": 0.6207,
+        "LightGBM": 0.6045,
+        "MSTL": 0.7759,
+        "Naive": 0.7279,
+        "Prophet": 0.8399,
+        "SeasonalNaive": 0.9385,
+        "WindowAverage": 0.5562
+      }
     },
     {
       "series_id": "N05C",
@@ -120,7 +185,20 @@
       "ensemble": 0.7852,
       "best_model": "CrostonOptimized",
       "best_mase": 0.7066,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 0.8459,
+        "AutoETS": 0.7461,
+        "CrostonOptimized": 0.7066,
+        "DynamicOptimizedTheta": 0.7069,
+        "Ensemble": 0.7852,
+        "LightGBM": 0.79,
+        "MSTL": 0.8563,
+        "Naive": 1.2364,
+        "Prophet": 0.8258,
+        "SeasonalNaive": 1.1736,
+        "WindowAverage": 0.7319
+      }
     },
     {
       "series_id": "R03",
@@ -128,7 +206,20 @@
       "ensemble": 1.1366,
       "best_model": "CrostonOptimized",
       "best_mase": 1.0844,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 1.1919,
+        "AutoETS": 1.093,
+        "CrostonOptimized": 1.0844,
+        "DynamicOptimizedTheta": 2.563,
+        "Ensemble": 1.1366,
+        "LightGBM": 1.1699,
+        "MSTL": 1.1895,
+        "Naive": 1.5126,
+        "Prophet": 1.2279,
+        "SeasonalNaive": 1.2942,
+        "WindowAverage": 1.1762
+      }
     },
     {
       "series_id": "R06",
@@ -136,7 +227,20 @@
       "ensemble": 1.6456,
       "best_model": "Prophet",
       "best_mase": 1.4635,
-      "ensemble_wins": true
+      "ensemble_wins": true,
+      "models": {
+        "AutoARIMA": 2.6018,
+        "AutoETS": 2.6386,
+        "CrostonOptimized": 2.3448,
+        "DynamicOptimizedTheta": 1.7779,
+        "Ensemble": 1.6456,
+        "LightGBM": 1.7932,
+        "MSTL": 1.7159,
+        "Naive": 3.0971,
+        "Prophet": 1.4635,
+        "SeasonalNaive": 1.8797,
+        "WindowAverage": 2.2762
+      }
     }
   ],
   "demand_classes": [
@@ -250,19 +354,19 @@
   },
   "compute": {
     "by_family_seconds": {
-      "statistical": 24.28,
-      "Prophet": 4.32,
-      "LightGBM": 1.1
+      "statistical": 48.09,
+      "Prophet": 6.29,
+      "LightGBM": 2.15
     },
-    "total_fit_seconds": 29.69,
-    "total_benchmark_seconds": 29.79,
+    "total_fit_seconds": 56.53,
+    "total_benchmark_seconds": 56.67,
     "model_fits": 292,
     "folds": 4,
-    "seconds_per_fit": 0.1017,
+    "seconds_per_fit": 0.1936,
     "note": "Wall clock on this machine, this run. The ensemble costs the sum of its members because they are fitted independently - which is also why the median cancels their errors."
   },
   "runtime": {
-    "total_seconds": 29.79,
+    "total_seconds": 56.67,
     "series_model_folds": 292,
     "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
     "python": "3.11.9"

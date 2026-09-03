@@ -18,6 +18,9 @@ export function Ops() {
   const rows = b.per_series ?? [];
   const losses = rows.filter((r) => r.ensemble > 1.0005).length;
   const ties = rows.filter((r) => Math.abs(r.ensemble - 1) <= 0.0005).length;
+  // Same order as the overall leaderboard (best to worst), minus Oracle -
+  // it is a bound computed from these rows, not a model that was fitted.
+  const modelColumns = board.map((m) => m.model).filter((m) => m !== "Oracle");
 
   const improvement =
     shipped && benchmark && benchmark.mase > 0
@@ -168,61 +171,93 @@ export function Ops() {
           </div>
         </div>
 
-        {/* Per series table */}
+        {/* Per series table - the full matrix every summary column above is
+            drawn from, not just the three-column digest. */}
         <div className="panel pad lg:col-span-2">
-          <div className="eyebrow text-slate-500">Per series — including where we lose</div>
+          <div className="eyebrow text-slate-500">Per series — every model, not just the summary</div>
           <p className="fine mt-1 text-slate-500 text-xs">
             A team that reports only its wins gets discounted, and experienced judges do
             it quickly. The ensemble beats seasonal-naive on all eight — so the honest
             column is the absolute one: <strong>MASE above 1.000 is worse than simply
             repeating last week</strong>. {losses} {losses === 1 ? "series is" : "series are"}
-            {ties ? `, and ${ties} exactly ties it` : ""}.
+            {ties ? `, and ${ties} exactly ties it` : ""}. Lowest cell in each row is the
+            best single model <em>for that series</em> — it is what
+            "best model" in the summary table meant.
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50 text-left">
-                  {["Series", "SNaive", "Ensemble", "Best single model, of all 11", ""].map((h) => (
-                    <th key={h} className="py-2.5 px-3 font-semibold text-xs text-slate-500">
-                      {h}
+                  <th className="sticky left-0 z-10 bg-slate-50/95 py-2.5 px-3 font-semibold text-xs text-slate-500">
+                    Series
+                  </th>
+                  {modelColumns.map((m) => (
+                    <th
+                      key={m}
+                      className={`whitespace-nowrap py-2.5 px-3 text-right font-semibold text-xs ${
+                        m === "Ensemble"
+                          ? "text-emerald-700"
+                          : m === "SeasonalNaive"
+                            ? "text-amber-700"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {m === "Ensemble" ? "Ensemble ★" : m === "SeasonalNaive" ? "SNaive" : m}
                     </th>
                   ))}
+                  <th className="py-2.5 px-3 text-right font-semibold text-xs text-slate-500" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/70">
-                {(b.per_series ?? []).map((row) => (
-                  <tr key={row.series_id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-2.5 px-3 font-mono text-xs font-bold text-slate-700">{row.series_id}</td>
-                    <td className="py-2.5 px-3 font-mono text-xs text-slate-400">
-                      {row.seasonal_naive.toFixed(3)}
-                    </td>
-                    <td
-                      className={`py-2.5 px-3 font-mono text-xs font-bold ${
-                        row.ensemble > 1.0005
-                          ? "text-rose-600"
-                          : Math.abs(row.ensemble - 1) <= 0.0005
-                            ? "text-slate-500"
-                            : "text-emerald-600"
-                      }`}
-                    >
-                      {row.ensemble.toFixed(3)}
-                    </td>
-                    <td className="py-2.5 px-3 text-xs text-slate-600 font-medium">{row.best_model}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      {row.ensemble > 1.0005 ? (
-                        <span className="chip bg-amber-50 text-amber-700 border-amber-200">
-                          above naive
-                        </span>
-                      ) : Math.abs(row.ensemble - 1) <= 0.0005 ? (
-                        <span className="chip bg-slate-100 text-slate-600 border-slate-200">ties naive</span>
-                      ) : row.ensemble_wins ? (
-                        <span className="chip bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">wins</span>
-                      ) : (
-                        <span className="chip bg-rose-50 text-rose-700 border-rose-200">loses</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {(b.per_series ?? []).map((row) => {
+                  const models = row.models ?? {};
+                  const best = Math.min(
+                    ...modelColumns.filter((m) => m !== "Ensemble").map((m) => models[m] ?? Infinity),
+                  );
+                  return (
+                    <tr key={row.series_id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="sticky left-0 z-10 bg-white py-2.5 px-3 font-mono text-xs font-bold text-slate-700">
+                        {row.series_id}
+                      </td>
+                      {modelColumns.map((m) => {
+                        const v = models[m];
+                        const isBest = m !== "Ensemble" && v !== undefined && v === best;
+                        const isEnsemble = m === "Ensemble";
+                        return (
+                          <td
+                            key={m}
+                            className={`whitespace-nowrap py-2.5 px-3 text-right font-mono text-xs ${
+                              isEnsemble
+                                ? row.ensemble > 1.0005
+                                  ? "font-bold text-rose-600"
+                                  : Math.abs(row.ensemble - 1) <= 0.0005
+                                    ? "font-bold text-slate-500"
+                                    : "font-bold text-emerald-600"
+                                : isBest
+                                  ? "font-bold text-slate-800"
+                                  : "text-slate-400"
+                            }`}
+                          >
+                            {v !== undefined ? v.toFixed(3) : "—"}
+                          </td>
+                        );
+                      })}
+                      <td className="py-2.5 px-3 text-right">
+                        {row.ensemble > 1.0005 ? (
+                          <span className="chip bg-amber-50 text-amber-700 border-amber-200">
+                            above naive
+                          </span>
+                        ) : Math.abs(row.ensemble - 1) <= 0.0005 ? (
+                          <span className="chip bg-slate-100 text-slate-600 border-slate-200">ties naive</span>
+                        ) : row.ensemble_wins ? (
+                          <span className="chip bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">wins</span>
+                        ) : (
+                          <span className="chip bg-rose-50 text-rose-700 border-rose-200">loses</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -263,6 +263,11 @@ def _per_series_payload(per_series: pd.DataFrame) -> list[dict]:
             "best_model": str(best),
             "best_mase": round(float(pool.min()), 4),
             "ensemble_wins": bool(en < sn),
+            # Every model this series was actually scored against, not just the
+            # three summary columns above - the full row the summary is drawn
+            # from, so a reader can see it rather than take "best" on faith.
+            "models": {str(m): round(float(v), 4) for m, v in r.items()
+                      if pd.notna(v)},
         })
     return rows
 

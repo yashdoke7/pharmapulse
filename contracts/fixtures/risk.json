@@ -1,29 +1,40 @@
 {
   "data": {
-    "total_exposure": 1235.85,
+    "total_exposure": 4416.3,
     "currency": "INR",
     "items": [
       {
         "series_id": "N02BE",
         "type": "stockout",
         "severity": "high",
-        "probability": 0.8471,
-        "exposure": 797.05,
+        "probability": 1.0,
+        "exposure": 2425.62,
         "headline": "Paracetamol runs below its reorder point",
-        "detail": "10.4 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
+        "detail": "10.4 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
         "recommended_action": "order_now",
-        "recommended_quantity": 240
+        "recommended_quantity": 610
       },
       {
         "series_id": "R03",
         "type": "stockout",
-        "severity": "medium",
-        "probability": 0.3437,
-        "exposure": 276.24,
+        "severity": "high",
+        "probability": 1.0,
+        "exposure": 1491.5,
         "headline": "Asthma / COPD runs below its reorder point",
-        "detail": "10.9 days of cover. The order has to survive 11 days - a 4-day lead time plus a 7-day gap until the next review.",
+        "detail": "10.9 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
         "recommended_action": "order_now",
-        "recommended_quantity": 60
+        "recommended_quantity": 110
+      },
+      {
+        "series_id": "N05B",
+        "type": "stockout",
+        "severity": "medium",
+        "probability": 0.5569,
+        "exposure": 243.49,
+        "headline": "Anxiolytics runs below its reorder point",
+        "detail": "20.3 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 80
       },
       {
         "series_id": "R06",
@@ -32,17 +43,51 @@
         "probability": 0.99,
         "exposure": 162.56,
         "headline": "Antihistamines has 110 days of cover",
-        "detail": "Capital tied up against a 7-day review period.",
+        "detail": "Capital tied up against a 14-day review period.",
         "recommended_action": "slow_mover",
         "recommended_quantity": 0
+      },
+      {
+        "series_id": "M01AE",
+        "type": "stockout",
+        "severity": "high",
+        "probability": 0.6086,
+        "exposure": 58.12,
+        "headline": "Ibuprofen runs below its reorder point",
+        "detail": "20.5 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 40
+      },
+      {
+        "series_id": "N02BA",
+        "type": "stockout",
+        "severity": "medium",
+        "probability": 0.4095,
+        "exposure": 22.63,
+        "headline": "Aspirin runs below its reorder point",
+        "detail": "16.5 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 30
+      },
+      {
+        "series_id": "N05C",
+        "type": "stockout",
+        "severity": "low",
+        "probability": 0.2228,
+        "exposure": 12.38,
+        "headline": "Sedatives runs below its reorder point",
+        "detail": "23.7 days of cover. The order has to survive 21 days - a 7-day lead time plus a 14-day gap until the next review.",
+        "recommended_action": "order_now",
+        "recommended_quantity": 10
       }
     ]
   },
   "meta": {
     "origin": "observed",
-    "model_version": "2026-09-02T0803Z/ens-v1",
+    "as_of": "2019-10-09",
+    "model_version": "2026-09-03T0543Z/ens-v1",
     "snapshot_id": "sha256:49e4f1c5c3da",
-    "generated_at": "2026-09-02T08:03:43Z",
+    "generated_at": "2026-09-03T05:43:54Z",
     "stale": false,
     "degraded": null,
     "correlation_id": "c-fixture01"

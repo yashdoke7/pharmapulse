@@ -190,6 +190,9 @@ export interface PerSeriesRow {
   best_model: string;
   best_mase: number;
   ensemble_wins: boolean;
+  /** Every model this series was actually scored against - the full row the
+   * summary columns above are drawn from. Keyed by model name, MASE value. */
+  models?: Record<string, number>;
 }
 
 export interface Benchmarks {
