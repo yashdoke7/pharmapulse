@@ -14,15 +14,10 @@ import {
 /**
  * Replay mode.
  *
- * A chosen window of the ACTUAL daily history, stepped one day at a time. Sales
- * post, stock depletes, orders go out, deliveries land after the lead time, and
- * status chips flip. Nothing here is invented - which is why the screen is
- * watermarked with the window being replayed.
+ * A chosen window of the ACTUAL daily history, stepped one day at a time.
+ * Redesigned into a clinical simulation control deck.
  */
 
-// 320ms was unwatchable - a quarter went past in half a minute and nobody
-// could see a delivery land. Default to a pace where each day is legible, and
-// let the presenter speed up once the point has landed.
 const SPEEDS = [
   { label: "1 day / 1.5s", ms: 1500 },
   { label: "1 day / 0.7s", ms: 700 },
@@ -70,7 +65,6 @@ export function LiveOps() {
     }
   }, [window_, stop]);
 
-  // Polling on a timer rather than websockets: it cannot break on stage.
   useEffect(() => {
     if (!running || !snap?.session_id) return;
     timer.current = window.setInterval(async () => {
@@ -102,7 +96,7 @@ export function LiveOps() {
         title="Replay"
         subtitle="The real 2019 history, replayed one day per tick. Nothing is simulated except the shelf."
         right={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200/70">
             {WINDOWS.map((w) => (
               <button
                 key={w.from}
@@ -111,10 +105,10 @@ export function LiveOps() {
                   setSnap(null);
                   setWindow(w);
                 }}
-                className={`px-3 py-1.5 text-sm transition-colors ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-200 ${
                   w.from === window_.from
-                    ? "bg-wash-strong text-ink"
-                    : "text-ink-mute hover:text-ink"
+                    ? "bg-white text-medical-teal-deep shadow-xs"
+                    : "text-slate-500 hover:text-ink"
                 }`}
               >
                 {w.label}
@@ -126,49 +120,54 @@ export function LiveOps() {
 
       {error ? <ErrorCard error={error} /> : null}
 
+      {/* Simulation Controller Card */}
       <div className="panel pad relative overflow-hidden">
-        <div className="pointer-events-none absolute right-4 top-3 select-none text-[10px] font-bold uppercase tracking-[0.28em] text-ink/15">
-          Replay · {window_.label}
+        <div className="pointer-events-none absolute right-5 top-4 select-none font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-medical-teal/30">
+          Simulation Deck · {window_.label}
         </div>
 
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <div className="eyebrow">Simulated date</div>
-            <div className="figure text-[28px] font-medium leading-none mt-1 tabular-nums">
+            <div className="eyebrow text-slate-500">Simulated Date</div>
+            <div className="figure text-[32px] sm:text-[38px] font-extrabold text-ink leading-none mt-1.5 tabular-nums">
               {snap?.current_date ?? "—"}
             </div>
-            <div className="fine mt-1">
+            <div className="fine mt-1.5 text-xs font-medium text-slate-500">
               {snap
                 ? `day ${snap.day_index} of ${snap.total_days} · ${window_.note}`
                 : `${window_.label} · ${window_.note}`}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             {!running ? (
-              <button className="btn-primary" onClick={start}>
+              <button className="btn-primary shadow-sm hover:shadow-glow" onClick={start}>
+                <span className="h-2 w-2 rounded-full bg-white" />
                 {snap && !snap.finished ? "Resume" : "Start replay"}
               </button>
             ) : (
-              <button className="btn-ghost" onClick={stop}>
+              <button className="btn-ghost border-amber-300 text-amber-700 bg-amber-50" onClick={stop}>
                 Pause
               </button>
             )}
-            <div className="flex items-center border border-line">
+
+            {/* Speed toggle */}
+            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
               {SPEEDS.map((sp) => (
                 <button
                   key={sp.label}
                   onClick={() => setSpeed(sp)}
-                  className={`px-2.5 py-1.5 text-xs transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
                     sp.ms === speed.ms
-                      ? "bg-wash-strong text-ink"
-                      : "text-ink-mute hover:text-ink"
+                      ? "bg-white text-medical-teal-deep shadow-xs"
+                      : "text-slate-500 hover:text-ink"
                   }`}
                 >
                   {sp.label}
                 </button>
               ))}
             </div>
+
             {snap ? (
               <button
                 className="btn-ghost"
@@ -187,12 +186,11 @@ export function LiveOps() {
                 Step 1 day
               </button>
             ) : null}
+
             {snap ? (
               <button
                 className="btn-ghost"
                 onClick={async () => {
-                  // Pause the poller first: two concurrent ticks on one
-                  // session would interleave inside the state machine.
                   const wasRunning = running;
                   stop();
                   const r = await api.replayTick(snap.session_id, 7);
@@ -210,25 +208,27 @@ export function LiveOps() {
           </div>
         </div>
 
-        <div className="mt-4 h-1.5 w-full overflow-hidden bg-wash">
+        {/* Progress bar */}
+        <div className="mt-5 h-2 w-full rounded-full overflow-hidden bg-slate-100">
           <div
-            className="h-full bg-signal-green transition-[width] duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-medical-teal to-medical-blue transition-[width] duration-300 shadow-xs"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        {snap ? (
+        {/* Mini scorecard tiles */}
+        {snap && snap.scorecard ? (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Mini label="Orders placed" value={String(snap.scorecard.orders_placed)} />
+            <Mini label="Orders placed" value={String(snap.scorecard.orders_placed ?? 0)} />
             <Mini
               label="Units short"
-              value={units(snap.scorecard.units_short)}
-              tone={snap.scorecard.units_short > 0 ? "rose" : "mint"}
+              value={units(snap.scorecard.units_short ?? 0)}
+              tone={(snap.scorecard.units_short ?? 0) > 0 ? "rose" : "mint"}
             />
-            <Mini label="Holding cost" value={inr(snap.scorecard.holding_cost)} />
+            <Mini label="Holding cost" value={inr(snap.scorecard.holding_cost ?? 0)} />
             <Mini
               label="Total cost"
-              value={inr(snap.scorecard.total_cost)}
+              value={inr(snap.scorecard.total_cost ?? 0)}
               tone="mint"
             />
           </div>
@@ -236,42 +236,47 @@ export function LiveOps() {
       </div>
 
       {snap ? (
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Live Shelf table */}
           <div className="panel overflow-hidden lg:col-span-2">
-            <div className="border-b border-line px-5 py-3">
-              <div className="eyebrow">Shelf, right now</div>
+            <div className="border-b border-slate-100 px-5 sm:px-6 py-3.5 bg-slate-50/50">
+              <div className="eyebrow text-slate-600">Shelf, right now</div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-line text-left">
+                  <tr className="border-b border-slate-100 bg-slate-50/30 text-left">
                     {["Product", "On hand", "Incoming", "Cover", "Lost", "Status"].map((h) => (
-                      <th key={h} className="px-4 py-2.5 font-medium text-ink-mute">
+                      <th key={h} className="px-4 py-2.5 font-semibold text-xs text-slate-500">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100/70">
                   {snap.positions.map((p) => (
-                    <tr key={p.series_id} className="border-b border-line-soft last:border-0">
-                      <td className="px-4 py-2.5 font-mono text-ink-soft">{p.series_id}</td>
-                      <td className="px-4 py-2.5 tabular-nums text-ink">
+                    <tr key={p.series_id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-700">{p.series_id}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs font-semibold text-ink">
                         {units(p.stock_on_hand)}
                       </td>
-                      <td className="px-4 py-2.5 tabular-nums text-ink-faint">
-                        {p.incoming > 0 ? `+${units(p.incoming)}` : "—"}
+                      <td className="px-4 py-2.5 font-mono text-xs text-slate-400">
+                        {p.incoming > 0 ? (
+                          <span className="text-blue-600 font-bold">+{units(p.incoming)}</span>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td
-                        className={`px-4 py-2.5 tabular-nums ${
-                          p.days_of_cover < 5 ? "text-signal-red" : "text-ink-soft"
+                        className={`px-4 py-2.5 font-mono text-xs ${
+                          p.days_of_cover < 5 ? "text-rose-600 font-bold" : "text-slate-600"
                         }`}
                       >
                         {p.days_of_cover > 900 ? "—" : `${p.days_of_cover.toFixed(1)} d`}
                       </td>
                       <td
-                        className={`px-4 py-2.5 tabular-nums ${
-                          p.units_short > 0 ? "text-signal-red" : "text-ink-pale"
+                        className={`px-4 py-2.5 font-mono text-xs ${
+                          p.units_short > 0 ? "text-rose-600 font-bold" : "text-slate-300"
                         }`}
                       >
                         {p.units_short > 0 ? units(p.units_short) : "—"}
@@ -286,27 +291,28 @@ export function LiveOps() {
             </div>
           </div>
 
+          {/* Live event feed */}
           <div className="panel pad">
-            <div className="eyebrow">Event feed</div>
-            <div className="mt-3 max-h-[340px] space-y-2 overflow-y-auto pr-1">
+            <div className="eyebrow text-slate-500">Event feed</div>
+            <div className="mt-3.5 max-h-[340px] space-y-2 overflow-y-auto pr-1">
               {feed.length === 0 ? (
-                <p className="fine">Nothing yet. Press start.</p>
+                <p className="fine text-slate-400">Nothing yet. Press start.</p>
               ) : (
                 feed.map((e, i) => (
-                  <div key={i} className="flex gap-2 text-xs">
+                  <div key={i} className="flex gap-2.5 text-xs rounded-xl bg-slate-50/60 p-2.5 border border-slate-100">
                     <span
-                      className={`mt-1 h-1.5 w-1.5 shrink-0 ${
+                      className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
                         e.type === "stockout"
-                          ? "bg-signal-red"
+                          ? "bg-rose-500 animate-pulse"
                           : e.type === "delivery"
-                            ? "bg-signal-blue"
-                            : "bg-signal-green"
+                            ? "bg-blue-500"
+                            : "bg-emerald-500"
                       }`}
                     />
                     <div>
-                      <span className="font-mono text-ink-faint">{e.date}</span>{" "}
-                      <span className="font-mono text-ink-mute">{e.series_id}</span>
-                      <div className="text-ink-soft">{e.message}</div>
+                      <span className="font-mono text-[10.5px] text-slate-400">{e.date}</span>{" "}
+                      <span className="font-mono text-[11px] font-bold text-slate-700">{e.series_id}</span>
+                      <div className="text-slate-600 mt-0.5">{e.message}</div>
                     </div>
                   </div>
                 ))
@@ -316,21 +322,18 @@ export function LiveOps() {
         </div>
       ) : null}
 
+      {/* Business Case Comparison */}
       <div>
         <SectionTitle
           title="What it was worth"
           subtitle="Our policy against a min/max policy, replayed over the identical real days."
         />
         {businessCase.isLoading ? (
-          <Loading label="Simulating both policies" />
+          <Loading label="Simulating policies across history" />
         ) : businessCase.isError ? (
           <ErrorCard error={businessCase.error} />
         ) : bc ? (
-          <div className="panel pad border-signal-green">
-            {/* Four policies, weakest first. Showing only min/max would be the
-                easiest result in the project to discount: it is the "no system
-                at all" case, and anyone who works in inventory knows every ERP
-                carries safety stock. The rungs we lose ship too. */}
+          <div className="panel pad border border-emerald-200/80 bg-gradient-to-b from-white to-emerald-50/20">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Policy label="PharmaPulse" s={bc.pharmapulse} best />
               {(bc.ladder ?? []).map((row) => (
@@ -343,14 +346,12 @@ export function LiveOps() {
                 />
               ))}
             </div>
-            <p className="fine mt-4 text-xs">{bc.method}</p>
+            <p className="fine mt-4 text-xs text-slate-400">{bc.method}</p>
 
-            {/* Nobody outside inventory knows what "min/max" or "lost margin"
-                mean, and a business case nobody can read is not a business
-                case. Spelled out on the screen rather than in a doc. */}
-            <div className="mt-5 border-t border-line pt-4">
-              <div className="eyebrow">Reading this comparison</div>
-              <dl className="mt-3 grid gap-x-8 gap-y-3 text-xs sm:grid-cols-2">
+            {/* Explanatory terms */}
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <div className="eyebrow text-slate-500">Reading this comparison</div>
+              <dl className="mt-3.5 grid gap-x-8 gap-y-4 text-xs sm:grid-cols-2">
                 {[
                   [
                     "Min/max on the mean — the floor",
@@ -389,9 +390,9 @@ export function LiveOps() {
                     "Every policy sizes off a trailing window of real sales, so the comparison isolates the decision rule. That means none of them can anticipate a seasonal turn — on 1 January the last 180 days are autumn. Anticipating it is what the forecast layer is for, and exercising it here needs a forecast produced at each review point rather than one vintage.",
                   ],
                 ].map(([term, body]) => (
-                  <div key={term}>
-                    <dt className="font-medium text-ink">{term}</dt>
-                    <dd className="mt-0.5 text-ink-mute">{body}</dd>
+                  <div key={term} className="rounded-xl bg-slate-50/60 p-3 border border-slate-100">
+                    <dt className="font-bold text-ink">{term}</dt>
+                    <dd className="mt-1 text-slate-500 leading-relaxed">{body}</dd>
                   </div>
                 ))}
               </dl>
@@ -424,24 +425,28 @@ function Policy({
 }) {
   return (
     <div
-      className={`border px-4 py-3 ${
-        best ? "border-signal-green bg-signal-green/[0.04]" : worse ? "border-signal-red" : "border-line"
+      className={`rounded-2xl border p-4 transition-all ${
+        best
+          ? "border-emerald-300 bg-emerald-50/50 shadow-xs"
+          : worse
+            ? "border-slate-200/90 bg-white"
+            : "border-slate-200/90 bg-white"
       }`}
     >
-      <div className="eyebrow min-h-[2.2em]">{label}</div>
+      <div className="eyebrow min-h-[2.2em] text-[10px] text-slate-500">{label}</div>
       <div
-        className={`mt-1 text-2xl font-semibold tabular-nums ${
-          best ? "text-signal-green" : "text-ink-soft"
+        className={`mt-1 text-2xl font-extrabold font-mono tabular-nums ${
+          best ? "text-emerald-700" : "text-ink"
         }`}
       >
         {inr(s.total_cost)}
       </div>
       {delta ? (
         <div
-          className={`mt-1 inline-block px-1.5 py-0.5 font-mono text-[10px] ${
+          className={`mt-1.5 inline-block px-2 py-0.5 rounded-full font-mono text-[10.5px] font-semibold ${
             delta.we_win
-              ? "bg-signal-green/[0.10] text-signal-green"
-              : "bg-signal-amber/[0.12] text-signal-amber"
+              ? "bg-emerald-100/90 text-emerald-800"
+              : "bg-amber-100/90 text-amber-800"
           }`}
         >
           {delta.we_win
@@ -449,18 +454,18 @@ function Policy({
             : `they are ${Math.abs(delta.saving_pct).toFixed(1)}% cheaper`}
         </div>
       ) : null}
-      <dl className="mt-2 space-y-1 text-xs text-ink-mute">
+      <dl className="mt-3 space-y-1.5 text-xs text-slate-500 border-t border-slate-100 pt-2">
         <div className="flex justify-between">
           <dt>lost margin</dt>
-          <dd className="font-mono">{inr(s.shortage_cost)}</dd>
+          <dd className="font-mono font-medium text-slate-700">{inr(s.shortage_cost)}</dd>
         </div>
         <div className="flex justify-between">
           <dt>holding</dt>
-          <dd className="font-mono">{inr(s.holding_cost)}</dd>
+          <dd className="font-mono font-medium text-slate-700">{inr(s.holding_cost)}</dd>
         </div>
         <div className="flex justify-between">
           <dt>units unsupplied</dt>
-          <dd className="font-mono">{units(s.units_short)}</dd>
+          <dd className="font-mono font-medium text-slate-700">{units(s.units_short)}</dd>
         </div>
       </dl>
     </div>
@@ -477,11 +482,16 @@ function Mini({
   tone?: "mint" | "rose";
 }) {
   const cls =
-    tone === "mint" ? "text-signal-green" : tone === "rose" ? "text-signal-red" : "text-ink";
+    tone === "mint"
+      ? "text-emerald-700 bg-emerald-50/70 border-emerald-200/70"
+      : tone === "rose"
+        ? "text-rose-700 bg-rose-50/70 border-rose-200/70"
+        : "text-ink bg-slate-50 border-slate-200/70";
+
   return (
-    <div className="border-t border-line pt-2">
-      <div className="eyebrow">{label}</div>
-      <div className={`figure mt-1 text-[19px] font-medium leading-none ${cls}`}>{value}</div>
+    <div className={`rounded-xl border p-3 ${cls}`}>
+      <div className="eyebrow text-[10px] text-slate-500">{label}</div>
+      <div className="figure mt-1 text-[20px] font-bold leading-none">{value}</div>
     </div>
   );
 }

@@ -8,14 +8,13 @@ import { shortDate, units } from "./ui";
  * needs it.
  *
  * Three bands, widest to narrowest: 5-95, 10-90, 25-75, with the median as a
- * solid line. Reading the width of the fan IS the product - the decision layer
- * consumes that spread, so it has to be the most visible thing on the screen.
+ * solid line in Medical Teal.
  */
 
 const BANDS: [string, string, number][] = [
-  ["0.05", "0.95", 0.1],
-  ["0.10", "0.90", 0.16],
-  ["0.25", "0.75", 0.26],
+  ["0.05", "0.95", 0.12],
+  ["0.10", "0.90", 0.22],
+  ["0.25", "0.75", 0.36],
 ];
 
 interface Props {
@@ -24,13 +23,13 @@ interface Props {
   historyWindow?: number;
 }
 
-export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
+export function FanChart({ data, height = 340, historyWindow = 26 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
 
   const W = 900;
   const H = height;
-  const pad = { top: 18, right: 18, bottom: 34, left: 52 };
+  const pad = { top: 20, right: 20, bottom: 36, left: 54 };
 
   const model = useMemo(() => {
     const history = data.history.slice(-historyWindow);
@@ -63,17 +62,17 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
     const y = (v: number) =>
       pad.top + (1 - (v - lo) / (hi - lo)) * (H - pad.top - pad.bottom);
 
-    // The last bucket is almost always TRUNCATED - the file ends mid-week and
-    // mid-month, so that point is 2 days of sales, not 7. Anchoring the fan to
-    // it dragged the start of the forecast down to the partial value and then
-    // jumped back up, which reads as the model ignoring its own last
-    // observation. Anchor on the last COMPLETE bucket instead and draw the
-    // partial tail as a dashed stub, so it is visible but not load-bearing.
     let anchorIndex = history.length - 1;
     while (anchorIndex > 0 && history[anchorIndex].completeness < 1) anchorIndex--;
 
     return {
-      history, forecast, xs, x, y, lo, hi,
+      history,
+      forecast,
+      xs,
+      x,
+      y,
+      lo,
+      hi,
       joinIndex: history.length - 1,
       anchorIndex,
     };
@@ -98,7 +97,6 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
     .map((h, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(h.y)}`)
     .join(" ");
 
-  // The truncated tail, drawn dashed so nobody reads it as a real fall.
   const partialPath =
     anchorIndex < history.length - 1
       ? history
@@ -126,10 +124,10 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
   const hoverHistory = hover !== null && hover <= joinIndex ? history[hover] : null;
 
   return (
-    <div ref={wrapRef} className="relative w-full">
+    <div ref={wrapRef} className="relative w-full overflow-hidden">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
+        className="w-full select-none"
         style={{ height }}
         onMouseLeave={() => setHover(null)}
         onMouseMove={(e) => {
@@ -150,14 +148,19 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
             patternTransform="rotate(45)"
             patternUnits="userSpaceOnUse"
           >
-            <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="2" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#94A3B8" strokeWidth="2" />
           </pattern>
           <linearGradient id="histFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1C4E7A" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#1C4E7A" stopOpacity="0" />
+            <stop offset="0%" stopColor="#2F80ED" stopOpacity="0.20" />
+            <stop offset="100%" stopColor="#2F80ED" stopOpacity="0.01" />
+          </linearGradient>
+          <linearGradient id="fanGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0F9FA8" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#087F86" stopOpacity="0.4" />
           </linearGradient>
         </defs>
 
+        {/* Horizontal grid lines */}
         {ticks.map((t, i) => (
           <g key={i}>
             <line
@@ -165,58 +168,78 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
               x2={W - pad.right}
               y1={y(t)}
               y2={y(t)}
-              stroke="rgba(20,17,13,.08)"
+              stroke="rgba(15, 159, 168, 0.08)"
               strokeWidth="1"
+              strokeDasharray={i === 0 ? "none" : "3 3"}
             />
-            <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="fill-ink-faint" fontSize="11">
+            <text
+              x={pad.left - 10}
+              y={y(t) + 4}
+              textAnchor="end"
+              className="fill-slate-400 font-mono"
+              fontSize="10.5"
+            >
               {units(t)}
             </text>
           </g>
         ))}
 
-        {/* forecast bands, widest first so narrower ones sit on top */}
+        {/* Forecast bands: widest first so narrower ones sit on top */}
         {BANDS.map(([loKey, hiKey, opacity]) => (
-          <path key={loKey} d={bandPath(loKey, hiKey)} fill="#14110D" opacity={opacity} />
+          <path
+            key={loKey}
+            d={bandPath(loKey, hiKey)}
+            fill="#0F9FA8"
+            opacity={opacity}
+          />
         ))}
 
-        {/* history */}
+        {/* History actual sales */}
         <path
           d={`${historyPath} L ${x(joinIndex)} ${H - pad.bottom} L ${x(0)} ${H - pad.bottom} Z`}
           fill="url(#histFill)"
         />
-        <path d={historyPath} fill="none" stroke="#1C4E7A" strokeWidth="2" />
+        <path
+          d={historyPath}
+          fill="none"
+          stroke="#2F80ED"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
         {partialPath ? (
           <>
             <path
               d={partialPath}
               fill="none"
-              stroke="#1C4E7A"
-              strokeWidth="1.5"
+              stroke="#2F80ED"
+              strokeWidth="1.8"
               strokeDasharray="4 3"
-              opacity={0.5}
+              opacity={0.6}
             />
             <circle
               cx={x(joinIndex)}
               cy={y(history[joinIndex].y)}
-              r={3.5}
-              fill="#F7F4EE"
-              stroke="#1C4E7A"
-              strokeWidth="1.5"
-              opacity={0.7}
+              r={4}
+              fill="#FFFFFF"
+              stroke="#2F80ED"
+              strokeWidth="2"
             />
             <text
               x={x(joinIndex)}
               y={y(history[joinIndex].y) + 18}
               textAnchor="middle"
               fontSize="9"
-              fill="#8A6410"
+              fill="#D97706"
+              fontWeight="600"
             >
               part period
             </text>
           </>
         ) : null}
 
-        {/* partial buckets are shown, never hidden */}
+        {/* Partial buckets marker */}
         {history.map((h, i) =>
           h.completeness < 1 ? (
             <rect
@@ -231,42 +254,69 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
           ) : null,
         )}
 
-        <path d={medianPath} fill="none" stroke="#14110D" strokeWidth="2.5" />
+        {/* Median forecast line */}
+        <path
+          d={medianPath}
+          fill="none"
+          stroke="#087F86"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
 
-        {/* the cutoff: everything right of this line is a forecast */}
+        {/* The cutoff: everything right of this line is a forecast */}
         <line
           x1={x(joinIndex)}
           x2={x(joinIndex)}
           y1={pad.top}
           y2={H - pad.bottom}
-          stroke="rgba(20,17,13,.40)"
-          strokeWidth="1"
+          stroke="#0F9FA8"
+          strokeWidth="1.5"
           strokeDasharray="4 4"
         />
-        <text x={x(joinIndex) + 6} y={pad.top + 11} fontSize="10" className="fill-ink-mute">
+        <rect
+          x={x(joinIndex) + 4}
+          y={pad.top + 2}
+          width="60"
+          height="16"
+          rx="4"
+          fill="rgba(15, 159, 168, 0.12)"
+        />
+        <text
+          x={x(joinIndex) + 34}
+          y={pad.top + 13}
+          textAnchor="middle"
+          fontSize="9.5"
+          fontWeight="600"
+          className="fill-medical-teal-deep uppercase tracking-wider font-mono"
+        >
           forecast
         </text>
 
+        {/* Hover vertical crosshair */}
         {hover !== null && xs[hover] ? (
           <line
             x1={x(hover)}
             x2={x(hover)}
             y1={pad.top}
             y2={H - pad.bottom}
-            stroke="rgba(20,17,13,.35)"
-            strokeWidth="1"
+            stroke="#0F9FA8"
+            strokeOpacity="0.5"
+            strokeWidth="1.5"
+            strokeDasharray="2 2"
           />
         ) : null}
 
+        {/* X-axis date labels */}
         {xs.map((ds, i) =>
           i % Math.ceil(xs.length / 8) === 0 ? (
             <text
               key={ds + i}
               x={x(i)}
-              y={H - 12}
+              y={H - 14}
               textAnchor="middle"
               fontSize="10"
-              className="fill-ink-faint"
+              className="fill-slate-400 font-mono"
             >
               {shortDate(ds)}
             </text>
@@ -274,50 +324,79 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
         )}
       </svg>
 
+      {/* Modern floating tooltip */}
       {hover !== null && (hoverPoint || hoverHistory) ? (
         <div
-          className="pointer-events-none absolute top-2 border border-line bg-paper-raised px-3 py-2 text-xs shadow-xl"
+          className="pointer-events-none absolute top-4 z-20 rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur-md px-4 py-3 text-xs shadow-float"
           style={{
-            left: `calc(${(x(hover) / W) * 100}% + 8px)`,
-            transform: x(hover) / W > 0.65 ? "translateX(-108%)" : undefined,
+            left: `calc(${(x(hover) / W) * 100}% + 12px)`,
+            transform: x(hover) / W > 0.65 ? "translateX(-112%)" : undefined,
           }}
         >
-          <div className="font-semibold text-ink">{shortDate(xs[hover])}</div>
+          <div className="font-bold text-ink text-sm flex items-center gap-2">
+            <span>{shortDate(xs[hover])}</span>
+            <span className="text-[10px] font-mono text-slate-400 font-normal">{xs[hover]}</span>
+          </div>
+
           {hoverHistory ? (
-            <div className="mt-1 text-ink-soft">
-              actual <span className="font-mono text-ink">{units(hoverHistory.y)}</span>
+            <div className="mt-2 flex items-center justify-between gap-4 text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-medical-blue" />
+                Actual Sales
+              </span>
+              <span className="font-mono font-bold text-ink text-sm">
+                {units(hoverHistory.y)}
+              </span>
               {hoverHistory.completeness < 1 ? (
-                <span className="ml-1 text-signal-amber">(partial)</span>
+                <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                  partial
+                </span>
               ) : null}
             </div>
           ) : null}
+
           {hoverPoint ? (
-            <table className="mt-1">
-              <tbody>
-                {["0.95", "0.75", "0.50", "0.25", "0.05"].map((q) => (
-                  <tr key={q}>
-                    <td className="pr-3 text-ink-mute">
-                      {q === "0.50" ? "median" : `p${Math.round(Number(q) * 100)}`}
-                    </td>
-                    <td
-                      className={`text-right font-mono ${
-                        q === "0.50" ? "text-signal-green" : "text-ink"
-                      }`}
-                    >
-                      {units(hoverPoint.q[q])}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-medical-teal-deep mb-1 font-mono">
+                Conformal Quantiles
+              </div>
+              <table className="w-full">
+                <tbody>
+                  {["0.95", "0.75", "0.50", "0.25", "0.05"].map((q) => (
+                    <tr key={q} className="py-0.5">
+                      <td className="pr-4 text-slate-500 font-medium">
+                        {q === "0.50" ? (
+                          <span className="text-medical-teal-deep font-semibold flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-medical-teal" />
+                            Median (p50)
+                          </span>
+                        ) : (
+                          `p${Math.round(Number(q) * 100)}`
+                        )}
+                      </td>
+                      <td
+                        className={`text-right font-mono font-medium ${
+                          q === "0.50"
+                            ? "text-medical-teal-deep font-bold text-sm"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        {units(hoverPoint.q[q])}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : null}
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-ink-mute">
-        <Legend color="#1C4E7A" label="actual" />
-        <Legend color="#14110D" label="median forecast" />
-        <Legend color="#14110D" label="50% / 80% / 90% bands" faded />
+      {/* Chart legends */}
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-[11.5px] text-slate-500 px-2">
+        <Legend color="#2F80ED" label="Actual Sales History" />
+        <Legend color="#087F86" label="Ensemble Median" />
+        <Legend color="#0F9FA8" label="Quantile Bands (50% / 80% / 90%)" faded />
       </div>
     </div>
   );
@@ -325,12 +404,12 @@ export function FanChart({ data, height = 320, historyWindow = 26 }: Props) {
 
 function Legend({ color, label, faded }: { color: string; label: string; faded?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center gap-2">
       <span
-        className="inline-block h-2 w-4 rounded"
-        style={{ background: color, opacity: faded ? 0.3 : 1 }}
+        className="inline-block h-2.5 w-4 rounded-sm"
+        style={{ background: color, opacity: faded ? 0.35 : 1 }}
       />
-      {label}
+      <span className="font-medium text-slate-600">{label}</span>
     </span>
   );
 }

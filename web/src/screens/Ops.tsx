@@ -7,23 +7,21 @@ export function Ops() {
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: () => api.metrics() });
 
   if (metrics.isError) return <ErrorCard error={metrics.error} />;
-  if (metrics.isLoading || !metrics.data) return <Loading label="Loading metrics" />;
+  if (metrics.isLoading || !metrics.data) return <Loading label="Loading benchmark metrics" />;
 
   const { benchmarks: b, runtime } = metrics.data.data;
   const board = b.leaderboard ?? [];
   const shipped = board.find((m) => m.is_shipped);
   const benchmark = board.find((m) => m.is_benchmark);
   const ablation = b.ablations?.selection_vs_combination;
-  const worst = Math.max(...board.map((m) => m.mase));
+  const worst = Math.max(...board.map((m) => m.mase), 1);
 
-  // A MASE of exactly 1.000 is a TIE with the naive baseline, not a loss, and
-  // conflating the two made this screen say "3 of 8" while the deck said two.
   const rows = b.per_series ?? [];
   const losses = rows.filter((r) => r.ensemble > 1.0005).length;
   const ties = rows.filter((r) => Math.abs(r.ensemble - 1) <= 0.0005).length;
 
   const improvement =
-    shipped && benchmark
+    shipped && benchmark && benchmark.mase > 0
       ? ((benchmark.mase - shipped.mase) / benchmark.mase) * 100
       : 0;
 
@@ -34,26 +32,29 @@ export function Ops() {
         subtitle="Every number here was written by the benchmark script from a clean clone. None of it is typed by a human."
       />
 
-      {/* This screen was unreadable to anyone who had not built it - a wall of
-          MASE figures with no statement of what they meant. The answer goes
-          first, in words; the numbers that support it come after. */}
-      <div className="panel pad border-l-2 border-l-ink">
-        <div className="eyebrow">In plain terms</div>
-        <p className="mt-2 max-w-4xl text-[15px] leading-relaxed text-ink-soft">
+      {/* "In plain terms" Executive Card */}
+      <div className="rounded-3xl border border-medical-teal/25 bg-gradient-to-br from-white via-white to-medical-cyan/20 p-6 sm:p-7 shadow-card">
+        <div className="inline-flex items-center gap-2 rounded-full bg-medical-cyan/70 px-3 py-1 text-xs font-semibold text-medical-teal-deep border border-medical-teal/20 mb-3 font-mono">
+          <span className="h-2 w-2 rounded-full bg-medical-teal animate-pulse" />
+          Executive Summary
+        </div>
+        <p className="mt-2 max-w-4xl text-[15px] sm:text-[16px] leading-relaxed text-slate-700">
           The question this screen answers is{" "}
-          <strong className="text-ink">
+          <strong className="text-ink font-bold">
             “should anyone act on the numbers the other screens produce?”
           </strong>{" "}
           Our forecasts are{" "}
-          <strong className="text-signal-green">{improvement.toFixed(0)}% more accurate</strong>{" "}
+          <strong className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            {improvement.toFixed(0)}% more accurate
+          </strong>{" "}
           than the standard benchmark — repeating what happened this week last year, which
           is what a pharmacy without a system effectively does. When we say we are 80% sure
           of a range, the truth lands inside it{" "}
-          <strong className="text-ink">
+          <strong className="text-ink font-bold font-mono">
             {((b.calibration?.achieved_after ?? 0) * 100).toFixed(0)}%
           </strong>{" "}
           of the time, so the confidence is close to honest. And on{" "}
-          <strong className="text-ink">
+          <strong className="text-ink font-bold">
             {losses} of {rows.length}
           </strong>{" "}
           products we are still worse than repeating last week
@@ -65,12 +66,13 @@ export function Ops() {
           ) : null}{" "}
           — those are named below rather than hidden.
         </p>
-        <p className="fine mt-3 max-w-4xl text-xs">
+        <p className="fine mt-3 max-w-4xl text-xs text-slate-400">
           Everything under this line is the working. It is here so the claim can be
           checked, not because a buyer has to read it.
         </p>
       </div>
 
+      {/* 4 Readout cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Readout
           label="Ensemble MASE"
@@ -81,7 +83,7 @@ export function Ops() {
         <Readout
           label="Benchmark to beat"
           value={benchmark?.mase.toFixed(3) ?? "—"}
-          hint="SeasonalNaive — the calendar alone"
+          hint="SeasonalNaive — calendar baseline"
         />
         <Readout
           label="Interval coverage"
@@ -101,9 +103,9 @@ export function Ops() {
       </div>
 
       {ablation ? (
-        <div className="panel pad border-signal-green">
-          <div className="eyebrow text-signal-green">The result worth leading with</div>
-          <h3 className="mt-2 text-lg font-semibold text-ink">
+        <div className="panel pad border-emerald-200/80 bg-gradient-to-b from-white to-emerald-50/20">
+          <div className="eyebrow text-emerald-700">The result worth leading with</div>
+          <h3 className="mt-2 text-lg font-bold text-ink">
             We implemented the obvious approach — pick each product's best model — and
             measured it losing.
           </h3>
@@ -116,7 +118,7 @@ export function Ops() {
             <Compare label="Combine them (median)" value={ablation.combination} best />
             <Compare label="Perfect hindsight (bound)" value={ablation.oracle} />
           </div>
-          <p className="fine mt-3">
+          <p className="fine mt-3 text-slate-500 text-xs">
             With ~300 weekly observations, "best on the last fold" is mostly noise, so
             selection chases noise. Independent models make independent mistakes, and the
             median cancels them.
@@ -124,44 +126,42 @@ export function Ops() {
         </div>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="panel pad">
-          <div className="eyebrow">Model leaderboard</div>
-          <p className="fine mt-1">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Model leaderboard */}
+        <div className="panel pad lg:col-span-2">
+          <div className="eyebrow text-slate-500">Model leaderboard</div>
+          <p className="fine mt-1 text-slate-400 text-xs">
             {String(b.protocol?.grain)} grain, horizon {String(b.protocol?.horizon)},{" "}
             {String(b.protocol?.folds)} rolling folds, seed {String(b.protocol?.seed)}.
           </p>
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-4 space-y-2">
             {board.map((m) => (
-              <div key={m.model} className="flex items-center gap-3">
+              <div key={m.model} className="flex items-center gap-3 py-1">
                 <span
-                  className={`w-48 shrink-0 text-sm ${
+                  className={`w-44 shrink-0 text-xs font-semibold ${
                     m.is_shipped
-                      ? "font-semibold text-signal-green"
+                      ? "text-emerald-700 font-bold flex items-center gap-1.5"
                       : m.is_benchmark
-                        ? "font-medium text-signal-amber"
-                        : m.is_bound
-                          ? "text-ink-faint"
-                          : "text-ink-soft"
+                        ? "text-amber-700 font-semibold"
+                        : "text-slate-600"
                   }`}
                 >
+                  {m.is_shipped ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> : null}
                   {m.model}
                 </span>
-                <div className="h-2.5 flex-1 overflow-hidden bg-wash">
+                <div className="h-3 flex-1 rounded-full overflow-hidden bg-slate-100">
                   <div
-                    className={`h-full ${
+                    className={`h-full rounded-full transition-all duration-300 ${
                       m.is_shipped
-                        ? "bg-signal-green"
+                        ? "bg-emerald-600"
                         : m.is_benchmark
-                          ? "bg-signal-amber"
-                          : m.is_bound
-                            ? "bg-ink-pale"
-                            : "bg-ink-faint"
+                          ? "bg-amber-500"
+                          : "bg-slate-300"
                     }`}
                     style={{ width: `${(m.mase / worst) * 100}%` }}
                   />
                 </div>
-                <span className="w-14 text-right font-mono text-sm text-ink-soft">
+                <span className="w-14 text-right font-mono text-xs font-bold text-slate-700">
                   {m.mase.toFixed(3)}
                 </span>
               </div>
@@ -169,22 +169,18 @@ export function Ops() {
           </div>
         </div>
 
-        {/* Moved here from the Why screen. It is a GLOBAL result - it was
-            identical on all eight products there, which made it look broken.
-            Evidence is where a global result belongs. */}
+        {/* Reliability Diagram */}
         <div className="panel pad lg:col-span-2">
-          <div className="eyebrow">Are our own confidence intervals honest?</div>
-          <p className="fine mt-1 max-w-3xl">
+          <div className="eyebrow text-slate-500">Are our own confidence intervals honest?</div>
+          <p className="fine mt-1 max-w-3xl text-slate-500 text-xs">
             Every interval we ever stated, checked against what actually happened. A
             stated{" "}
-            {((b.calibration?.nominal ?? 0.8) * 100).toFixed(0)}% band covered{" "}
-            <strong className="text-signal-red">
+            <strong className="text-ink font-semibold">{((b.calibration?.nominal ?? 0.8) * 100).toFixed(0)}%</strong> band covered{" "}
+            <strong className="text-rose-600 font-semibold">
               {((b.calibration?.achieved_before ?? 0) * 100).toFixed(1)}%
             </strong>{" "}
-            of outcomes — too wide, which sounds like the safe direction and is not: an
-            over-wide band pushes the order quantity up and the buyer pays holding cost
-            for confidence the model has not earned. Conformal correction pulls it to{" "}
-            <strong className="text-signal-green">
+            of outcomes — too wide. Conformal correction pulls it to{" "}
+            <strong className="text-emerald-600 font-semibold">
               {((b.calibration?.achieved_after ?? 0) * 100).toFixed(1)}%
             </strong>
             . Closer to the diagonal is better.
@@ -198,69 +194,57 @@ export function Ops() {
           </div>
         </div>
 
-        <div className="panel pad">
-          <div className="eyebrow">Per series — including where we lose</div>
-          <p className="fine mt-1">
+        {/* Per series table */}
+        <div className="panel pad lg:col-span-2">
+          <div className="eyebrow text-slate-500">Per series — including where we lose</div>
+          <p className="fine mt-1 text-slate-500 text-xs">
             A team that reports only its wins gets discounted, and experienced judges do
             it quickly. The ensemble beats seasonal-naive on all eight — so the honest
             column is the absolute one: <strong>MASE above 1.000 is worse than simply
             repeating last week</strong>. {losses} {losses === 1 ? "series is" : "series are"}
             {ties ? `, and ${ties} exactly ties it` : ""}.
           </p>
-          <p className="fine mt-2 text-xs">
-            The last column is <strong>not what we ship</strong>. It names the single best
-            performer out of all eleven models for that product, which is the comparison
-            behind the ablation above — and it is why five different names appear there.
-            What we actually ship is the same five-model ensemble for every product:{" "}
-            <span className="font-mono">
-              {(b.ensemble_members ?? []).join(" · ")}
-            </span>
-            .
-          </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line text-left">
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-left">
                   {["Series", "SNaive", "Ensemble", "Best single model, of all 11", ""].map((h) => (
-                    <th key={h} className="py-2 font-medium text-ink-mute">
+                    <th key={h} className="py-2.5 px-3 font-semibold text-xs text-slate-500">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100/70">
                 {(b.per_series ?? []).map((row) => (
-                  <tr key={row.series_id} className="border-b border-line-soft last:border-0">
-                    <td className="py-2 font-mono text-ink-soft">{row.series_id}</td>
-                    <td className="py-2 font-mono text-ink-mute">
+                  <tr key={row.series_id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-xs font-bold text-slate-700">{row.series_id}</td>
+                    <td className="py-2.5 px-3 font-mono text-xs text-slate-400">
                       {row.seasonal_naive.toFixed(3)}
                     </td>
                     <td
-                      className={`py-2 font-mono ${
+                      className={`py-2.5 px-3 font-mono text-xs font-bold ${
                         row.ensemble > 1.0005
-                          ? "text-signal-red"
+                          ? "text-rose-600"
                           : Math.abs(row.ensemble - 1) <= 0.0005
-                            ? "text-ink-mute"
-                            : "text-signal-green"
+                            ? "text-slate-500"
+                            : "text-emerald-600"
                       }`}
                     >
                       {row.ensemble.toFixed(3)}
                     </td>
-                    <td className="py-2 text-ink-mute">{row.best_model}</td>
-                    {/* Two different questions, and only the second one is hard.
-                        Beating SNaive is the relative claim; MASE >= 1 means the
-                        series is genuinely hard and we say so on the screen. */}
-                    <td className="py-2">
+                    <td className="py-2.5 px-3 text-xs text-slate-600 font-medium">{row.best_model}</td>
+                    <td className="py-2.5 px-3 text-right">
                       {row.ensemble > 1.0005 ? (
-                        <span className="chip bg-signal-amber/[0.10] text-signal-amber">
+                        <span className="chip bg-amber-50 text-amber-700 border-amber-200">
                           above naive
                         </span>
                       ) : Math.abs(row.ensemble - 1) <= 0.0005 ? (
-                        <span className="chip bg-wash-strong text-ink-mute">ties naive</span>
+                        <span className="chip bg-slate-100 text-slate-600 border-slate-200">ties naive</span>
                       ) : row.ensemble_wins ? (
-                        <span className="chip bg-signal-green/[0.08] text-signal-green">wins</span>
+                        <span className="chip bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">wins</span>
                       ) : (
-                        <span className="chip bg-signal-red/[0.07] text-signal-red">loses</span>
+                        <span className="chip bg-rose-50 text-rose-700 border-rose-200">loses</span>
                       )}
                     </td>
                   </tr>
@@ -271,48 +255,43 @@ export function Ops() {
         </div>
       </div>
 
-      {/* "Why five models" is a fair question and the honest answer needs the
-          price on it. All wall clock, measured during the benchmark run that
-          wrote the file this screen reads. */}
+      {/* Portfolio compute cost card */}
       {b.compute ? (
         <div className="panel pad">
-          <div className="eyebrow">What the portfolio costs, and what caches</div>
-          <p className="fine mt-1 max-w-4xl">
+          <div className="eyebrow text-slate-500">What the portfolio costs, and what caches</div>
+          <p className="fine mt-1 max-w-4xl text-slate-500 text-xs">
             Five models cost roughly five times one. That is the trade, and it is worth
             making here because the alternative &mdash; picking the best single model per
             product &mdash; scored {ablation?.selection.toFixed(3)} against{" "}
-            {ablation?.combination.toFixed(3)}. It is affordable because none of it happens
-            while anyone is waiting.
+            {ablation?.combination.toFixed(3)}.
           </p>
 
-          <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <div className="mt-5 grid gap-6 lg:grid-cols-2">
             <div>
-              <div className="eyebrow mb-2">Fitting time, by model family</div>
+              <div className="eyebrow mb-2.5 text-slate-500">Fitting time, by model family</div>
               {Object.entries(b.compute.by_family_seconds).map(([fam, secs]) => {
                 const pctOf = (secs / (b.compute?.total_fit_seconds || 1)) * 100;
                 return (
-                  <div key={fam} className="mb-1.5 flex items-center gap-3">
-                    <div className="w-24 shrink-0 text-xs text-ink-soft">{fam}</div>
-                    <div className="h-3 flex-1 bg-wash">
-                      <div className="h-full bg-ink/60" style={{ width: `${pctOf}%` }} />
+                  <div key={fam} className="mb-2 flex items-center gap-3">
+                    <div className="w-28 shrink-0 text-xs font-medium text-slate-600">{fam}</div>
+                    <div className="h-3 flex-1 rounded-full overflow-hidden bg-slate-100">
+                      <div className="h-full rounded-full bg-medical-teal" style={{ width: `${pctOf}%` }} />
                     </div>
-                    <div className="w-20 shrink-0 text-right font-mono text-xs text-ink-mute">
+                    <div className="w-20 shrink-0 text-right font-mono text-xs font-bold text-slate-600">
                       {secs.toFixed(1)}s
                     </div>
                   </div>
                 );
               })}
-              <p className="fine mt-3 text-xs">
+              <p className="fine mt-3 text-xs text-slate-400">
                 {b.compute.model_fits} model-fold fits in{" "}
                 {b.compute.total_fit_seconds.toFixed(1)}s &mdash;{" "}
-                {(b.compute.seconds_per_fit * 1000).toFixed(0)}ms each. The statistical
-                family dominates because it fits per series; LightGBM is one global model
-                across all eight, which is why it is the cheapest thing in the portfolio.
+                {(b.compute.seconds_per_fit * 1000).toFixed(0)}ms each.
               </p>
             </div>
 
             <div>
-              <div className="eyebrow mb-2">Where the time is, and is not</div>
+              <div className="eyebrow mb-2.5 text-slate-500">Where the time is, and is not</div>
               <dl className="space-y-2.5 text-xs">
                 {[
                   ["Nightly batch", "Fits everything and writes a versioned forecast store. Minutes, offline, nobody waiting."],
@@ -320,11 +299,11 @@ export function Ops() {
                   ["Cached in process", "Quantile reads are memoised on (series, grain, horizon, model_version). Publishing a new version invalidates them by key rather than by clearing."],
                   ["NOT cached, and it should be", "The batch refits from scratch every run. There is no warm start and no incremental update, so yesterday’s work is thrown away. It is affordable at 8 products; it is the first thing that breaks at 8,000."],
                 ].map(([term, body], i) => (
-                  <div key={term} className={i === 3 ? "border-l-2 border-signal-amber pl-2.5" : ""}>
-                    <dt className={`font-medium ${i === 3 ? "text-signal-amber" : "text-ink"}`}>
+                  <div key={term} className={`rounded-xl p-3 border ${i === 3 ? "border-amber-200 bg-amber-50/60" : "border-slate-100 bg-slate-50/60"}`}>
+                    <dt className={`font-bold ${i === 3 ? "text-amber-800" : "text-ink"}`}>
                       {term}
                     </dt>
-                    <dd className="mt-0.5 text-ink-mute">{body}</dd>
+                    <dd className="mt-0.5 text-slate-500">{body}</dd>
                   </div>
                 ))}
               </dl>
@@ -333,9 +312,10 @@ export function Ops() {
         </div>
       ) : null}
 
+      {/* Provenance Card */}
       <div className="panel pad">
-        <div className="eyebrow">Provenance</div>
-        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div className="eyebrow text-slate-500">Provenance & Operational Audit</div>
+        <div className="mt-3.5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Kv label="Snapshot" value={b.snapshot_id} />
           <Kv label="Generated" value={b.generated_at?.slice(0, 19).replace("T", " ")} />
           <Kv label="Model version" value={String(runtime?.model_version ?? "—")} />
@@ -372,18 +352,18 @@ function Compare({
 }) {
   return (
     <div
-      className={`pt-3 ${
+      className={`rounded-xl p-3.5 border ${
         best
-          ? "border-t-2 border-signal-green"
+          ? "border-emerald-300 bg-emerald-50/70"
           : worse
-            ? "border-t-2 border-signal-red"
-            : "border-t border-line"
+            ? "border-rose-200 bg-rose-50/70"
+            : "border-slate-200/80 bg-white"
       }`}
     >
-      <div className="eyebrow">{label}</div>
+      <div className="eyebrow text-[10px] text-slate-500">{label}</div>
       <div
-        className={`figure mt-1.5 text-[30px] font-medium leading-none ${
-          best ? "text-signal-green" : worse ? "text-signal-red" : "text-ink-mute"
+        className={`figure mt-1.5 text-[28px] font-extrabold leading-none ${
+          best ? "text-emerald-700" : worse ? "text-rose-700" : "text-slate-600"
         }`}
       >
         {value.toFixed(3)}
@@ -392,12 +372,11 @@ function Compare({
   );
 }
 
-
 function Kv({ label, value }: { label: string; value?: string }) {
   return (
-    <div>
-      <div className="eyebrow">{label}</div>
-      <div className="mt-0.5 truncate font-mono text-xs text-ink-soft" title={value}>
+    <div className="rounded-xl bg-slate-50/70 p-3 border border-slate-100">
+      <div className="eyebrow text-[10px] text-slate-400">{label}</div>
+      <div className="mt-1 truncate font-mono text-xs font-bold text-slate-700" title={value}>
         {value ?? "—"}
       </div>
     </div>
