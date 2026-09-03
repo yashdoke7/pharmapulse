@@ -17,8 +17,12 @@ import {
  * The home screen opens on EXCEPTIONS, never on a chart.
  * Redesigned into a premium Medical Intelligence & Pharmaceutical Sales Dashboard.
  */
-// Lead time (4) + review period (7). Lane 2, and the Settings screen moves it.
-const PROTECTION = 11;
+// Fallback only, used while /api/settings is still loading. The real value is
+// lead_time_days + review_period_days, read live from settings below - it used
+// to be hardcoded here, so moving the sliders on the Settings screen never
+// moved this line even though it changes what "the next order must cover"
+// actually means.
+const DEFAULT_PROTECTION = 11;
 
 /**
  * Days of cover per product, as a horizontal runway, with the protection
@@ -119,9 +123,23 @@ export function Dashboard() {
   const nav = useNavigate();
   const risk = useQuery({ queryKey: ["risk"], queryFn: () => api.risk(20) });
   const positions = useQuery({ queryKey: ["positions"], queryFn: () => api.positions() });
+  // Same query key Settings.tsx uses, so this is a cache hit whenever that
+  // screen has already been visited rather than a second network round trip.
+  const settings = useQuery({ queryKey: ["settings"], queryFn: () => api.settings() });
 
   if (risk.isError) return <ErrorCard error={risk.error} />;
   if (risk.isLoading || positions.isLoading) return <Loading label="Reading the shelf" />;
+
+  // Matches decision/newsvendor.py::protection_interval_days exactly: lead
+  // time plus review period, not lead time alone. Per-product lead-time
+  // overrides (Settings screen, per series) are real, but this chart draws
+  // ONE shared line across every product - so it reflects the shop-wide
+  // setting, and a product overriding its own lead time will show a runway
+  // slightly ahead of or behind where its bar actually needs to clear.
+  const s = settings.data?.data;
+  const protection = s
+    ? s.lead_time_days + s.review_period_days
+    : DEFAULT_PROTECTION;
 
   const asOf = risk.data?.meta.as_of ?? null;
   const asOfLabel = asOf
@@ -239,10 +257,10 @@ export function Dashboard() {
       <section>
         <div className="panel overflow-hidden">
           <PanelHead right={<span className="fine text-xs">each bar is days of stock left</span>}>
-            Runway, against the {PROTECTION} days the next order must cover
+            Runway, against the {protection} days the next order must cover
           </PanelHead>
           <div className="p-5 sm:p-6">
-            <CoverRunway positions={pos} protection={PROTECTION} />
+            <CoverRunway positions={pos} protection={protection} />
           </div>
         </div>
       </section>
@@ -250,7 +268,7 @@ export function Dashboard() {
       {/* Shelf Position Table */}
       <section>
         <div className="panel overflow-hidden">
-          <PanelHead right={<span className="fine text-xs">cover against an 11-day protection interval</span>}>
+          <PanelHead right={<span className="fine text-xs">cover against a {protection}-day protection interval</span>}>
             Shelf position & Inventory Status
           </PanelHead>
           {/* Table for tablet+; a seven-column table has no honest way to

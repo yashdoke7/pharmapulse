@@ -22,6 +22,7 @@ Cognizant campus drive · Healthcare · Pharma Sales Analysis & Forecasting.
 | Document | What it is |
 |---|---|
 | **[docs/PHARMAPULSE_SYSTEM.md](docs/PHARMAPULSE_SYSTEM.md)** | **Start here.** The whole project in one file: how the pieces connect, every decision and the alternative it beat, the results, and where the code is |
+| **[docs/TECHNICAL_REFERENCE.md](docs/TECHNICAL_REFERENCE.md)** | **What's used and how it's wired.** Stack versions, module dependency graph, storage schemas, the full API surface table, every env var, and one request traced through the actual function calls — no narrative |
 | **[docs/ARCHITECTURE_DELTA.md](docs/ARCHITECTURE_DELTA.md)** | **What changed against the submitted design.** 4 components removed, 2 moved layer, 5 added — plus 3 design claims the data contradicts. Read it next to the design documents |
 | [docs/DEMONSTRATION.md](docs/DEMONSTRATION.md) | Run it, then present it — with the words |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | **Every term, defined once.** MASE, ADI/CV², protection interval, critical fractile, conformal prediction, the lanes |
