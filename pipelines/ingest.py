@@ -95,7 +95,15 @@ def ingest(raw_path: str | Path,
     sid = snapshot_id(raw_path)
     batch_id = uuid.uuid4().hex[:12]
 
-    wide[DATE_COL] = pd.to_datetime(wide[DATE_COL], format=DATE_FORMAT)
+    try:
+        wide[DATE_COL] = pd.to_datetime(wide[DATE_COL], format=DATE_FORMAT)
+    except ValueError:
+        # The original file is MM/DD/YYYY. A user-supplied or extended file is
+        # free to use any date style (ISO YYYY-MM-DD is the common one) - the
+        # upload feature exists specifically so a second dataset can be loaded,
+        # and a format assumption baked in from the first file would make that
+        # feature only work on files shaped exactly like the first one.
+        wide[DATE_COL] = pd.to_datetime(wide[DATE_COL], format="mixed")
 
     long = wide.melt(
         id_vars=[DATE_COL],
