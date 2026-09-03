@@ -1,4 +1,3 @@
-import { ReliabilityDiagram } from "../components/ReliabilityDiagram";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { ErrorCard, Loading, Readout, SectionTitle } from "../components/ui";
@@ -166,31 +165,6 @@ export function Ops() {
                 </span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Reliability Diagram */}
-        <div className="panel pad lg:col-span-2">
-          <div className="eyebrow text-slate-500">Are our own confidence intervals honest?</div>
-          <p className="fine mt-1 max-w-3xl text-slate-500 text-xs">
-            Every interval we ever stated, checked against what actually happened. A
-            stated{" "}
-            <strong className="text-ink font-semibold">{((b.calibration?.nominal ?? 0.8) * 100).toFixed(0)}%</strong> band covered{" "}
-            <strong className="text-rose-600 font-semibold">
-              {((b.calibration?.achieved_before ?? 0) * 100).toFixed(1)}%
-            </strong>{" "}
-            of outcomes — too wide. Conformal correction pulls it to{" "}
-            <strong className="text-emerald-600 font-semibold">
-              {((b.calibration?.achieved_after ?? 0) * 100).toFixed(1)}%
-            </strong>
-            . Closer to the diagonal is better.
-          </p>
-          <div className="mt-4 max-w-xl">
-            <ReliabilityDiagram
-              before={b.calibration?.curve_before ?? []}
-              after={b.calibration?.curve_after ?? []}
-              nPoints={b.calibration?.n_points ?? 0}
-            />
           </div>
         </div>
 
